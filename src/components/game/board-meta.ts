@@ -22,6 +22,12 @@ export function isVerticalEdge(id: number): boolean {
   return (id > 10 && id < 20) || (id > 30 && id < 40)
 }
 
+/** Center of a tile as percentages of the 11×11 board (for the token layer). */
+export function tileCenter(id: number): { x: number; y: number } {
+  const { row, col } = tileCell(id)
+  return { x: ((col - 0.5) / 11) * 100, y: ((row - 0.5) / 11) * 100 }
+}
+
 export const GROUP_COLOR: Record<ColorGroup, string> = {
   brown: "#92400e",
   lightBlue: "#7dd3fc",

@@ -1,7 +1,13 @@
-import { BOARD, type GameState, type Player } from "@/game"
+import { useEffect, useRef, useState } from "react"
+
+import { BOARD, type GameState, type TileDefinition } from "@/game"
 import { cn } from "@/lib/utils"
 
-import { GROUP_COLOR, tileCell } from "./board-meta"
+import { useBoardTheme } from "./board-theme"
+import { tileCell } from "./board-meta"
+import { Dice } from "./Dice"
+import { TokenLayer } from "./TokenLayer"
+import { isCornerTile, tileVisual } from "./tile-visuals"
 
 /** Short label for a tile abbreviation shown when space is tight. */
 function shortName(name: string): string {
@@ -10,20 +16,10 @@ function shortName(name: string): string {
     .trim()
 }
 
-function Tokens({ players }: { players: Player[] }) {
-  if (players.length === 0) return null
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0.5 flex flex-wrap justify-center gap-0.5">
-      {players.map((p) => (
-        <span
-          key={p.id}
-          title={p.nickname}
-          className="size-2 rounded-full border border-white/70 shadow"
-          style={{ backgroundColor: p.color }}
-        />
-      ))}
-    </div>
-  )
+function priceLabel(def: TileDefinition): string | undefined {
+  if ("price" in def) return `$${def.price}`
+  if (def.type === "tax") return `$${def.amount}`
+  return undefined
 }
 
 function Tile({
@@ -35,95 +31,165 @@ function Tile({
   state: GameState
   isCurrent: boolean
 }) {
+  const { theme } = useBoardTheme()
   const def = BOARD[id]
   const cell = tileCell(id)
   const tile = state.tiles[id]
   const owner = tile.ownerId
     ? state.players.find((p) => p.id === tile.ownerId)
     : undefined
-  const here = state.players.filter((p) => !p.isBankrupt && p.position === id)
 
-  const groupColor = def.type === "street" ? GROUP_COLOR[def.group] : undefined
-  const price = "price" in def ? def.price : undefined
+  const visual = tileVisual(def)
+  const corner = isCornerTile(id)
+  const groupColor = def.type === "street" ? theme.groupColors[def.group] : undefined
+  const isMono = theme.id === "mono"
+  const iconColor = isMono ? "var(--tile-fg)" : visual?.color
+  const label = priceLabel(def)
+
+  // Background: street tint, corner accent tint, or plain tile color.
+  let bg = "var(--tile-bg)"
+  if (def.type === "street" && theme.tintTiles && groupColor) {
+    bg = `color-mix(in srgb, ${groupColor} 14%, var(--tile-bg))`
+  } else if (corner && visual && !isMono) {
+    bg = `color-mix(in srgb, ${visual.color} 12%, var(--tile-bg))`
+  }
 
   return (
     <div
-      style={{ gridRow: cell.row, gridColumn: cell.col }}
+      style={{
+        gridRow: cell.row,
+        gridColumn: cell.col,
+        backgroundColor: bg,
+        borderColor: "var(--tile-border)",
+        color: "var(--tile-fg)",
+        translate: "0 0",
+      }}
       className={cn(
-        "relative flex min-h-0 flex-col overflow-hidden rounded-sm border bg-card text-[8px] leading-tight",
-        isCurrent && "ring-2 ring-primary"
+        "relative flex min-h-0 flex-col overflow-hidden rounded-md border text-[8px] leading-tight",
+        "transition-[translate,box-shadow] duration-150 hover:z-10 hover:-translate-y-px hover:shadow-md",
+        isCurrent && "tile-current z-10 ring-2 ring-ring"
       )}
     >
-      {groupColor && (
-        <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: groupColor }} />
+      {/* Street: color band + optional house markers */}
+      {def.type === "street" && groupColor && (
+        <div
+          className="h-2 w-full shrink-0"
+          style={{
+            backgroundColor: groupColor,
+            boxShadow: theme.glow ? `0 0 6px ${groupColor}` : undefined,
+          }}
+        />
       )}
       {def.type === "street" && tile.houses > 0 && (
-        <div className="absolute inset-x-0 top-1.5 flex justify-center gap-px">
+        <div className="absolute inset-x-0 top-2 flex justify-center gap-px">
           {tile.houses === 5 ? (
-            <span className="h-1.5 w-2.5 rounded-[1px] bg-red-600" title="Hotel" />
+            <span className="h-1.5 w-3 rounded-[1px] bg-red-600 shadow" title="Hotel" />
           ) : (
             Array.from({ length: tile.houses }).map((_, i) => (
-              <span key={i} className="h-1.5 w-1 rounded-[1px] bg-green-600" />
+              <span
+                key={i}
+                className="h-1.5 w-1 rounded-[1px] bg-emerald-500 shadow-sm"
+              />
             ))
           )}
         </div>
       )}
-      <div className="flex flex-1 flex-col items-center justify-center px-0.5 text-center">
-        <span className="line-clamp-2 font-medium">{shortName(def.name)}</span>
-        {price !== undefined && (
-          <span className="text-muted-foreground">${price}</span>
+
+      <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-0.5 text-center">
+        {visual && (
+          <visual.Icon
+            className={corner ? "size-5" : "size-3.5"}
+            style={{ color: iconColor }}
+            strokeWidth={2}
+          />
         )}
+        <span
+          className={cn(
+            "line-clamp-2 leading-tight",
+            corner ? "text-[7px] font-bold tracking-wide" : "font-medium"
+          )}
+        >
+          {corner && visual?.label ? visual.label : shortName(def.name)}
+        </span>
+        {label && <span className="opacity-55">{label}</span>}
       </div>
-      {tile.mortgaged && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/55">
-          <span className="text-[7px] font-bold tracking-wide text-muted-foreground">
-            MTG
-          </span>
-        </div>
-      )}
+
       {owner && (
         <div
-          className="h-1 w-full shrink-0"
+          className="h-1.5 w-full shrink-0"
           style={{ backgroundColor: owner.color }}
           title={`Owned by ${owner.nickname}`}
         />
       )}
-      <Tokens players={here} />
+      {tile.mortgaged && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-grayscale">
+          <span className="rounded bg-background/70 px-1 text-[7px] font-bold tracking-wide text-muted-foreground">
+            MTG
+          </span>
+        </div>
+      )}
     </div>
   )
 }
 
 export function GameBoard({ state }: { state: GameState }) {
+  const { theme } = useBoardTheme()
   const currentId = state.players[state.currentPlayerIndex]?.position
 
+  // Bump a counter on every roll so the dice re-tumble even on repeat values.
+  const [rollSeq, setRollSeq] = useState(0)
+  const lastSeed = useRef(state.rngSeed)
+  useEffect(() => {
+    if (state.rngSeed !== lastSeed.current) {
+      lastSeed.current = state.rngSeed
+      setRollSeq((s) => s + 1)
+    }
+  }, [state.rngSeed])
+
   return (
-    <div className="aspect-square w-full max-w-[640px]">
-      <div className="grid h-full w-full grid-cols-11 grid-rows-11 gap-0.5">
-        {BOARD.map((def) => (
-          <Tile
-            key={def.id}
-            id={def.id}
-            state={state}
-            isCurrent={def.id === currentId}
-          />
-        ))}
-        {/* Center area */}
-        <div className="col-start-2 col-end-11 row-start-2 row-end-11 flex flex-col items-center justify-center gap-1">
-          <span className="text-2xl font-bold tracking-widest text-muted-foreground/60 select-none">
-            DISAPOLY
-          </span>
-          {state.dice && (
-            <div className="flex gap-2">
-              {state.dice.map((face, i) => (
-                <span
-                  key={i}
-                  className="flex size-9 items-center justify-center rounded-md border bg-card text-lg font-bold shadow-sm"
-                >
-                  {face}
-                </span>
-              ))}
+    <div
+      style={{
+        ...theme.vars,
+        background:
+          "linear-gradient(145deg, color-mix(in srgb, var(--board-frame) 86%, white), var(--board-frame))",
+      }}
+      className="w-full max-w-[780px] rounded-3xl p-2.5 shadow-xl ring-1 ring-black/5 sm:p-3.5"
+    >
+      <div
+        className="relative overflow-hidden rounded-2xl p-1 shadow-inner"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--board-inner) 94%, white), var(--board-inner))",
+        }}
+      >
+        <div className="relative grid aspect-square w-full grid-cols-11 grid-rows-11 gap-[3px]">
+          {BOARD.map((def) => (
+            <Tile
+              key={def.id}
+              id={def.id}
+              state={state}
+              isCurrent={def.id === currentId}
+            />
+          ))}
+
+          {/* Center area */}
+          <div className="col-start-2 col-end-11 row-start-2 row-end-11 flex flex-col items-center justify-center gap-3">
+            <div className="flex flex-col items-center gap-1.5 select-none">
+              <span
+                className="text-3xl font-black tracking-[0.32em] sm:text-4xl"
+                style={{ color: "var(--center-fg)", opacity: 0.55 }}
+              >
+                DISAPOLY
+              </span>
+              <span
+                className="h-px w-28 rounded-full"
+                style={{ background: "var(--center-fg)", opacity: 0.25 }}
+              />
             </div>
-          )}
+            {state.dice && <Dice values={state.dice} rollSeq={rollSeq} />}
+          </div>
+
+          <TokenLayer state={state} />
         </div>
       </div>
     </div>

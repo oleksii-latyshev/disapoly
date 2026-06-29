@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { GameScreen } from "@/components/game/GameScreen"
+import { SettingsButton } from "@/components/game/SettingsButton"
 import { SetupScreen } from "@/components/game/SetupScreen"
 import { HomeScreen } from "@/components/online/HomeScreen"
 import { RoomScreen } from "@/components/online/RoomScreen"
@@ -17,35 +18,39 @@ export function App() {
   const { roomId, navigate } = useRoute()
   const [hotSeat, setHotSeat] = useState<HotSeat>({ kind: "off" })
 
-  // Online room takes priority — the URL is the source of truth for it.
+  let screen
   if (roomId) {
-    return <RoomScreen roomId={roomId} onLeave={() => navigate(null)} />
-  }
-
-  if (hotSeat.kind === "setup") {
-    return (
+    // Online room takes priority — the URL is the source of truth for it.
+    screen = <RoomScreen roomId={roomId} onLeave={() => navigate(null)} />
+  } else if (hotSeat.kind === "setup") {
+    screen = (
       <SetupScreen
         onStart={(setups) => setHotSeat({ kind: "playing", setups })}
       />
     )
-  }
-
-  if (hotSeat.kind === "playing") {
-    return (
+  } else if (hotSeat.kind === "playing") {
+    screen = (
       <GameScreen
         key={JSON.stringify(hotSeat.setups)}
         setups={hotSeat.setups}
         onNewGame={() => setHotSeat({ kind: "off" })}
       />
     )
+  } else {
+    screen = (
+      <HomeScreen
+        onCreateRoom={() => navigate(generateRoomId())}
+        onJoinRoom={(id) => navigate(id)}
+        onHotSeat={() => setHotSeat({ kind: "setup" })}
+      />
+    )
   }
 
   return (
-    <HomeScreen
-      onCreateRoom={() => navigate(generateRoomId())}
-      onJoinRoom={(id) => navigate(id)}
-      onHotSeat={() => setHotSeat({ kind: "setup" })}
-    />
+    <>
+      {screen}
+      <SettingsButton />
+    </>
   )
 }
 

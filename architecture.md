@@ -287,7 +287,9 @@ Local storage stays useful, but **not for sync** — rather for:
 3. 🔶 **Stage 2 — Full rules.**
    - ✅ Part 1 — economy: house/hotel building (with even-building), mortgage/unmortgage, proper bankruptcy via automatic asset liquidation. *(Done — reducer + `ManagePanel`, board renders houses/mortgages.)*
    - ⬜ Part 2 — jail proper (roll/pay/card) and Chance/Community Chest cards.
-4. **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
+4. 🔶 **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
+   - ✅ Polish so far: board themes (Classic / Minimal / Neon, persisted, settings button bottom-left), animated token movement and 3D dice via Motion, larger colorful board. *(`board-theme.tsx`, `TokenLayer.tsx`, `Dice.tsx`, `SettingsButton.tsx`; respects `prefers-reduced-motion`.)*
+   - ⬜ Remaining: trading, net-worth charts, dead-player timeout, sound.
 
 ### Running locally
 
