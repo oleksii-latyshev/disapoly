@@ -66,7 +66,7 @@ function Tile({
         translate: "0 0",
       }}
       className={cn(
-        "relative flex min-h-0 flex-col overflow-hidden rounded-md border text-[8px] leading-tight",
+        "relative flex min-h-0 flex-col overflow-hidden rounded-md border leading-tight text-[length:max(7.5px,1.05cqw)]",
         "transition-[translate,box-shadow] duration-150 hover:z-10 hover:-translate-y-px hover:shadow-md",
         isCurrent && "tile-current z-10 ring-2 ring-ring"
       )}
@@ -107,12 +107,18 @@ function Tile({
         <span
           className={cn(
             "line-clamp-2 leading-tight",
-            corner ? "text-[7px] font-bold tracking-wide" : "font-medium"
+            corner
+              ? "font-bold tracking-wide text-[length:max(7px,0.92cqw)]"
+              : "font-semibold"
           )}
         >
           {corner && visual?.label ? visual.label : shortName(def.name)}
         </span>
-        {label && <span className="opacity-55">{label}</span>}
+        {label && (
+          <span className="font-bold opacity-80 text-[length:max(8px,1.25cqw)]">
+            {label}
+          </span>
+        )}
       </div>
 
       {owner && (
@@ -165,7 +171,7 @@ export function GameBoard({ state }: { state: GameState }) {
             "radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--board-inner) 94%, white), var(--board-inner))",
         }}
       >
-        <div className="relative grid aspect-square w-full grid-cols-11 grid-rows-11 gap-[3px]">
+        <div className="@container relative grid aspect-square w-full grid-cols-11 grid-rows-11 gap-[3px]">
           {BOARD.map((def) => (
             <Tile
               key={def.id}
