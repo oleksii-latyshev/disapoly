@@ -3,6 +3,7 @@ import type { ClientMessage, RoomMember, RoomState } from "@/game"
 
 import { GameBoard } from "@/components/game/GameBoard"
 import { GameLog } from "@/components/game/GameLog"
+import { ManagePanel } from "@/components/game/ManagePanel"
 import { PlayersList } from "@/components/game/PlayersList"
 import { TurnControls } from "@/components/game/TurnControls"
 
@@ -42,6 +43,11 @@ export function NetworkGame({
           onNewGame={() => send({ type: "reset" })}
           localPlayerId={self?.id}
           canReset={self?.isHost ?? false}
+        />
+        <ManagePanel
+          state={game}
+          send={(action) => send({ type: "action", action })}
+          localPlayerId={self?.id}
         />
         <PlayersList state={game} />
         <GameLog state={game} />

@@ -284,7 +284,9 @@ Local storage stays useful, but **not for sync** — rather for:
 
 1. ✅ **Stage 0 — Skeleton.** Game model + rules reducer, local (hot-seat, everyone plays on one screen). No network. Board, dice, buying, rent. *(Done — `src/game/`, hot-seat UI.)*
 2. ✅ **Stage 1 — Network.** Authoritative room on a Cloudflare Durable Object (via `partyserver`), lobby, link sharing, turn order across devices. *(Done — `party/server.ts`, `src/game/room.ts`, `src/net/`, online UI.)*
-3. **Stage 2 — Full rules.** Monopoly and building, cards, jail, mortgage, bankruptcy, end of game.
+3. 🔶 **Stage 2 — Full rules.**
+   - ✅ Part 1 — economy: house/hotel building (with even-building), mortgage/unmortgage, proper bankruptcy via automatic asset liquidation. *(Done — reducer + `ManagePanel`, board renders houses/mortgages.)*
+   - ⬜ Part 2 — jail proper (roll/pay/card) and Chance/Community Chest cards.
 4. **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
 
 ### Running locally

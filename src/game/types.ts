@@ -120,3 +120,8 @@ export type GameAction =
   | { type: "BUY_PROPERTY" }
   | { type: "DECLINE_PROPERTY" }
   | { type: "END_TURN" }
+  // Property management — legal on your own turn outside the buy step.
+  | { type: "BUILD_HOUSE"; tileId: number }
+  | { type: "SELL_HOUSE"; tileId: number }
+  | { type: "MORTGAGE"; tileId: number }
+  | { type: "UNMORTGAGE"; tileId: number }

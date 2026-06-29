@@ -3,6 +3,7 @@ import { useGame } from "@/hooks/useGame"
 
 import { GameBoard } from "./GameBoard"
 import { GameLog } from "./GameLog"
+import { ManagePanel } from "./ManagePanel"
 import { PlayersList } from "./PlayersList"
 import { TurnControls } from "./TurnControls"
 
@@ -23,6 +24,7 @@ export function GameScreen({
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">
         <TurnControls state={state} send={send} onNewGame={onNewGame} />
+        <ManagePanel state={state} send={send} />
         <PlayersList state={state} />
         <GameLog state={state} />
       </aside>

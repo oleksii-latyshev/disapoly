@@ -57,12 +57,30 @@ function Tile({
       {groupColor && (
         <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: groupColor }} />
       )}
+      {def.type === "street" && tile.houses > 0 && (
+        <div className="absolute inset-x-0 top-1.5 flex justify-center gap-px">
+          {tile.houses === 5 ? (
+            <span className="h-1.5 w-2.5 rounded-[1px] bg-red-600" title="Hotel" />
+          ) : (
+            Array.from({ length: tile.houses }).map((_, i) => (
+              <span key={i} className="h-1.5 w-1 rounded-[1px] bg-green-600" />
+            ))
+          )}
+        </div>
+      )}
       <div className="flex flex-1 flex-col items-center justify-center px-0.5 text-center">
         <span className="line-clamp-2 font-medium">{shortName(def.name)}</span>
         {price !== undefined && (
           <span className="text-muted-foreground">${price}</span>
         )}
       </div>
+      {tile.mortgaged && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/55">
+          <span className="text-[7px] font-bold tracking-wide text-muted-foreground">
+            MTG
+          </span>
+        </div>
+      )}
       {owner && (
         <div
           className="h-1 w-full shrink-0"

@@ -7,14 +7,26 @@
  */
 
 import {
+  BOARD,
   BOARD_SIZE,
   GO_PAYOUT,
   JAIL_FINE,
   JAIL_TILE_ID,
 } from "./board.config"
 import { rollDice } from "./rng"
-import { activePlayers, rentFor, tileDef } from "./state"
-import type { GameAction, GameState, Player } from "./types"
+import {
+  activePlayers,
+  canBuildHouse,
+  canMortgage,
+  canSellHouse,
+  canUnmortgage,
+  currentPlayer,
+  mortgageValue,
+  rentFor,
+  tileDef,
+  unmortgageCost,
+} from "./state"
+import type { GameAction, GameState, Player, StreetTile } from "./types"
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   if (state.status !== "playing") return state
@@ -28,9 +40,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state.phase === "awaiting-buy" ? decline(clone(state)) : state
     case "END_TURN":
       return state.phase === "awaiting-end" ? endTurn(clone(state)) : state
+    case "BUILD_HOUSE":
+      return canManage(state) ? buildHouse(clone(state), action.tileId) : state
+    case "SELL_HOUSE":
+      return canManage(state) ? sellHouse(clone(state), action.tileId) : state
+    case "MORTGAGE":
+      return canManage(state) ? mortgage(clone(state), action.tileId) : state
+    case "UNMORTGAGE":
+      return canManage(state) ? unmortgage(clone(state), action.tileId) : state
     default:
       return state
   }
+}
+
+/** Property management is allowed on your own turn, outside the buy step. */
+function canManage(state: GameState): boolean {
+  return state.phase === "awaiting-roll" || state.phase === "awaiting-end"
 }
 
 // --- action handlers (mutate the cloned draft, then return it) ---
@@ -155,6 +180,50 @@ function endTurn(d: GameState): GameState {
   return d
 }
 
+// --- property management (Stage 2) ---
+
+function buildHouse(d: GameState, tileId: number): GameState {
+  const player = currentPlayer(d)
+  if (!canBuildHouse(d, player.id, tileId)) return d
+  const def = tileDef(tileId) as StreetTile
+  player.balance -= def.houseCost
+  d.tiles[tileId].houses += 1
+  const what = d.tiles[tileId].houses === 5 ? "a hotel" : "a house"
+  log(d, `${player.nickname} built ${what} on ${def.name} for $${def.houseCost}.`)
+  return d
+}
+
+function sellHouse(d: GameState, tileId: number): GameState {
+  const player = currentPlayer(d)
+  if (!canSellHouse(d, player.id, tileId)) return d
+  const def = tileDef(tileId) as StreetTile
+  const refund = Math.floor(def.houseCost / 2)
+  d.tiles[tileId].houses -= 1
+  player.balance += refund
+  log(d, `${player.nickname} sold a building on ${def.name} for $${refund}.`)
+  return d
+}
+
+function mortgage(d: GameState, tileId: number): GameState {
+  const player = currentPlayer(d)
+  if (!canMortgage(d, player.id, tileId)) return d
+  const value = mortgageValue(tileId)
+  d.tiles[tileId].mortgaged = true
+  player.balance += value
+  log(d, `${player.nickname} mortgaged ${tileDef(tileId).name} for $${value}.`)
+  return d
+}
+
+function unmortgage(d: GameState, tileId: number): GameState {
+  const player = currentPlayer(d)
+  if (!canUnmortgage(d, player.id, tileId)) return d
+  const cost = unmortgageCost(tileId)
+  d.tiles[tileId].mortgaged = false
+  player.balance -= cost
+  log(d, `${player.nickname} lifted the mortgage on ${tileDef(tileId).name} for $${cost}.`)
+  return d
+}
+
 // --- helpers ---
 
 /**
@@ -177,9 +246,10 @@ function settle(d: GameState): GameState {
 
 /**
  * Move `amount` from `debtor` to `creditorId` (or the bank when null). If the
- * debtor can't cover it, they pay what they have and go bankrupt — their assets
- * transfer to the creditor (or back to the bank). Bankruptcy is simplified for
- * Stage 0 (no house liquidation / auctions — see architecture.md §3.10).
+ * debtor is short, they auto-liquidate (sell buildings, then mortgage) to try to
+ * cover it; if assets still fall short, they go bankrupt and hand everything to
+ * the creditor (or back to the bank). Liquidation is automatic — no interactive
+ * "raise money" step (see architecture.md §3.10).
  */
 function pay(
   d: GameState,
@@ -191,13 +261,15 @@ function pay(
     ? d.players.find((p) => p.id === creditorId) ?? null
     : null
 
+  if (debtor.balance < amount) raiseCash(d, debtor, amount)
+
   if (debtor.balance >= amount) {
     debtor.balance -= amount
     if (creditor) creditor.balance += amount
     return
   }
 
-  // Insolvent: hand over remaining cash and all properties, then go bankrupt.
+  // Still insolvent after liquidation: hand over remaining cash and properties.
   if (creditor) creditor.balance += debtor.balance
   debtor.balance = 0
   debtor.isBankrupt = true
@@ -205,11 +277,37 @@ function pay(
     if (tile.ownerId === debtor.id) {
       tile.ownerId = creditorId
       tile.houses = 0
-      tile.mortgaged = false
+      // A creditor inherits the mortgage; assets returned to the bank are clear.
+      if (!creditorId) tile.mortgaged = false
     }
   }
   log(d, `${debtor.nickname} went bankrupt!`)
   checkGameOver(d)
+}
+
+/**
+ * Raise cash for an insolvent debtor up to `target`: sell buildings (half cost),
+ * then mortgage clear properties (half price). Stops early once covered.
+ */
+function raiseCash(d: GameState, debtor: Player, target: number): void {
+  for (const def of BOARD) {
+    if (debtor.balance >= target) return
+    if (def.type !== "street") continue
+    const tile = d.tiles[def.id]
+    if (tile.ownerId !== debtor.id) continue
+    while (tile.houses > 0 && debtor.balance < target) {
+      tile.houses -= 1
+      debtor.balance += Math.floor(def.houseCost / 2)
+    }
+  }
+  for (const def of BOARD) {
+    if (debtor.balance >= target) return
+    if (!("price" in def)) continue
+    const tile = d.tiles[def.id]
+    if (tile.ownerId !== debtor.id || tile.mortgaged) continue
+    tile.mortgaged = true
+    debtor.balance += Math.floor(def.price / 2)
+  }
 }
 
 function sendToJail(player: Player): void {

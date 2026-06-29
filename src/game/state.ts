@@ -122,6 +122,104 @@ export function rentFor(
   return 0
 }
 
+// --- property management (Stage 2) ---
+
+/** Price of a purchasable tile, or 0 for non-ownable tiles. */
+export function priceOf(tileId: number): number {
+  const def = tileDef(tileId)
+  return "price" in def ? def.price : 0
+}
+
+export function mortgageValue(tileId: number): number {
+  return Math.floor(priceOf(tileId) / 2)
+}
+
+/** Cost to lift a mortgage: the mortgage value plus 10% interest. */
+export function unmortgageCost(tileId: number): number {
+  return Math.round(mortgageValue(tileId) * 1.1)
+}
+
+/** Min and max houses currently built across a color group's tiles. */
+export function groupHouseRange(
+  state: GameState,
+  group: keyof typeof GROUP_TILE_IDS
+): { min: number; max: number } {
+  const counts = GROUP_TILE_IDS[group].map((id) => state.tiles[id].houses)
+  return { min: Math.min(...counts), max: Math.max(...counts) }
+}
+
+/**
+ * Whether `playerId` may build a house/hotel on `tileId` right now: owns the
+ * full color group, even-building holds, below the hotel cap, and can pay.
+ */
+export function canBuildHouse(
+  state: GameState,
+  playerId: string,
+  tileId: number
+): boolean {
+  const def = tileDef(tileId)
+  if (def.type !== "street") return false
+  const tile = state.tiles[tileId]
+  if (tile.ownerId !== playerId || tile.mortgaged) return false
+  if (tile.houses >= 5) return false
+  if (!hasMonopoly(state, playerId, def.group)) return false
+  // Even building: never more than one ahead of the least-built tile.
+  if (tile.houses !== groupHouseRange(state, def.group).min) return false
+  const player = playerById(state, playerId)
+  return !!player && player.balance >= def.houseCost
+}
+
+/** Whether `playerId` may sell a house from `tileId` (even-selling rule). */
+export function canSellHouse(
+  state: GameState,
+  playerId: string,
+  tileId: number
+): boolean {
+  const def = tileDef(tileId)
+  if (def.type !== "street") return false
+  const tile = state.tiles[tileId]
+  if (tile.ownerId !== playerId || tile.houses === 0) return false
+  return tile.houses === groupHouseRange(state, def.group).max
+}
+
+/** Whether `playerId` may mortgage `tileId` (no buildings left in the group). */
+export function canMortgage(
+  state: GameState,
+  playerId: string,
+  tileId: number
+): boolean {
+  const def = tileDef(tileId)
+  if (def.type !== "street" && def.type !== "railroad" && def.type !== "utility")
+    return false
+  const tile = state.tiles[tileId]
+  if (tile.ownerId !== playerId || tile.mortgaged) return false
+  if (def.type === "street" && groupHouseRange(state, def.group).max > 0)
+    return false
+  return true
+}
+
+/** Whether `playerId` may lift the mortgage on `tileId` (and afford it). */
+export function canUnmortgage(
+  state: GameState,
+  playerId: string,
+  tileId: number
+): boolean {
+  const def = tileDef(tileId)
+  if (def.type !== "street" && def.type !== "railroad" && def.type !== "utility")
+    return false
+  const tile = state.tiles[tileId]
+  if (tile.ownerId !== playerId || !tile.mortgaged) return false
+  const player = playerById(state, playerId)
+  return !!player && player.balance >= unmortgageCost(tileId)
+}
+
+/** Purchasable tiles owned by a player, in board order. */
+export function ownedTiles(state: GameState, playerId: string): number[] {
+  return BOARD.filter(
+    (def) => "price" in def && state.tiles[def.id].ownerId === playerId
+  ).map((def) => def.id)
+}
+
 /** Net worth = cash + price of owned tiles (Stage 0 ignores building value). */
 export function netWorth(state: GameState, playerId: string): number {
   const player = playerById(state, playerId)
