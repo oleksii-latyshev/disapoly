@@ -78,6 +78,10 @@ export type Player = {
   /** Current tile index (0–39). */
   position: number
   inJail: boolean
+  /** Failed escape attempts during the current jail stint (0–3). */
+  jailTurns: number
+  /** Held "get out of jail free" cards (Stage 2 part 2 — cards). */
+  getOutOfJailCards: number
   isBankrupt: boolean
 }
 
@@ -125,3 +129,6 @@ export type GameAction =
   | { type: "SELL_HOUSE"; tileId: number }
   | { type: "MORTGAGE"; tileId: number }
   | { type: "UNMORTGAGE"; tileId: number }
+  // Jail — only valid for the current player while in jail.
+  | { type: "PAY_JAIL_FINE" }
+  | { type: "USE_JAIL_CARD" }

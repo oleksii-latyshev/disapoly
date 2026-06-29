@@ -48,6 +48,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return canManage(state) ? mortgage(clone(state), action.tileId) : state
     case "UNMORTGAGE":
       return canManage(state) ? unmortgage(clone(state), action.tileId) : state
+    case "PAY_JAIL_FINE":
+      return canLeaveJail(state) ? payJailFine(clone(state)) : state
+    case "USE_JAIL_CARD":
+      return canLeaveJail(state) ? redeemJailCard(clone(state)) : state
     default:
       return state
   }
@@ -58,17 +62,19 @@ function canManage(state: GameState): boolean {
   return state.phase === "awaiting-roll" || state.phase === "awaiting-end"
 }
 
+/** Pay/card jail exits are only legal before rolling, while in jail. */
+function canLeaveJail(state: GameState): boolean {
+  return (
+    state.phase === "awaiting-roll" &&
+    state.players[state.currentPlayerIndex].inJail
+  )
+}
+
 // --- action handlers (mutate the cloned draft, then return it) ---
 
 function roll(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
-
-  if (player.inJail) {
-    // Stage 0 simplification: pay the fine and leave; full jail is Stage 2.
-    pay(d, player, JAIL_FINE, null)
-    player.inJail = false
-    log(d, `${player.nickname} paid $${JAIL_FINE} to leave jail.`)
-  }
+  if (player.inJail) return rollInJail(d, player)
 
   const result = rollDice(d.rngSeed)
   d.rngSeed = result.seed
@@ -86,16 +92,81 @@ function roll(d: GameState): GameState {
     return d
   }
 
+  moveBy(d, player, sum)
+  resolveLanding(d, sum)
+  return settle(d)
+}
+
+/**
+ * Rolling from jail: doubles free you (and you move that many, but get no extra
+ * turn). Otherwise you stay; on the third failed attempt you must pay the fine
+ * and then move. See architecture.md §3.8.
+ */
+function rollInJail(d: GameState, player: Player): GameState {
+  const result = rollDice(d.rngSeed)
+  d.rngSeed = result.seed
+  d.dice = result.dice
+  const [a, b] = result.dice
+  const isDouble = a === b
+  const sum = a + b
+  log(d, `${player.nickname} rolled ${a} + ${b} = ${sum} from jail.`)
+
+  if (isDouble) {
+    player.inJail = false
+    player.jailTurns = 0
+    log(d, `${player.nickname} rolled doubles and leaves jail.`)
+    moveBy(d, player, sum)
+    resolveLanding(d, sum)
+    return settleNoExtra(d)
+  }
+
+  player.jailTurns += 1
+  if (player.jailTurns < 3) {
+    log(d, `${player.nickname} failed to roll doubles and stays in jail.`)
+    return settleNoExtra(d)
+  }
+
+  // Third failed attempt: pay the fine (may bankrupt), then move.
+  log(d, `${player.nickname}'s third attempt failed and must pay $${JAIL_FINE}.`)
+  pay(d, player, JAIL_FINE, null)
+  player.inJail = false
+  player.jailTurns = 0
+  if (!player.isBankrupt) {
+    moveBy(d, player, sum)
+    resolveLanding(d, sum)
+  }
+  return settleNoExtra(d)
+}
+
+function payJailFine(d: GameState): GameState {
+  const player = currentPlayer(d)
+  pay(d, player, JAIL_FINE, null)
+  if (player.isBankrupt) return settleNoExtra(d)
+  player.inJail = false
+  player.jailTurns = 0
+  log(d, `${player.nickname} paid $${JAIL_FINE} to get out of jail.`)
+  return d // stays in awaiting-roll so the player then rolls to move
+}
+
+function redeemJailCard(d: GameState): GameState {
+  const player = currentPlayer(d)
+  if (player.getOutOfJailCards <= 0) return d
+  player.getOutOfJailCards -= 1
+  player.inJail = false
+  player.jailTurns = 0
+  log(d, `${player.nickname} used a "get out of jail free" card.`)
+  return d // stays in awaiting-roll
+}
+
+/** Advance a player by `steps`, paying the GO bonus when passing it. */
+function moveBy(d: GameState, player: Player, steps: number): void {
   const from = player.position
-  const to = (from + sum) % BOARD_SIZE
+  const to = (from + steps) % BOARD_SIZE
   if (to < from) {
     player.balance += GO_PAYOUT
     log(d, `${player.nickname} passed GO and collected $${GO_PAYOUT}.`)
   }
   player.position = to
-
-  resolveLanding(d, sum)
-  return settle(d)
 }
 
 function resolveLanding(d: GameState, diceSum: number): void {
@@ -244,6 +315,13 @@ function settle(d: GameState): GameState {
   return d
 }
 
+/** Like `settle`, but never grants an extra roll (a jail-exit roll doesn't). */
+function settleNoExtra(d: GameState): GameState {
+  if (d.status !== "playing") return d
+  if (d.phase !== "awaiting-buy") d.phase = "awaiting-end"
+  return d
+}
+
 /**
  * Move `amount` from `debtor` to `creditorId` (or the bank when null). If the
  * debtor is short, they auto-liquidate (sell buildings, then mortgage) to try to
@@ -313,6 +391,7 @@ function raiseCash(d: GameState, debtor: Player, target: number): void {
 function sendToJail(player: Player): void {
   player.position = JAIL_TILE_ID
   player.inJail = true
+  player.jailTurns = 0
 }
 
 function checkGameOver(d: GameState): void {

@@ -56,6 +56,11 @@ const DICT: Record<Lang, Record<string, string>> = {
     "turn.newGame": "New game",
     "turn.waitHostNew": "Waiting for the host to start a new game…",
 
+    "jail.title": "In jail — escape attempt {n}/3",
+    "jail.pay": "Pay ${fine}",
+    "jail.useCard": "Use card",
+    "jail.roll": "Roll for doubles",
+
     "manage.title": "Your properties",
     "manage.empty": "You don’t own any properties yet.",
     "manage.mortgaged": "(mortgaged)",
@@ -122,6 +127,11 @@ const DICT: Record<Lang, Record<string, string>> = {
     "turn.gameOver": "Игра окончена.",
     "turn.newGame": "Новая игра",
     "turn.waitHostNew": "Ждём, пока хост начнёт новую игру…",
+
+    "jail.title": "В тюрьме — попытка {n}/3",
+    "jail.pay": "Заплатить ${fine}",
+    "jail.useCard": "Карта",
+    "jail.roll": "Бросок на дубль",
 
     "manage.title": "Твоё имущество",
     "manage.empty": "У тебя пока нет участков.",

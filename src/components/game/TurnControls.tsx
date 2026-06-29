@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import {
   BOARD,
   currentPlayer,
+  JAIL_FINE,
   type GameAction,
   type GameState,
 } from "@/game"
@@ -66,10 +67,42 @@ export function TurnControls({
         </p>
       )}
 
-      {isMyTurn && state.phase === "awaiting-roll" && (
+      {isMyTurn && state.phase === "awaiting-roll" && !player.inJail && (
         <Button onClick={() => send({ type: "ROLL_DICE" })}>
           <Dices /> {t("turn.roll")}
         </Button>
+      )}
+
+      {isMyTurn && state.phase === "awaiting-roll" && player.inJail && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground">
+            {t("jail.title", { n: player.jailTurns + 1 })}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              disabled={player.balance < JAIL_FINE}
+              onClick={() => send({ type: "PAY_JAIL_FINE" })}
+            >
+              {t("jail.pay", { fine: JAIL_FINE })}
+            </Button>
+            {player.getOutOfJailCards > 0 && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => send({ type: "USE_JAIL_CARD" })}
+              >
+                {t("jail.useCard")}
+              </Button>
+            )}
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => send({ type: "ROLL_DICE" })}
+          >
+            <Dices /> {t("jail.roll")}
+          </Button>
+        </div>
       )}
 
       {isMyTurn && state.phase === "awaiting-buy" && pending && (

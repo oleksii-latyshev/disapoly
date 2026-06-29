@@ -31,6 +31,8 @@ export function createInitialState(
     balance: STARTING_BALANCE,
     position: 0,
     inJail: false,
+    jailTurns: 0,
+    getOutOfJailCards: 0,
     isBankrupt: false,
   }))
 

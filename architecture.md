@@ -286,7 +286,9 @@ Local storage stays useful, but **not for sync** — rather for:
 2. ✅ **Stage 1 — Network.** Authoritative room on a Cloudflare Durable Object (via `partyserver`), lobby, link sharing, turn order across devices. *(Done — `party/server.ts`, `src/game/room.ts`, `src/net/`, online UI.)*
 3. 🔶 **Stage 2 — Full rules.**
    - ✅ Part 1 — economy: house/hotel building (with even-building), mortgage/unmortgage, proper bankruptcy via automatic asset liquidation. *(Done — reducer + `ManagePanel`, board renders houses/mortgages.)*
-   - ⬜ Part 2 — jail proper (roll/pay/card) and Chance/Community Chest cards.
+   - 🔶 Part 2:
+     - ✅ Jail proper — roll for doubles (no extra turn), pay the fine, or use a "get out of jail free" card; forced fine on the 3rd failed attempt. *(reducer `rollInJail` + jail controls in `TurnControls`.)*
+     - ⬜ Chance / Community Chest cards (decks, effects, the jail-free card). Card field on players is already wired.
 4. 🔶 **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
    - ✅ Polish so far: board themes (Classic / Minimal / Neon, persisted, settings button bottom-left), animated token movement and 3D dice via Motion, larger colorful board. *(`board-theme.tsx`, `TokenLayer.tsx`, `Dice.tsx`, `SettingsButton.tsx`; respects `prefers-reduced-motion`.)*
    - ⬜ Remaining: trading, net-worth charts, dead-player timeout, sound.
