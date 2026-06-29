@@ -7,6 +7,8 @@
     "dev": "vite",
     "dev:party": "wrangler dev",
     "deploy:party": "wrangler deploy",
+    "deploy:pages": "wrangler pages deploy dist --project-name disapoly",
+    "deploy:all": "bun run deploy:party && bun run build && bun run deploy:pages",
     "cf-typegen": "wrangler types",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
