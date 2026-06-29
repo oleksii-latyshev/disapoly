@@ -270,22 +270,38 @@ Local storage stays useful, but **not for sync** — rather for:
 
 ## 8. Open questions / decide before implementation
 
-- [ ] Final choice of sync layer (B vs C).
-- [ ] Compute rules on the server (relay authority) or on the host client (relay as a "pipe")?
-- [ ] What to do when the host leaves: hand off the host / make the relay authoritative / pause the match.
+- [x] ~~Final choice of sync layer (B vs C).~~ → **Option B: PartyKit** (thin authoritative WebSocket room on Cloudflare's free tier).
+- [x] ~~Compute rules on the server or on the host client?~~ → **On the server** (PartyKit room is the authority).
+- [x] ~~What to do when the host leaves?~~ → Non-issue: the authority lives in the relay, not in a host client.
 - [ ] Whether to support an auction on a declined purchase (classic Monopoly rule).
-- [ ] Exact balance parameters (prices, rent, payouts) — extract into `board.config.ts`.
-- [ ] Player cap and behavior beyond 8.
-- [ ] Reconnect strategy and "dead player" timeout.
+- [x] ~~Exact balance parameters~~ → Extracted into `board.config.ts` (classic values).
+- [ ] Player cap and behavior beyond 8 (currently capped at 8 by available colors).
+- [ ] Reconnect strategy and "dead player" timeout (reconnect works; turn timeout still open).
 
 ---
 
 ## 9. Proposed stages (roadmap)
 
-1. **Stage 0 — Skeleton.** Game model + rules reducer, local (hot-seat, everyone plays on one screen). No network. Board, dice, buying, rent.
-2. **Stage 1 — Network.** Wire up the chosen sync layer, lobby, link sharing, turn order across devices.
+1. ✅ **Stage 0 — Skeleton.** Game model + rules reducer, local (hot-seat, everyone plays on one screen). No network. Board, dice, buying, rent. *(Done — `src/game/`, hot-seat UI.)*
+2. ✅ **Stage 1 — Network.** Authoritative room on a Cloudflare Durable Object (via `partyserver`), lobby, link sharing, turn order across devices. *(Done — `party/server.ts`, `src/game/room.ts`, `src/net/`, online UI.)*
 3. **Stage 2 — Full rules.** Monopoly and building, cards, jail, mortgage, bankruptcy, end of game.
 4. **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
+
+### Running locally
+
+- `bun run dev:party` — start the room server (`wrangler dev`, Durable Object via miniflare) at `127.0.0.1:8787`. No Cloudflare account needed locally. Run alongside `bun run dev`.
+- `bun run dev` — start the Vite client. Open two browser tabs/devices, "Create online room", share the `?room=…` link.
+- Deploy: `wrangler login` (your own free Cloudflare account), then `bun run deploy:party` → a `https://disapoly.<subdomain>.workers.dev` host. Build the client with `VITE_PARTYKIT_HOST=disapoly.<subdomain>.workers.dev`.
+
+> **Why self-hosted Cloudflare, not PartyKit's cloud?** PartyKit's hosted platform (`*.partykit.dev`) is in maintenance after the Cloudflare acquisition and its shared zone hit Cloudflare's 10k-custom-domains limit, so new deploys fail there. `partyserver` is the same programming model deployed to *your own* Cloudflare account — no shared-zone limits, still the free Durable Objects tier. The `partysocket` client is unchanged.
+
+### Stage 1 design notes
+
+- **The Durable Object is the authority** (Option B realized). Clients send only intent messages (`join` / `start` / `action` / `reset`); the server validates them through the pure `applyClientMessage` reducer and broadcasts the whole `RoomState`. Out-of-turn or non-host intents are rejected server-side.
+- **No logic duplication:** all room/game rules live in the alias-free game core (`src/game/`), imported by both the React client and the Cloudflare Worker.
+- **Routing:** `partyserver` maps `/parties/<party>/<room>` to a DO binding by kebab-case name; the client sets `party: "game"` to match the `Game` binding in `wrangler.jsonc`. The class is declared as a `new_sqlite_classes` migration (required for the free plan).
+- **Identity** is a persisted `playerId` (localStorage) + nickname; reconnect resumes the same member. Hot-seat (Stage 0) is preserved as an offline mode.
+- **Known limitation (deferred to Stage 3):** if the player whose turn it is disconnects and never returns, the match stalls — no "dead player" timeout yet (see §8).
 
 ---
 

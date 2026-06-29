@@ -11,7 +11,13 @@ import {
 import { createSeed } from "./rng"
 import type { GameState, Player, TileDefinition } from "./types"
 
-export type PlayerSetup = { nickname: string }
+export type PlayerSetup = {
+  /** Stable id; auto-generated for local hot-seat, supplied for online play. */
+  id?: string
+  nickname: string
+  /** Token color; auto-assigned by join order when omitted. */
+  color?: string
+}
 
 /** Build a fresh match state for the given players (2–8). */
 export function createInitialState(
@@ -19,9 +25,9 @@ export function createInitialState(
   seed: number = createSeed()
 ): GameState {
   const players: Player[] = setups.map((setup, index) => ({
-    id: `p${index + 1}`,
+    id: setup.id ?? `p${index + 1}`,
     nickname: setup.nickname.trim() || `Player ${index + 1}`,
-    color: PLAYER_COLORS[index % PLAYER_COLORS.length],
+    color: setup.color ?? PLAYER_COLORS[index % PLAYER_COLORS.length],
     balance: STARTING_BALANCE,
     position: 0,
     inJail: false,

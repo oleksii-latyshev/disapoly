@@ -1,3 +1,37 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+dist
+dist-ssr
+build
+*.local
+
+# Environment variables — never commit real values to a public repo.
+# Use .env.example as the committed template.
+.env
+.env.*
+!.env.example
+
+# Cloudflare / Wrangler local state and generated types
+.wrangler
+.partykit
+.dev.vars
+.dev.vars.*
+wrangler.toml.bak
+worker-configuration.d.ts
+.cloudflare
+
+# Vite / TS caches
+.vite
+*.tsbuildinfo
+
+# Test / coverage
+coverage
+.nyc_output
+
 # Logs
 logs
 *.log
@@ -6,19 +40,18 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
+.pnpm-debug.log*
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+.DS_Store
+Thumbs.db

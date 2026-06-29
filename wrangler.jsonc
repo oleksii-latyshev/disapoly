@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "disapoly",
+  "main": "party/server.ts",
+  "compatibility_date": "2025-06-01",
+  "durable_objects": {
+    "bindings": [{ "name": "Game", "class_name": "DisapolyServer" }]
+  },
+  // SQLite-backed DO classes are required for the free Workers plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DisapolyServer"] }],
+  "observability": { "enabled": true }
+}
