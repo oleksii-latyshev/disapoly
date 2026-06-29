@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PLAYER_COLORS, type PlayerSetup } from "@/game"
+import { useT } from "@/i18n"
 
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = PLAYER_COLORS.length // 8
@@ -21,6 +22,7 @@ export function SetupScreen({
 }: {
   onStart: (players: PlayerSetup[]) => void
 }) {
+  const t = useT()
   const [names, setNames] = useState<string[]>(["", ""])
 
   const setName = (index: number, value: string) =>
@@ -44,7 +46,7 @@ export function SetupScreen({
         <CardHeader>
           <CardTitle>Disapoly</CardTitle>
           <CardDescription>
-            Local hot-seat. Add 2–{MAX_PLAYERS} players and start.
+            {t("setup.desc", { max: MAX_PLAYERS })}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -56,12 +58,12 @@ export function SetupScreen({
                   style={{ backgroundColor: PLAYER_COLORS[index] }}
                 />
                 <Label className="sr-only" htmlFor={`player-${index}`}>
-                  Player {index + 1}
+                  {t("setup.playerN", { n: index + 1 })}
                 </Label>
                 <Input
                   id={`player-${index}`}
                   value={name}
-                  placeholder={`Player ${index + 1}`}
+                  placeholder={t("setup.playerN", { n: index + 1 })}
                   maxLength={16}
                   onChange={(e) => setName(index, e.target.value)}
                 />
@@ -71,7 +73,7 @@ export function SetupScreen({
 
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
-              {names.length} players
+              {t("setup.players", { n: names.length })}
             </span>
             <div className="flex gap-1">
               <Button
@@ -79,7 +81,7 @@ export function SetupScreen({
                 size="icon-sm"
                 onClick={removePlayer}
                 disabled={names.length <= MIN_PLAYERS}
-                aria-label="Remove player"
+                aria-label={t("setup.removePlayer")}
               >
                 <Minus />
               </Button>
@@ -88,7 +90,7 @@ export function SetupScreen({
                 size="icon-sm"
                 onClick={addPlayer}
                 disabled={names.length >= MAX_PLAYERS}
-                aria-label="Add player"
+                aria-label={t("setup.addPlayer")}
               >
                 <Plus />
               </Button>
@@ -96,7 +98,7 @@ export function SetupScreen({
           </div>
 
           <Button onClick={start}>
-            <Play /> Start game
+            <Play /> {t("setup.start")}
           </Button>
         </CardContent>
       </Card>

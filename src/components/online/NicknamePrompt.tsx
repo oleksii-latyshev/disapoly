@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useT } from "@/i18n"
 
 export function NicknamePrompt({
   initial,
@@ -20,6 +21,7 @@ export function NicknamePrompt({
   onSubmit: (nickname: string) => void
   onCancel: () => void
 }) {
+  const t = useT()
   const [nickname, setNickname] = useState(initial)
   const trimmed = nickname.trim()
 
@@ -27,8 +29,8 @@ export function NicknamePrompt({
     <div className="flex min-h-svh items-center justify-center p-6">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Join game</CardTitle>
-          <CardDescription>Pick a nickname to enter the room.</CardDescription>
+          <CardTitle>{t("nickname.title")}</CardTitle>
+          <CardDescription>{t("nickname.desc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -39,22 +41,22 @@ export function NicknamePrompt({
             }}
           >
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="nickname">Nickname</Label>
+              <Label htmlFor="nickname">{t("nickname.label")}</Label>
               <Input
                 id="nickname"
                 autoFocus
                 value={nickname}
-                placeholder="Your name"
+                placeholder={t("nickname.placeholder")}
                 maxLength={16}
                 onChange={(e) => setNickname(e.target.value)}
               />
             </div>
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={!trimmed}>
-                Enter
+                {t("nickname.enter")}
               </Button>
               <Button type="button" variant="ghost" onClick={onCancel}>
-                Back
+                {t("common.back")}
               </Button>
             </div>
           </form>

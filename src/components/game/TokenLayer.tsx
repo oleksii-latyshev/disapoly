@@ -119,7 +119,7 @@ export function TokenLayer({ state }: { state: GameState }) {
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0">
+    <div className="pointer-events-none absolute inset-0 z-20">
       {active.map((player) => (
         <Token
           key={player.id}

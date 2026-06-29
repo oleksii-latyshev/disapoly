@@ -5,13 +5,16 @@ import "./index.css"
 import App from "./App.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { BoardThemeProvider } from "@/components/game/board-theme.tsx"
+import { I18nProvider } from "@/i18n.tsx"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
-      <BoardThemeProvider>
-        <App />
-      </BoardThemeProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <BoardThemeProvider>
+          <App />
+        </BoardThemeProvider>
+      </ThemeProvider>
+    </I18nProvider>
   </StrictMode>
 )

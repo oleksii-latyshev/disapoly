@@ -13,6 +13,7 @@ import {
   type GameAction,
   type GameState,
 } from "@/game"
+import { useT } from "@/i18n"
 
 import { GROUP_COLOR } from "./board-meta"
 
@@ -30,6 +31,7 @@ export function ManagePanel({
   send: (action: GameAction) => void
   localPlayerId?: string
 }) {
+  const t = useT()
   if (state.status !== "playing") return null
 
   const player = currentPlayer(state)
@@ -44,13 +46,11 @@ export function ManagePanel({
   return (
     <div className="flex flex-col gap-1.5 rounded-md border bg-card p-3">
       <span className="text-xs font-medium text-muted-foreground">
-        Your properties
+        {t("manage.title")}
       </span>
 
       {tiles.length === 0 && (
-        <p className="text-xs text-muted-foreground">
-          You don’t own any properties yet.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("manage.empty")}</p>
       )}
 
       <div className="flex max-h-56 flex-col gap-1 overflow-y-auto">
@@ -71,7 +71,9 @@ export function ManagePanel({
               <span className="min-w-0 flex-1 truncate">
                 {def.name}
                 {tile.mortgaged && (
-                  <span className="ml-1 text-muted-foreground">(mortgaged)</span>
+                  <span className="ml-1 text-muted-foreground">
+                    {t("manage.mortgaged")}
+                  </span>
                 )}
                 {def.type === "street" && tile.houses > 0 && (
                   <span className="ml-1 text-muted-foreground">
@@ -86,7 +88,7 @@ export function ManagePanel({
                     size="icon-xs"
                     variant="outline"
                     disabled={!canBuildHouse(state, player.id, id)}
-                    title={`Build ($${def.houseCost})`}
+                    title={t("manage.build", { cost: def.houseCost })}
                     onClick={() => send({ type: "BUILD_HOUSE", tileId: id })}
                   >
                     {tile.houses === 4 ? <Hotel /> : <House />}
@@ -95,7 +97,7 @@ export function ManagePanel({
                     size="icon-xs"
                     variant="ghost"
                     disabled={!canSellHouse(state, player.id, id)}
-                    title="Sell a building"
+                    title={t("manage.sell")}
                     onClick={() => send({ type: "SELL_HOUSE", tileId: id })}
                   >
                     −
@@ -108,17 +110,17 @@ export function ManagePanel({
                   size="xs"
                   variant="outline"
                   disabled={!canUnmortgage(state, player.id, id)}
-                  title={`Lift mortgage ($${unmortgageCost(id)})`}
+                  title={t("manage.liftMortgage", { cost: unmortgageCost(id) })}
                   onClick={() => send({ type: "UNMORTGAGE", tileId: id })}
                 >
-                  Unmortgage
+                  {t("manage.unmortgage")}
                 </Button>
               ) : (
                 <Button
                   size="icon-xs"
                   variant="ghost"
                   disabled={!canMortgage(state, player.id, id)}
-                  title="Mortgage"
+                  title={t("manage.mortgage")}
                   onClick={() => send({ type: "MORTGAGE", tileId: id })}
                 >
                   <Landmark />

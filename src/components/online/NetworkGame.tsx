@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
+import { useT } from "@/i18n"
 
 import { GameBoard } from "@/components/game/GameBoard"
 import { GameLog } from "@/components/game/GameLog"
@@ -18,10 +19,11 @@ export function NetworkGame({
   send: (message: ClientMessage) => void
   connected: boolean
 }) {
+  const t = useT()
   const game = state.game!
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
+    <div className="mx-auto flex min-h-svh max-w-7xl flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
         <GameBoard state={game} />
       </div>
@@ -34,7 +36,7 @@ export function NetworkGame({
               connected ? "bg-green-500" : "bg-amber-500"
             )}
           />
-          {connected ? "Connected" : "Reconnecting…"}
+          {connected ? t("net.connected") : t("net.reconnecting")}
         </div>
 
         <TurnControls

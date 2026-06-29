@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { useT } from "@/i18n"
 
 export function HomeScreen({
   onCreateRoom,
@@ -21,6 +22,7 @@ export function HomeScreen({
   onJoinRoom: (roomId: string) => void
   onHotSeat: () => void
 }) {
+  const t = useT()
   const [code, setCode] = useState("")
   const trimmed = code.trim()
 
@@ -29,13 +31,11 @@ export function HomeScreen({
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Disapoly</CardTitle>
-          <CardDescription>
-            Create a room and share the link with friends — no sign-up.
-          </CardDescription>
+          <CardDescription>{t("home.tagline")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Button onClick={onCreateRoom}>
-            <Users /> Create online room
+            <Users /> {t("home.createRoom")}
           </Button>
 
           <form
@@ -47,18 +47,18 @@ export function HomeScreen({
           >
             <Input
               value={code}
-              placeholder="Room code"
+              placeholder={t("home.roomCode")}
               onChange={(e) => setCode(e.target.value)}
             />
             <Button type="submit" variant="outline" disabled={!trimmed}>
-              Join
+              {t("home.join")}
             </Button>
           </form>
 
           <Separator />
 
           <Button variant="ghost" onClick={onHotSeat}>
-            <Gamepad2 /> Play hot-seat (one device)
+            <Gamepad2 /> {t("home.hotseat")}
           </Button>
         </CardContent>
       </Card>

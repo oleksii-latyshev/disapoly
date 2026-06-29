@@ -4,16 +4,20 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { useI18n, type Lang } from "@/i18n"
 
 import { BOARD_THEMES, useBoardTheme, type BoardThemeId } from "./board-theme"
 
-const ORDER: BoardThemeId[] = ["classic", "mono", "neon"]
+const THEME_ORDER: BoardThemeId[] = ["classic", "mono", "neon"]
+const LANGS: { id: Lang; label: string }[] = [
+  { id: "en", label: "English" },
+  { id: "ru", label: "Русский" },
+]
 
 function ThemeSwatch({ id }: { id: BoardThemeId }) {
   const theme = BOARD_THEMES[id]
@@ -30,9 +34,10 @@ function ThemeSwatch({ id }: { id: BoardThemeId }) {
   )
 }
 
-/** Fixed bottom-left settings button → board theme picker. */
+/** Fixed bottom-left settings button → board theme + language picker. */
 export function SettingsButton() {
   const { themeId, setThemeId } = useBoardTheme()
+  const { lang, setLang, t } = useI18n()
 
   return (
     <Dialog>
@@ -41,7 +46,7 @@ export function SettingsButton() {
           <Button
             variant="outline"
             size="icon"
-            aria-label="Settings"
+            aria-label={t("settings.title")}
             className="fixed bottom-4 left-4 z-50 rounded-full shadow-md"
           />
         }
@@ -50,13 +55,33 @@ export function SettingsButton() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Choose a board theme.</DialogDescription>
+          <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          {ORDER.map((id) => {
-            const theme = BOARD_THEMES[id]
+          <span className="text-xs font-medium text-muted-foreground">
+            {t("settings.language")}
+          </span>
+          <div className="flex gap-2">
+            {LANGS.map((l) => (
+              <Button
+                key={l.id}
+                variant={l.id === lang ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => setLang(l.id)}
+              >
+                {l.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {t("settings.boardTheme")}
+          </span>
+          {THEME_ORDER.map((id) => {
             const active = id === themeId
             return (
               <button
@@ -72,9 +97,11 @@ export function SettingsButton() {
               >
                 <ThemeSwatch id={id} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{theme.name}</span>
+                  <span className="block text-sm font-medium">
+                    {t(`theme.${id}.name`)}
+                  </span>
                   <span className="block text-xs text-muted-foreground">
-                    {theme.description}
+                    {t(`theme.${id}.desc`)}
                   </span>
                 </span>
                 {active && <Check className="size-4 text-primary" />}

@@ -17,7 +17,7 @@ export function GameScreen({
   const { state, send } = useGame(setups)
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
+    <div className="mx-auto flex min-h-svh max-w-7xl flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
         <GameBoard state={state} />
       </div>

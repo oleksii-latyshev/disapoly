@@ -6,6 +6,7 @@ import {
   setStoredNickname,
 } from "@/net/identity"
 import { useRoom } from "@/hooks/useRoom"
+import { useT } from "@/i18n"
 
 import { LobbyScreen } from "./LobbyScreen"
 import { NetworkGame } from "./NetworkGame"
@@ -31,13 +32,14 @@ function ConnectedRoom({
   nickname: string
   onLeave: () => void
 }) {
+  const t = useT()
   const identity = useMemo(
     () => ({ playerId, nickname }),
     [playerId, nickname]
   )
   const { state, connected, send } = useRoom(roomId, identity)
 
-  if (!state) return <Centered>Connecting to room…</Centered>
+  if (!state) return <Centered>{t("net.connectingRoom")}</Centered>
 
   const self = state.members.find((m) => m.id === playerId)
 

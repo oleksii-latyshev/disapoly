@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 
-import { BOARD, type GameState, type TileDefinition } from "@/game"
+import { BOARD, currentPlayer, type GameState, type TileDefinition } from "@/game"
 import { cn } from "@/lib/utils"
+import { useT } from "@/i18n"
 
 import { useBoardTheme } from "./board-theme"
 import { tileCell } from "./board-meta"
@@ -134,6 +135,8 @@ function Tile({
 
 export function GameBoard({ state }: { state: GameState }) {
   const { theme } = useBoardTheme()
+  const t = useT()
+  const active = state.status === "playing" ? currentPlayer(state) : undefined
   const currentId = state.players[state.currentPlayerIndex]?.position
 
   // Bump a counter on every roll so the dice re-tumble even on repeat values.
@@ -153,7 +156,7 @@ export function GameBoard({ state }: { state: GameState }) {
         background:
           "linear-gradient(145deg, color-mix(in srgb, var(--board-frame) 86%, white), var(--board-frame))",
       }}
-      className="w-full max-w-[780px] rounded-3xl p-2.5 shadow-xl ring-1 ring-black/5 sm:p-3.5"
+      className="mx-auto w-full max-w-[min(94vw,860px)] rounded-3xl p-2.5 shadow-xl ring-1 ring-black/5 sm:p-3.5 lg:mx-0 lg:w-[min(82svh,1000px)] lg:max-w-none"
     >
       <div
         className="relative overflow-hidden rounded-2xl p-1 shadow-inner"
@@ -187,6 +190,19 @@ export function GameBoard({ state }: { state: GameState }) {
               />
             </div>
             {state.dice && <Dice values={state.dice} rollSeq={rollSeq} />}
+
+            {active && (
+              <div
+                className="flex items-center gap-2 rounded-full border bg-card/80 px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur-sm"
+                style={{ color: "var(--tile-fg)" }}
+              >
+                <span
+                  className="size-2.5 rounded-full"
+                  style={{ backgroundColor: active.color }}
+                />
+                {t("turn.turnOf", { name: active.nickname })}
+              </div>
+            )}
           </div>
 
           <TokenLayer state={state} />
