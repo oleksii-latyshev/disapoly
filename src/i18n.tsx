@@ -61,6 +61,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "jail.useCard": "Use card",
     "jail.roll": "Roll for doubles",
 
+    "card.chance": "Chance",
+    "card.chest": "Community Chest",
+
     "manage.title": "Your properties",
     "manage.empty": "You don’t own any properties yet.",
     "manage.mortgaged": "(mortgaged)",
@@ -132,6 +135,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "jail.pay": "Заплатить ${fine}",
     "jail.useCard": "Карта",
     "jail.roll": "Бросок на дубль",
+
+    "card.chance": "Шанс",
+    "card.chest": "Общественная казна",
 
     "manage.title": "Твоё имущество",
     "manage.empty": "У тебя пока нет участков.",

@@ -8,8 +8,9 @@ import {
   STARTING_BALANCE,
   UTILITY_MULTIPLIER,
 } from "./board.config"
-import { createSeed } from "./rng"
-import type { GameState, Player, TileDefinition } from "./types"
+import { CHANCE, COMMUNITY_CHEST } from "./cards"
+import { createSeed, shuffle } from "./rng"
+import type { DeckState, GameState, Player, TileDefinition } from "./types"
 
 export type PlayerSetup = {
   /** Stable id; auto-generated for local hot-seat, supplied for online play. */
@@ -36,6 +37,13 @@ export function createInitialState(
     isBankrupt: false,
   }))
 
+  // Shuffle both decks from the seed, then keep the advanced seed for rolls.
+  const range = (n: number) => Array.from({ length: n }, (_, i) => i)
+  const ch = shuffle(range(CHANCE.length), seed)
+  const cc = shuffle(range(COMMUNITY_CHEST.length), ch.seed)
+  const chance: DeckState = { order: ch.result, pos: 0 }
+  const chest: DeckState = { order: cc.result, pos: 0 }
+
   return {
     status: "playing",
     players,
@@ -45,7 +53,10 @@ export function createInitialState(
     dice: null,
     doublesCount: 0,
     pendingPurchase: null,
-    rngSeed: seed,
+    rngSeed: cc.seed,
+    chance,
+    chest,
+    lastCard: null,
     log: [{ id: 0, text: `Game started with ${players.length} players.` }],
     nextLogId: 1,
     winnerId: null,

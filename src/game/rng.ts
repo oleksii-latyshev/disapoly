@@ -36,3 +36,19 @@ export function rollDice(seed: number): {
 export function createSeed(): number {
   return (Math.floor(Math.random() * 0xffffffff) | 0) >>> 0
 }
+
+/** Deterministic Fisher–Yates shuffle; returns the result and advanced seed. */
+export function shuffle<T>(
+  items: readonly T[],
+  seed: number
+): { result: T[]; seed: number } {
+  const result = [...items]
+  let s = seed
+  for (let i = result.length - 1; i > 0; i--) {
+    const next = nextRandom(s)
+    s = next.seed
+    const j = Math.floor(next.value * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return { result, seed: s }
+}

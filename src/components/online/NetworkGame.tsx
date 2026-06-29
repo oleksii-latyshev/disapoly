@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
 import { useT } from "@/i18n"
 
+import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
 import { GameLog } from "@/components/game/GameLog"
 import { ManagePanel } from "@/components/game/ManagePanel"
@@ -46,6 +47,7 @@ export function NetworkGame({
           localPlayerId={self?.id}
           canReset={self?.isHost ?? false}
         />
+        {game.lastCard && <CardBanner card={game.lastCard} />}
         <ManagePanel
           state={game}
           send={(action) => send({ type: "action", action })}

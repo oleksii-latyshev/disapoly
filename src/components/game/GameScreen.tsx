@@ -1,6 +1,7 @@
 import type { PlayerSetup } from "@/game"
 import { useGame } from "@/hooks/useGame"
 
+import { CardBanner } from "./CardBanner"
 import { GameBoard } from "./GameBoard"
 import { GameLog } from "./GameLog"
 import { ManagePanel } from "./ManagePanel"
@@ -24,6 +25,7 @@ export function GameScreen({
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">
         <TurnControls state={state} send={send} onNewGame={onNewGame} />
+        {state.lastCard && <CardBanner card={state.lastCard} />}
         <ManagePanel state={state} send={send} />
         <PlayersList state={state} />
         <GameLog state={state} />

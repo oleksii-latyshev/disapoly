@@ -99,6 +99,12 @@ export type LogEntry = {
   text: string
 }
 
+/** Draw order (card indices) plus a pointer into it; reshuffles on wrap. */
+export type DeckState = { order: number[]; pos: number }
+
+/** The most recently drawn card, shown until the turn ends. */
+export type DrawnCard = { deck: "chance" | "chest"; text: string }
+
 export type GameState = {
   status: "playing" | "finished"
   players: Player[]
@@ -113,6 +119,11 @@ export type GameState = {
   pendingPurchase: number | null
   /** Seed for the deterministic PRNG; advances on every roll. */
   rngSeed: number
+  /** Chance / Community Chest draw piles. */
+  chance: DeckState
+  chest: DeckState
+  /** Card drawn this turn, or null. */
+  lastCard: DrawnCard | null
   log: LogEntry[]
   nextLogId: number
   winnerId: string | null

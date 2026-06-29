@@ -13,7 +13,8 @@ import {
   JAIL_FINE,
   JAIL_TILE_ID,
 } from "./board.config"
-import { rollDice } from "./rng"
+import { CHANCE, COMMUNITY_CHEST, type CardEffect } from "./cards"
+import { rollDice, shuffle } from "./rng"
 import {
   activePlayers,
   canBuildHouse,
@@ -204,9 +205,84 @@ function resolveLanding(d: GameState, diceSum: number): void {
       return
     }
 
+    case "chance":
+      drawCard(d, "chance", diceSum)
+      return
+
+    case "communityChest":
+      drawCard(d, "chest", diceSum)
+      return
+
     default:
-      // go, jail (just visiting), freeParking, chance, communityChest:
-      // no effect in Stage 0.
+      // go, jail (just visiting), freeParking: no effect.
+      return
+  }
+}
+
+/** Draw the top card of a deck (reshuffling on wrap) and apply its effect. */
+function drawCard(
+  d: GameState,
+  deck: "chance" | "chest",
+  diceSum: number
+): void {
+  const cards = deck === "chance" ? CHANCE : COMMUNITY_CHEST
+  const pile = d[deck]
+  if (pile.pos >= pile.order.length) {
+    const reshuffled = shuffle(pile.order, d.rngSeed)
+    d.rngSeed = reshuffled.seed
+    pile.order = reshuffled.result
+    pile.pos = 0
+  }
+  const card = cards[pile.order[pile.pos]]
+  pile.pos += 1
+  d.lastCard = { deck, text: card.text }
+  log(d, `${currentPlayer(d).nickname} drew: ${card.text}`)
+  applyCard(d, card.effect, diceSum)
+}
+
+function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
+  const player = currentPlayer(d)
+  const others = d.players.filter((p) => !p.isBankrupt && p.id !== player.id)
+
+  switch (effect.kind) {
+    case "money":
+      if (effect.amount >= 0) player.balance += effect.amount
+      else pay(d, player, -effect.amount, null)
+      return
+    case "collectFromEach":
+      for (const other of others) pay(d, other, effect.amount, player.id)
+      return
+    case "payEach":
+      for (const other of others) pay(d, player, effect.amount, other.id)
+      return
+    case "repairs": {
+      let houses = 0
+      let hotels = 0
+      for (const def of BOARD) {
+        if (def.type === "street" && d.tiles[def.id].ownerId === player.id) {
+          if (d.tiles[def.id].houses === 5) hotels += 1
+          else houses += d.tiles[def.id].houses
+        }
+      }
+      pay(d, player, houses * effect.perHouse + hotels * effect.perHotel, null)
+      return
+    }
+    case "moveTo": {
+      moveBy(d, player, (effect.tile - player.position + BOARD_SIZE) % BOARD_SIZE)
+      resolveLanding(d, diceSum)
+      return
+    }
+    case "moveBack":
+      player.position =
+        (player.position - effect.steps + BOARD_SIZE) % BOARD_SIZE
+      resolveLanding(d, diceSum)
+      return
+    case "goToJail":
+      sendToJail(player)
+      log(d, `${player.nickname} was sent to jail.`)
+      return
+    case "getOutOfJail":
+      player.getOutOfJailCards += 1
       return
   }
 }
@@ -239,6 +315,7 @@ function decline(d: GameState): GameState {
 function endTurn(d: GameState): GameState {
   d.doublesCount = 0
   d.pendingPurchase = null
+  d.lastCard = null
 
   const count = d.players.length
   let next = d.currentPlayerIndex
@@ -414,6 +491,8 @@ function clone(state: GameState): GameState {
     ...state,
     players: state.players.map((p) => ({ ...p })),
     tiles: state.tiles.map((t) => ({ ...t })),
+    chance: { order: [...state.chance.order], pos: state.chance.pos },
+    chest: { order: [...state.chest.order], pos: state.chest.pos },
     log: [...state.log],
   }
 }
