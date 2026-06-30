@@ -276,7 +276,7 @@ Local storage stays useful, but **not for sync** — rather for:
 - [ ] Whether to support an auction on a declined purchase (classic Monopoly rule).
 - [x] ~~Exact balance parameters~~ → Extracted into `board.config.ts` (classic values).
 - [ ] Player cap and behavior beyond 8 (currently capped at 8 by available colors).
-- [ ] Reconnect strategy and "dead player" timeout (reconnect works; turn timeout still open).
+- [x] ~~Reconnect strategy and "dead player" timeout.~~ → Reconnect works (rejoin by playerId); a disconnected current player can be skipped by any connected player. (Auto-skip via a DO alarm could be added later.)
 
 ---
 
@@ -294,7 +294,8 @@ Local storage stays useful, but **not for sync** — rather for:
    - ✅ Polish: board themes (Classic / Minimal / Neon, persisted), animated token movement and 3D dice via Motion, larger colorful board, tile icons, house badges, monopoly highlight, click-for-details, i18n (en/ru). *(respects `prefers-reduced-motion`.)*
    - ✅ Sound — procedural SFX synthesized with the Web Audio API (no audio files): dice, buy, build, card, trade, jail, win. State-driven so it works in hot-seat and online; mute toggle in settings. *(`src/sound/`, `useGameSounds`.)*
    - ✅ Net-worth charts + end-game screen — per-turn net-worth history, a Recharts line chart (lazy-loaded), a "Stats" dialog during play, and a results overlay on finish (winner, final standings, the chart). *(`history` in state, `NetWorthChart`, `StatsButton`, `GameResults`.)*
-   - ⬜ Remaining: dead-player timeout, localized card/log text.
+   - ✅ Disconnect handling — when the current player drops mid-turn the game would stall, so any connected player can skip a disconnected player's turn (server-validated: only the offline current player can be skipped). *(`skip` room message → `FORCE_END_TURN`; offline banner in `NetworkGame`.)*
+   - ⬜ Remaining: localized card/log text.
 
 ### Running locally
 

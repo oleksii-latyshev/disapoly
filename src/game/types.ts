@@ -170,3 +170,5 @@ export type GameAction =
   | { type: "PROPOSE_TRADE"; offer: TradeOffer }
   | { type: "RESPOND_TRADE"; accept: boolean; playerId: string }
   | { type: "CANCEL_TRADE"; playerId: string }
+  // Server-only: skip a disconnected player's turn (never sent by clients).
+  | { type: "FORCE_END_TURN" }

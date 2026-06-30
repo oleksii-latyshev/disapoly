@@ -88,6 +88,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.connected": "Connected",
     "net.reconnecting": "Reconnecting…",
     "net.connectingRoom": "Connecting to room…",
+    "net.playerOffline": "{name} is offline",
+    "net.skip": "Skip their turn",
 
     "settings.title": "Settings",
     "settings.boardTheme": "Board theme",
@@ -200,6 +202,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.connected": "На связи",
     "net.reconnecting": "Переподключение…",
     "net.connectingRoom": "Подключение к комнате…",
+    "net.playerOffline": "{name} не в сети",
+    "net.skip": "Пропустить его ход",
 
     "settings.title": "Настройки",
     "settings.boardTheme": "Тема доски",

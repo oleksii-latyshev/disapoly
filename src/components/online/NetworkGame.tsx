@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { WifiOff } from "lucide-react"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
 import { useT } from "@/i18n"
 import { useGameSounds } from "@/hooks/useGameSounds"
@@ -28,6 +30,11 @@ export function NetworkGame({
   const game = state.game!
   useGameSounds(game)
 
+  const turnPlayer = game.players[game.currentPlayerIndex]
+  const turnMember = state.members.find((m) => m.id === turnPlayer?.id)
+  const turnPlayerOffline =
+    game.status === "playing" && !!turnMember && !turnMember.connected
+
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
@@ -44,6 +51,22 @@ export function NetworkGame({
           />
           {connected ? t("net.connected") : t("net.reconnecting")}
         </div>
+
+        {turnPlayerOffline && (
+          <div className="flex flex-col gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs">
+            <span className="flex items-center gap-1.5 font-medium">
+              <WifiOff className="size-3.5" />
+              {t("net.playerOffline", { name: turnPlayer.nickname })}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => send({ type: "skip" })}
+            >
+              {t("net.skip")}
+            </Button>
+          </div>
+        )}
 
         <TurnControls
           state={game}

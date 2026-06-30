@@ -38,6 +38,7 @@ export type ClientMessage =
   | { type: "start" }
   | { type: "action"; action: GameAction }
   | { type: "reset" }
+  | { type: "skip" } // skip a disconnected player's turn
 
 /** Server → client broadcasts. */
 export type ServerMessage = { type: "state"; state: RoomState }
@@ -61,6 +62,8 @@ export function applyClientMessage(
       return action(state, senderId, message.action)
     case "reset":
       return reset(state, senderId)
+    case "skip":
+      return skip(state, senderId)
     default:
       return state
   }
@@ -123,6 +126,8 @@ function action(
   gameAction: GameAction
 ): RoomState {
   if (state.phase !== "in-game" || !state.game) return state
+  // FORCE_END_TURN is server-only; never apply it from a client message.
+  if (gameAction.type === "FORCE_END_TURN") return state
 
   let stamped = gameAction
   if (gameAction.type === "PROPOSE_TRADE") {
@@ -141,6 +146,23 @@ function action(
   }
 
   return { ...state, game: gameReducer(state.game, stamped) }
+}
+
+/**
+ * Skip the current player's turn — only when that player is disconnected, and
+ * only at the request of another connected member. Keeps the game unstuck if
+ * someone drops mid-turn (architecture.md §8).
+ */
+function skip(state: RoomState, senderId: string): RoomState {
+  if (state.phase !== "in-game" || !state.game) return state
+  const sender = state.members.find((m) => m.id === senderId)
+  if (!sender?.connected) return state
+
+  const current = state.game.players[state.game.currentPlayerIndex]
+  const currentMember = state.members.find((m) => m.id === current.id)
+  if (!currentMember || currentMember.connected) return state
+
+  return { ...state, game: gameReducer(state.game, { type: "FORCE_END_TURN" }) }
 }
 
 /** Host returns the room to the lobby for a new match (members preserved). */

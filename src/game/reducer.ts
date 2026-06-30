@@ -49,6 +49,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state.phase === "awaiting-buy" ? decline(clone(state)) : state
     case "END_TURN":
       return state.phase === "awaiting-end" ? endTurn(clone(state)) : state
+    case "FORCE_END_TURN":
+      // Abandon the current player's turn from any phase (disconnect skip).
+      return endTurn(clone(state))
     case "BUILD_HOUSE":
       return canManage(state) ? buildHouse(clone(state), action.tileId) : state
     case "SELL_HOUSE":
