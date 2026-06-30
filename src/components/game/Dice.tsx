@@ -39,8 +39,12 @@ function Face({ value, transform }: { value: number; transform: string }) {
   const pips = new Set(PIPS[value])
   return (
     <div
-      className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px rounded-[6px] border border-zinc-300 bg-white p-1.5"
-      style={{ transform, backfaceVisibility: "hidden" }}
+      className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px rounded-[5px] bg-white p-1.5"
+      style={{
+        transform,
+        backfaceVisibility: "hidden",
+        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.08)",
+      }}
     >
       {Array.from({ length: 9 }, (_, i) => (
         <span key={i} className="flex items-center justify-center">

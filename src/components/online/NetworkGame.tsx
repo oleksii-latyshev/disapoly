@@ -24,7 +24,7 @@ export function NetworkGame({
   const game = state.game!
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-7xl flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
+    <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
         <GameBoard state={game} />
       </div>

@@ -64,6 +64,18 @@ const DICT: Record<Lang, Record<string, string>> = {
     "card.chance": "Chance",
     "card.chest": "Community Chest",
 
+    "details.owner": "Owner",
+    "details.price": "Price",
+    "details.baseRent": "Base rent",
+    "details.withSet": "With color set",
+    "details.house": "With {n} house(s)",
+    "details.hotel": "With hotel",
+    "details.houseCost": "House cost",
+    "details.mortgage": "Mortgage value",
+    "details.owned": "{n} owned",
+    "details.timesDice": "{x}× dice roll",
+    "details.tax": "Tax",
+
     "manage.title": "Your properties",
     "manage.empty": "You don’t own any properties yet.",
     "manage.mortgaged": "(mortgaged)",
@@ -138,6 +150,18 @@ const DICT: Record<Lang, Record<string, string>> = {
 
     "card.chance": "Шанс",
     "card.chest": "Общественная казна",
+
+    "details.owner": "Владелец",
+    "details.price": "Цена",
+    "details.baseRent": "Базовая аренда",
+    "details.withSet": "С монополией",
+    "details.house": "С {n} домами",
+    "details.hotel": "С отелем",
+    "details.houseCost": "Цена дома",
+    "details.mortgage": "Залог",
+    "details.owned": "Во владении: {n}",
+    "details.timesDice": "{x}× по кубикам",
+    "details.tax": "Налог",
 
     "manage.title": "Твоё имущество",
     "manage.empty": "У тебя пока нет участков.",
