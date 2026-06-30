@@ -10,7 +10,13 @@ import {
 } from "./board.config"
 import { CHANCE, COMMUNITY_CHEST } from "./cards"
 import { createSeed, shuffle } from "./rng"
-import type { DeckState, GameState, Player, TileDefinition } from "./types"
+import type {
+  DeckState,
+  GameState,
+  Player,
+  TileDefinition,
+  TradeOffer,
+} from "./types"
 
 export type PlayerSetup = {
   /** Stable id; auto-generated for local hot-seat, supplied for online play. */
@@ -57,6 +63,7 @@ export function createInitialState(
     chance,
     chest,
     lastCard: null,
+    pendingTrade: null,
     log: [{ id: 0, text: `Game started with ${players.length} players.` }],
     nextLogId: 1,
     winnerId: null,
@@ -231,6 +238,45 @@ export function ownedTiles(state: GameState, playerId: string): number[] {
   return BOARD.filter(
     (def) => "price" in def && state.tiles[def.id].ownerId === playerId
   ).map((def) => def.id)
+}
+
+// --- trading (Stage 3) ---
+
+/** Tiles a player may put up for trade: owned, and the group has no buildings. */
+export function tradableTiles(state: GameState, playerId: string): number[] {
+  return ownedTiles(state, playerId).filter((id) => {
+    const def = tileDef(id)
+    if (def.type === "street") return groupHouseRange(state, def.group).max === 0
+    return true
+  })
+}
+
+/** Validate a trade offer against the current state (propose and apply time). */
+export function isTradeValid(state: GameState, offer: TradeOffer): boolean {
+  const from = playerById(state, offer.fromId)
+  const to = playerById(state, offer.toId)
+  if (!from || !to || from.id === to.id || from.isBankrupt || to.isBankrupt)
+    return false
+
+  const bundleOk = (
+    bundle: TradeOffer["give"],
+    owner: Player,
+    partner: Player
+  ): boolean => {
+    if (bundle.money < 0 || bundle.jailCards < 0) return false
+    if (bundle.money > owner.balance) return false
+    if (bundle.jailCards > owner.getOutOfJailCards) return false
+    const tradable = new Set(tradableTiles(state, owner.id))
+    return bundle.tiles.every((id) => tradable.has(id)) && partner != null
+  }
+
+  if (!bundleOk(offer.give, from, to)) return false
+  if (!bundleOk(offer.receive, to, from)) return false
+
+  const empty = (b: TradeOffer["give"]) =>
+    b.tiles.length === 0 && b.money === 0 && b.jailCards === 0
+  // Reject a no-op exchange.
+  return !(empty(offer.give) && empty(offer.receive))
 }
 
 /** Net worth = cash + price of owned tiles (Stage 0 ignores building value). */

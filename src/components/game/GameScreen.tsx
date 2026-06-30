@@ -6,6 +6,7 @@ import { GameBoard } from "./GameBoard"
 import { GameLog } from "./GameLog"
 import { ManagePanel } from "./ManagePanel"
 import { PlayersList } from "./PlayersList"
+import { TradePanel } from "./TradePanel"
 import { TurnControls } from "./TurnControls"
 
 export function GameScreen({
@@ -27,6 +28,7 @@ export function GameScreen({
         <TurnControls state={state} send={send} onNewGame={onNewGame} />
         {state.lastCard && <CardBanner card={state.lastCard} />}
         <ManagePanel state={state} send={send} />
+        <TradePanel state={state} send={send} />
         <PlayersList state={state} />
         <GameLog state={state} />
       </aside>

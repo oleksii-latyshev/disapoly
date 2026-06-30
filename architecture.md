@@ -289,9 +289,10 @@ Local storage stays useful, but **not for sync** — rather for:
    - ✅ Part 2:
      - ✅ Jail proper — roll for doubles (no extra turn), pay the fine, or use a "get out of jail free" card; forced fine on the 3rd failed attempt. *(reducer `rollInJail` + jail controls.)*
      - ✅ Chance / Community Chest cards — seeded decks, declarative effects (money, collect/pay each, move/move-back, go to jail, repairs, get-out-of-jail), drawn card shown in a banner. *(`cards.ts`, reducer `drawCard`/`applyCard`, `CardBanner`.)*
-4. 🔶 **Stage 3 — Trades and polish.** Player-to-player trading, log, charts, reconnect, sound/animations.
-   - ✅ Polish so far: board themes (Classic / Minimal / Neon, persisted, settings button bottom-left), animated token movement and 3D dice via Motion, larger colorful board. *(`board-theme.tsx`, `TokenLayer.tsx`, `Dice.tsx`, `SettingsButton.tsx`; respects `prefers-reduced-motion`.)*
-   - ⬜ Remaining: trading, net-worth charts, dead-player timeout, sound.
+4. 🔶 **Stage 3 — Trades and polish.**
+   - ✅ Player-to-player trading — propose/accept/decline/withdraw, swapping properties + cash + jail cards, two-phase with re-validation at apply time; allowed out of turn (server stamps the actor). *(`TradePanel`, reducer trade actions, `room.ts` non-turn-gated path.)*
+   - ✅ Polish: board themes (Classic / Minimal / Neon, persisted), animated token movement and 3D dice via Motion, larger colorful board, tile icons, house badges, monopoly highlight, click-for-details, i18n (en/ru). *(respects `prefers-reduced-motion`.)*
+   - ⬜ Remaining: net-worth charts, dead-player timeout, localized card/log text, sound.
 
 ### Running locally
 

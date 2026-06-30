@@ -112,16 +112,35 @@ function start(state: RoomState, senderId: string): RoomState {
   return { ...state, phase: "in-game", game }
 }
 
-/** Forward a game action only if it comes from the player whose turn it is. */
+/**
+ * Forward a game action. Trade actions are allowed out of turn (the server
+ * stamps the sender's id so it can't be spoofed); everything else is gated to
+ * the player whose turn it is.
+ */
 function action(
   state: RoomState,
   senderId: string,
   gameAction: GameAction
 ): RoomState {
   if (state.phase !== "in-game" || !state.game) return state
-  const current = state.game.players[state.game.currentPlayerIndex]
-  if (current.id !== senderId) return state
-  return { ...state, game: gameReducer(state.game, gameAction) }
+
+  let stamped = gameAction
+  if (gameAction.type === "PROPOSE_TRADE") {
+    stamped = {
+      ...gameAction,
+      offer: { ...gameAction.offer, fromId: senderId },
+    }
+  } else if (
+    gameAction.type === "RESPOND_TRADE" ||
+    gameAction.type === "CANCEL_TRADE"
+  ) {
+    stamped = { ...gameAction, playerId: senderId }
+  } else {
+    const current = state.game.players[state.game.currentPlayerIndex]
+    if (current.id !== senderId) return state
+  }
+
+  return { ...state, game: gameReducer(state.game, stamped) }
 }
 
 /** Host returns the room to the lobby for a new match (members preserved). */

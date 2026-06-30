@@ -7,6 +7,7 @@ import { GameBoard } from "@/components/game/GameBoard"
 import { GameLog } from "@/components/game/GameLog"
 import { ManagePanel } from "@/components/game/ManagePanel"
 import { PlayersList } from "@/components/game/PlayersList"
+import { TradePanel } from "@/components/game/TradePanel"
 import { TurnControls } from "@/components/game/TurnControls"
 
 export function NetworkGame({
@@ -49,6 +50,11 @@ export function NetworkGame({
         />
         {game.lastCard && <CardBanner card={game.lastCard} />}
         <ManagePanel
+          state={game}
+          send={(action) => send({ type: "action", action })}
+          localPlayerId={self?.id}
+        />
+        <TradePanel
           state={game}
           send={(action) => send({ type: "action", action })}
           localPlayerId={self?.id}

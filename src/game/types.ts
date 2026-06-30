@@ -105,6 +105,17 @@ export type DeckState = { order: number[]; pos: number }
 /** The most recently drawn card, shown until the turn ends. */
 export type DrawnCard = { deck: "chance" | "chest"; text: string }
 
+/** One side of a trade: tiles, cash, and jail cards offered. */
+export type TradeBundle = { tiles: number[]; money: number; jailCards: number }
+
+/** A pending trade proposal awaiting the partner's response. */
+export type TradeOffer = {
+  fromId: string
+  toId: string
+  give: TradeBundle // what `fromId` gives `toId`
+  receive: TradeBundle // what `fromId` gets from `toId`
+}
+
 export type GameState = {
   status: "playing" | "finished"
   players: Player[]
@@ -124,6 +135,8 @@ export type GameState = {
   chest: DeckState
   /** Card drawn this turn, or null. */
   lastCard: DrawnCard | null
+  /** Outstanding trade proposal awaiting a response, or null. */
+  pendingTrade: TradeOffer | null
   log: LogEntry[]
   nextLogId: number
   winnerId: string | null
@@ -143,3 +156,7 @@ export type GameAction =
   // Jail — only valid for the current player while in jail.
   | { type: "PAY_JAIL_FINE" }
   | { type: "USE_JAIL_CARD" }
+  // Trades — allowed out of turn; the server stamps the actor's id.
+  | { type: "PROPOSE_TRADE"; offer: TradeOffer }
+  | { type: "RESPOND_TRADE"; accept: boolean; playerId: string }
+  | { type: "CANCEL_TRADE"; playerId: string }

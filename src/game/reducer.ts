@@ -22,12 +22,19 @@ import {
   canSellHouse,
   canUnmortgage,
   currentPlayer,
+  isTradeValid,
   mortgageValue,
   rentFor,
   tileDef,
   unmortgageCost,
 } from "./state"
-import type { GameAction, GameState, Player, StreetTile } from "./types"
+import type {
+  GameAction,
+  GameState,
+  Player,
+  StreetTile,
+  TradeOffer,
+} from "./types"
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   if (state.status !== "playing") return state
@@ -53,6 +60,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return canLeaveJail(state) ? payJailFine(clone(state)) : state
     case "USE_JAIL_CARD":
       return canLeaveJail(state) ? redeemJailCard(clone(state)) : state
+    case "PROPOSE_TRADE":
+      return proposeTrade(clone(state), action.offer)
+    case "RESPOND_TRADE":
+      return respondTrade(clone(state), action.accept, action.playerId)
+    case "CANCEL_TRADE":
+      return cancelTrade(clone(state), action.playerId)
     default:
       return state
   }
@@ -157,6 +170,64 @@ function redeemJailCard(d: GameState): GameState {
   player.jailTurns = 0
   log(d, `${player.nickname} used a "get out of jail free" card.`)
   return d // stays in awaiting-roll
+}
+
+// --- trading (Stage 3) ---
+
+function proposeTrade(d: GameState, offer: TradeOffer): GameState {
+  if (d.pendingTrade || !isTradeValid(d, offer)) return d
+  d.pendingTrade = offer
+  const from = d.players.find((p) => p.id === offer.fromId)
+  const to = d.players.find((p) => p.id === offer.toId)
+  log(d, `${from?.nickname} proposed a trade to ${to?.nickname}.`)
+  return d
+}
+
+function respondTrade(
+  d: GameState,
+  accept: boolean,
+  playerId: string
+): GameState {
+  const offer = d.pendingTrade
+  if (!offer || offer.toId !== playerId) return d
+  const to = d.players.find((p) => p.id === offer.toId)
+
+  if (!accept) {
+    log(d, `${to?.nickname} declined the trade.`)
+    d.pendingTrade = null
+    return d
+  }
+  if (!isTradeValid(d, offer)) {
+    log(d, "The trade is no longer valid and was cancelled.")
+    d.pendingTrade = null
+    return d
+  }
+  applyTrade(d, offer)
+  log(d, `${to?.nickname} accepted the trade.`)
+  d.pendingTrade = null
+  return d
+}
+
+function cancelTrade(d: GameState, playerId: string): GameState {
+  const offer = d.pendingTrade
+  if (!offer || offer.fromId !== playerId) return d
+  d.pendingTrade = null
+  log(d, "The trade offer was withdrawn.")
+  return d
+}
+
+/** Atomically swap the two bundles between the players. */
+function applyTrade(d: GameState, offer: TradeOffer): void {
+  const from = d.players.find((p) => p.id === offer.fromId)!
+  const to = d.players.find((p) => p.id === offer.toId)!
+
+  for (const id of offer.give.tiles) d.tiles[id].ownerId = to.id
+  for (const id of offer.receive.tiles) d.tiles[id].ownerId = from.id
+
+  from.balance += offer.receive.money - offer.give.money
+  to.balance += offer.give.money - offer.receive.money
+  from.getOutOfJailCards += offer.receive.jailCards - offer.give.jailCards
+  to.getOutOfJailCards += offer.give.jailCards - offer.receive.jailCards
 }
 
 /** Advance a player by `steps`, paying the GO bonus when passing it. */
@@ -428,6 +499,13 @@ function pay(
   if (creditor) creditor.balance += debtor.balance
   debtor.balance = 0
   debtor.isBankrupt = true
+  // Drop any pending trade that involves the now-bankrupt player.
+  if (
+    d.pendingTrade &&
+    (d.pendingTrade.fromId === debtor.id || d.pendingTrade.toId === debtor.id)
+  ) {
+    d.pendingTrade = null
+  }
   for (const tile of d.tiles) {
     if (tile.ownerId === debtor.id) {
       tile.ownerId = creditorId
