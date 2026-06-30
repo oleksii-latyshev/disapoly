@@ -1,4 +1,4 @@
-import { Check, Settings } from "lucide-react"
+import { Check, Settings, Volume2, VolumeX } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { useI18n, type Lang } from "@/i18n"
+import { useSound } from "@/sound/SoundProvider"
 
 import { BOARD_THEMES, useBoardTheme, type BoardThemeId } from "./board-theme"
 
@@ -38,6 +39,7 @@ function ThemeSwatch({ id }: { id: BoardThemeId }) {
 export function SettingsButton() {
   const { themeId, setThemeId } = useBoardTheme()
   const { lang, setLang, t } = useI18n()
+  const { muted, setMuted, play } = useSound()
 
   return (
     <Dialog>
@@ -75,6 +77,24 @@ export function SettingsButton() {
               </Button>
             ))}
           </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            {t("settings.sound")}
+          </span>
+          <Button
+            variant={muted ? "outline" : "default"}
+            size="sm"
+            onClick={() => {
+              const next = !muted
+              setMuted(next)
+              if (!next) play("buy") // brief preview when enabling
+            }}
+          >
+            {muted ? <VolumeX /> : <Volume2 />}
+            {muted ? t("common.off") : t("common.on")}
+          </Button>
         </div>
 
         <div className="flex flex-col gap-2">

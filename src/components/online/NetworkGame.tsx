@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
 import { useT } from "@/i18n"
+import { useGameSounds } from "@/hooks/useGameSounds"
 
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
@@ -23,6 +24,7 @@ export function NetworkGame({
 }) {
   const t = useT()
   const game = state.game!
+  useGameSounds(game)
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">

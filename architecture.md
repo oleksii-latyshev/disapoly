@@ -292,7 +292,8 @@ Local storage stays useful, but **not for sync** — rather for:
 4. 🔶 **Stage 3 — Trades and polish.**
    - ✅ Player-to-player trading — propose/accept/decline/withdraw, swapping properties + cash + jail cards, two-phase with re-validation at apply time; allowed out of turn (server stamps the actor). *(`TradePanel`, reducer trade actions, `room.ts` non-turn-gated path.)*
    - ✅ Polish: board themes (Classic / Minimal / Neon, persisted), animated token movement and 3D dice via Motion, larger colorful board, tile icons, house badges, monopoly highlight, click-for-details, i18n (en/ru). *(respects `prefers-reduced-motion`.)*
-   - ⬜ Remaining: net-worth charts, dead-player timeout, localized card/log text, sound.
+   - ✅ Sound — procedural SFX synthesized with the Web Audio API (no audio files): dice, buy, build, card, trade, jail, win. State-driven so it works in hot-seat and online; mute toggle in settings. *(`src/sound/`, `useGameSounds`.)*
+   - ⬜ Remaining: net-worth charts, dead-player timeout, localized card/log text.
 
 ### Running locally
 

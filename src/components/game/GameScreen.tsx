@@ -1,5 +1,6 @@
 import type { PlayerSetup } from "@/game"
 import { useGame } from "@/hooks/useGame"
+import { useGameSounds } from "@/hooks/useGameSounds"
 
 import { CardBanner } from "./CardBanner"
 import { GameBoard } from "./GameBoard"
@@ -17,6 +18,7 @@ export function GameScreen({
   onNewGame: () => void
 }) {
   const { state, send } = useGame(setups)
+  useGameSounds(state)
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">

@@ -114,6 +114,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "trade.pendingTitle": "Trade offer",
     "trade.gives": "{name} gives",
     "trade.nothing": "nothing",
+
+    "settings.sound": "Sound",
+    "common.on": "On",
+    "common.off": "Off",
   },
   ru: {
     "home.tagline": "Создай комнату и поделись ссылкой с друзьями — без регистрации.",
@@ -217,6 +221,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "trade.pendingTitle": "Предложение обмена",
     "trade.gives": "{name} отдаёт",
     "trade.nothing": "ничего",
+
+    "settings.sound": "Звук",
+    "common.on": "Вкл",
+    "common.off": "Выкл",
   },
 }
 
