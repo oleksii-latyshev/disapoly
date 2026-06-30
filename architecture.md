@@ -293,7 +293,8 @@ Local storage stays useful, but **not for sync** — rather for:
    - ✅ Player-to-player trading — propose/accept/decline/withdraw, swapping properties + cash + jail cards, two-phase with re-validation at apply time; allowed out of turn (server stamps the actor). *(`TradePanel`, reducer trade actions, `room.ts` non-turn-gated path.)*
    - ✅ Polish: board themes (Classic / Minimal / Neon, persisted), animated token movement and 3D dice via Motion, larger colorful board, tile icons, house badges, monopoly highlight, click-for-details, i18n (en/ru). *(respects `prefers-reduced-motion`.)*
    - ✅ Sound — procedural SFX synthesized with the Web Audio API (no audio files): dice, buy, build, card, trade, jail, win. State-driven so it works in hot-seat and online; mute toggle in settings. *(`src/sound/`, `useGameSounds`.)*
-   - ⬜ Remaining: net-worth charts, dead-player timeout, localized card/log text.
+   - ✅ Net-worth charts + end-game screen — per-turn net-worth history, a Recharts line chart (lazy-loaded), a "Stats" dialog during play, and a results overlay on finish (winner, final standings, the chart). *(`history` in state, `NetWorthChart`, `StatsButton`, `GameResults`.)*
+   - ⬜ Remaining: dead-player timeout, localized card/log text.
 
 ### Running locally
 

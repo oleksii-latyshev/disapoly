@@ -118,6 +118,11 @@ const DICT: Record<Lang, Record<string, string>> = {
     "settings.sound": "Sound",
     "common.on": "On",
     "common.off": "Off",
+
+    "stats.open": "Stats",
+    "stats.title": "Net worth over time",
+    "results.standings": "Final standings",
+    "results.bankrupt": "bankrupt",
   },
   ru: {
     "home.tagline": "Создай комнату и поделись ссылкой с друзьями — без регистрации.",
@@ -225,6 +230,11 @@ const DICT: Record<Lang, Record<string, string>> = {
     "settings.sound": "Звук",
     "common.on": "Вкл",
     "common.off": "Выкл",
+
+    "stats.open": "Статистика",
+    "stats.title": "Капитал по ходам",
+    "results.standings": "Итоговый рейтинг",
+    "results.bankrupt": "банкрот",
   },
 }
 

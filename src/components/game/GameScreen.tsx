@@ -5,8 +5,10 @@ import { useGameSounds } from "@/hooks/useGameSounds"
 import { CardBanner } from "./CardBanner"
 import { GameBoard } from "./GameBoard"
 import { GameLog } from "./GameLog"
+import { GameResults } from "./GameResults"
 import { ManagePanel } from "./ManagePanel"
 import { PlayersList } from "./PlayersList"
+import { StatsButton } from "./StatsButton"
 import { TradePanel } from "./TradePanel"
 import { TurnControls } from "./TurnControls"
 
@@ -32,8 +34,11 @@ export function GameScreen({
         <ManagePanel state={state} send={send} />
         <TradePanel state={state} send={send} />
         <PlayersList state={state} />
+        <StatsButton state={state} />
         <GameLog state={state} />
       </aside>
+
+      <GameResults state={state} onNewGame={onNewGame} />
     </div>
   )
 }

@@ -6,8 +6,10 @@ import { useGameSounds } from "@/hooks/useGameSounds"
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
 import { GameLog } from "@/components/game/GameLog"
+import { GameResults } from "@/components/game/GameResults"
 import { ManagePanel } from "@/components/game/ManagePanel"
 import { PlayersList } from "@/components/game/PlayersList"
+import { StatsButton } from "@/components/game/StatsButton"
 import { TradePanel } from "@/components/game/TradePanel"
 import { TurnControls } from "@/components/game/TurnControls"
 
@@ -62,8 +64,15 @@ export function NetworkGame({
           localPlayerId={self?.id}
         />
         <PlayersList state={game} />
+        <StatsButton state={game} />
         <GameLog state={game} />
       </aside>
+
+      <GameResults
+        state={game}
+        onNewGame={() => send({ type: "reset" })}
+        canReset={self?.isHost ?? false}
+      />
     </div>
   )
 }

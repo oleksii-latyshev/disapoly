@@ -105,6 +105,12 @@ export type DeckState = { order: number[]; pos: number }
 /** The most recently drawn card, shown until the turn ends. */
 export type DrawnCard = { deck: "chance" | "chest"; text: string }
 
+/**
+ * A net-worth snapshot for the chart. Has a `turn` key plus one entry per
+ * player id → net worth at that point.
+ */
+export type HistoryPoint = { turn: number } & Record<string, number>
+
 /** One side of a trade: tiles, cash, and jail cards offered. */
 export type TradeBundle = { tiles: number[]; money: number; jailCards: number }
 
@@ -137,6 +143,10 @@ export type GameState = {
   lastCard: DrawnCard | null
   /** Outstanding trade proposal awaiting a response, or null. */
   pendingTrade: TradeOffer | null
+  /** Completed turns so far (x-axis for the net-worth chart). */
+  turnCount: number
+  /** Net-worth snapshot per completed turn. */
+  history: HistoryPoint[]
   log: LogEntry[]
   nextLogId: number
   winnerId: string | null

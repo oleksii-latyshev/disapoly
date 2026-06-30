@@ -22,6 +22,7 @@ import {
   canSellHouse,
   canUnmortgage,
   currentPlayer,
+  historyPoint,
   isTradeValid,
   mortgageValue,
   rentFor,
@@ -396,6 +397,8 @@ function endTurn(d: GameState): GameState {
   }
   d.currentPlayerIndex = next
   d.phase = "awaiting-roll"
+  d.turnCount += 1
+  d.history = [...d.history, historyPoint(d, d.turnCount)]
   return d
 }
 

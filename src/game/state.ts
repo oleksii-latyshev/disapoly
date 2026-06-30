@@ -13,6 +13,7 @@ import { createSeed, shuffle } from "./rng"
 import type {
   DeckState,
   GameState,
+  HistoryPoint,
   Player,
   TileDefinition,
   TradeOffer,
@@ -50,7 +51,7 @@ export function createInitialState(
   const chance: DeckState = { order: ch.result, pos: 0 }
   const chest: DeckState = { order: cc.result, pos: 0 }
 
-  return {
+  const state: GameState = {
     status: "playing",
     players,
     tiles: BOARD.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
@@ -64,10 +65,21 @@ export function createInitialState(
     chest,
     lastCard: null,
     pendingTrade: null,
+    turnCount: 0,
+    history: [],
     log: [{ id: 0, text: `Game started with ${players.length} players.` }],
     nextLogId: 1,
     winnerId: null,
   }
+
+  return { ...state, history: [historyPoint(state, 0)] }
+}
+
+/** Snapshot every player's net worth at a given turn. */
+export function historyPoint(state: GameState, turn: number): HistoryPoint {
+  const point: HistoryPoint = { turn }
+  for (const p of state.players) point[p.id] = netWorth(state, p.id)
+  return point
 }
 
 /** The tile definition at a board index. */
