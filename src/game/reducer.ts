@@ -32,6 +32,7 @@ import {
 import type {
   GameAction,
   GameState,
+  LogParam,
   Player,
   StreetTile,
   TradeOffer,
@@ -100,12 +101,17 @@ function roll(d: GameState): GameState {
   const [a, b] = result.dice
   const isDouble = a === b
   const sum = a + b
-  log(d, `${player.nickname} rolled ${a} + ${b} = ${sum}${isDouble ? " (doubles)" : ""}.`)
+  log(d, isDouble ? "log.rolledDoubles" : "log.rolled", {
+    name: player.nickname,
+    a,
+    b,
+    sum,
+  })
 
   if (isDouble) d.doublesCount += 1
   if (isDouble && d.doublesCount === 3) {
     sendToJail(player)
-    log(d, `${player.nickname} rolled three doubles and goes to jail!`)
+    log(d, "log.threeDoubles", { name: player.nickname })
     d.phase = "awaiting-end"
     return d
   }
@@ -127,12 +133,12 @@ function rollInJail(d: GameState, player: Player): GameState {
   const [a, b] = result.dice
   const isDouble = a === b
   const sum = a + b
-  log(d, `${player.nickname} rolled ${a} + ${b} = ${sum} from jail.`)
+  log(d, "log.rolledFromJail", { name: player.nickname, a, b, sum })
 
   if (isDouble) {
     player.inJail = false
     player.jailTurns = 0
-    log(d, `${player.nickname} rolled doubles and leaves jail.`)
+    log(d, "log.jailDoubles", { name: player.nickname })
     moveBy(d, player, sum)
     resolveLanding(d, sum)
     return settleNoExtra(d)
@@ -140,12 +146,12 @@ function rollInJail(d: GameState, player: Player): GameState {
 
   player.jailTurns += 1
   if (player.jailTurns < 3) {
-    log(d, `${player.nickname} failed to roll doubles and stays in jail.`)
+    log(d, "log.jailStay", { name: player.nickname })
     return settleNoExtra(d)
   }
 
   // Third failed attempt: pay the fine (may bankrupt), then move.
-  log(d, `${player.nickname}'s third attempt failed and must pay $${JAIL_FINE}.`)
+  log(d, "log.jailThird", { name: player.nickname, fine: JAIL_FINE })
   pay(d, player, JAIL_FINE, null)
   player.inJail = false
   player.jailTurns = 0
@@ -162,7 +168,7 @@ function payJailFine(d: GameState): GameState {
   if (player.isBankrupt) return settleNoExtra(d)
   player.inJail = false
   player.jailTurns = 0
-  log(d, `${player.nickname} paid $${JAIL_FINE} to get out of jail.`)
+  log(d, "log.jailPaid", { name: player.nickname, fine: JAIL_FINE })
   return d // stays in awaiting-roll so the player then rolls to move
 }
 
@@ -172,7 +178,7 @@ function redeemJailCard(d: GameState): GameState {
   player.getOutOfJailCards -= 1
   player.inJail = false
   player.jailTurns = 0
-  log(d, `${player.nickname} used a "get out of jail free" card.`)
+  log(d, "log.jailCard", { name: player.nickname })
   return d // stays in awaiting-roll
 }
 
@@ -183,7 +189,10 @@ function proposeTrade(d: GameState, offer: TradeOffer): GameState {
   d.pendingTrade = offer
   const from = d.players.find((p) => p.id === offer.fromId)
   const to = d.players.find((p) => p.id === offer.toId)
-  log(d, `${from?.nickname} proposed a trade to ${to?.nickname}.`)
+  log(d, "log.tradeProposed", {
+    from: from?.nickname ?? "?",
+    to: to?.nickname ?? "?",
+  })
   return d
 }
 
@@ -197,17 +206,17 @@ function respondTrade(
   const to = d.players.find((p) => p.id === offer.toId)
 
   if (!accept) {
-    log(d, `${to?.nickname} declined the trade.`)
+    log(d, "log.tradeDeclined", { name: to?.nickname ?? "?" })
     d.pendingTrade = null
     return d
   }
   if (!isTradeValid(d, offer)) {
-    log(d, "The trade is no longer valid and was cancelled.")
+    log(d, "log.tradeInvalid")
     d.pendingTrade = null
     return d
   }
   applyTrade(d, offer)
-  log(d, `${to?.nickname} accepted the trade.`)
+  log(d, "log.tradeAccepted", { name: to?.nickname ?? "?" })
   d.pendingTrade = null
   return d
 }
@@ -216,7 +225,7 @@ function cancelTrade(d: GameState, playerId: string): GameState {
   const offer = d.pendingTrade
   if (!offer || offer.fromId !== playerId) return d
   d.pendingTrade = null
-  log(d, "The trade offer was withdrawn.")
+  log(d, "log.tradeWithdrawn")
   return d
 }
 
@@ -240,7 +249,7 @@ function moveBy(d: GameState, player: Player, steps: number): void {
   const to = (from + steps) % BOARD_SIZE
   if (to < from) {
     player.balance += GO_PAYOUT
-    log(d, `${player.nickname} passed GO and collected $${GO_PAYOUT}.`)
+    log(d, "log.passGo", { name: player.nickname, amount: GO_PAYOUT })
   }
   player.position = to
 }
@@ -251,13 +260,17 @@ function resolveLanding(d: GameState, diceSum: number): void {
 
   switch (def.type) {
     case "tax":
-      log(d, `${player.nickname} landed on ${def.name} and owes $${def.amount}.`)
+      log(d, "log.tax", {
+        name: player.nickname,
+        tile: def.name,
+        amount: def.amount,
+      })
       pay(d, player, def.amount, null)
       return
 
     case "goToJail":
       sendToJail(player)
-      log(d, `${player.nickname} was sent to jail.`)
+      log(d, "log.toJail", { name: player.nickname })
       return
 
     case "street":
@@ -269,12 +282,21 @@ function resolveLanding(d: GameState, diceSum: number): void {
           d.pendingPurchase = def.id
           d.phase = "awaiting-buy"
         } else {
-          log(d, `${player.nickname} can't afford ${def.name} ($${def.price}).`)
+          log(d, "log.cantAfford", {
+            name: player.nickname,
+            tile: def.name,
+            price: def.price,
+          })
         }
       } else if (tile.ownerId !== player.id) {
         const rent = rentFor(d, def.id, diceSum)
         const owner = d.players.find((p) => p.id === tile.ownerId)!
-        log(d, `${player.nickname} pays $${rent} rent to ${owner.nickname} for ${def.name}.`)
+        log(d, "log.rent", {
+          name: player.nickname,
+          rent,
+          owner: owner.nickname,
+          tile: def.name,
+        })
         pay(d, player, rent, owner.id)
       }
       return
@@ -310,8 +332,11 @@ function drawCard(
   }
   const card = cards[pile.order[pile.pos]]
   pile.pos += 1
-  d.lastCard = { deck, text: card.text }
-  log(d, `${currentPlayer(d).nickname} drew: ${card.text}`)
+  d.lastCard = { deck, cardId: card.id }
+  log(d, "log.drew", {
+    name: currentPlayer(d).nickname,
+    card: { t: `card.${card.id}` },
+  })
   applyCard(d, card.effect, diceSum)
 }
 
@@ -354,7 +379,7 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
       return
     case "goToJail":
       sendToJail(player)
-      log(d, `${player.nickname} was sent to jail.`)
+      log(d, "log.toJail", { name: player.nickname })
       return
     case "getOutOfJail":
       player.getOutOfJailCards += 1
@@ -371,7 +396,7 @@ function buy(d: GameState): GameState {
   if (player.balance >= price) {
     player.balance -= price
     d.tiles[tileId].ownerId = player.id
-    log(d, `${player.nickname} bought ${def.name} for $${price}.`)
+    log(d, "log.bought", { name: player.nickname, tile: def.name, price })
   }
   d.pendingPurchase = null
   d.phase = "awaiting-end" // clear the buy gate so settle() can recompute
@@ -381,7 +406,7 @@ function buy(d: GameState): GameState {
 function decline(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
   const def = tileDef(d.pendingPurchase!)
-  log(d, `${player.nickname} declined to buy ${def.name}.`)
+  log(d, "log.declinedBuy", { name: player.nickname, tile: def.name })
   d.pendingPurchase = null
   d.phase = "awaiting-end" // clear the buy gate so settle() can recompute
   return settle(d)
@@ -413,8 +438,11 @@ function buildHouse(d: GameState, tileId: number): GameState {
   const def = tileDef(tileId) as StreetTile
   player.balance -= def.houseCost
   d.tiles[tileId].houses += 1
-  const what = d.tiles[tileId].houses === 5 ? "a hotel" : "a house"
-  log(d, `${player.nickname} built ${what} on ${def.name} for $${def.houseCost}.`)
+  log(d, d.tiles[tileId].houses === 5 ? "log.builtHotel" : "log.builtHouse", {
+    name: player.nickname,
+    tile: def.name,
+    cost: def.houseCost,
+  })
   return d
 }
 
@@ -425,7 +453,7 @@ function sellHouse(d: GameState, tileId: number): GameState {
   const refund = Math.floor(def.houseCost / 2)
   d.tiles[tileId].houses -= 1
   player.balance += refund
-  log(d, `${player.nickname} sold a building on ${def.name} for $${refund}.`)
+  log(d, "log.soldBuilding", { name: player.nickname, tile: def.name, refund })
   return d
 }
 
@@ -435,7 +463,11 @@ function mortgage(d: GameState, tileId: number): GameState {
   const value = mortgageValue(tileId)
   d.tiles[tileId].mortgaged = true
   player.balance += value
-  log(d, `${player.nickname} mortgaged ${tileDef(tileId).name} for $${value}.`)
+  log(d, "log.mortgaged", {
+    name: player.nickname,
+    tile: tileDef(tileId).name,
+    value,
+  })
   return d
 }
 
@@ -445,7 +477,11 @@ function unmortgage(d: GameState, tileId: number): GameState {
   const cost = unmortgageCost(tileId)
   d.tiles[tileId].mortgaged = false
   player.balance -= cost
-  log(d, `${player.nickname} lifted the mortgage on ${tileDef(tileId).name} for $${cost}.`)
+  log(d, "log.unmortgaged", {
+    name: player.nickname,
+    tile: tileDef(tileId).name,
+    cost,
+  })
   return d
 }
 
@@ -520,7 +556,7 @@ function pay(
       if (!creditorId) tile.mortgaged = false
     }
   }
-  log(d, `${debtor.nickname} went bankrupt!`)
+  log(d, "log.bankrupt", { name: debtor.nickname })
   checkGameOver(d)
 }
 
@@ -560,12 +596,13 @@ function checkGameOver(d: GameState): void {
   if (remaining.length <= 1) {
     d.status = "finished"
     d.winnerId = remaining[0]?.id ?? null
-    log(d, remaining[0] ? `${remaining[0].nickname} wins the game!` : "Game over.")
+    if (remaining[0]) log(d, "log.wins", { name: remaining[0].nickname })
+    else log(d, "log.gameOver")
   }
 }
 
-function log(d: GameState, text: string): void {
-  d.log.push({ id: d.nextLogId, text })
+function log(d: GameState, key: string, params?: Record<string, LogParam>): void {
+  d.log.push({ id: d.nextLogId, key, params })
   d.nextLogId += 1
 }
 

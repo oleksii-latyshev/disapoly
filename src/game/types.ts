@@ -94,16 +94,21 @@ export type TurnPhase =
   | "awaiting-buy" // current player landed on an unowned tile they can afford
   | "awaiting-end" // resolution done, current player must end the turn
 
+/** A log param is plain text/number, or `{ t }` for a translatable value. */
+export type LogParam = string | number | { t: string }
+
+/** Structured log event: an i18n key plus params the client translates. */
 export type LogEntry = {
   id: number
-  text: string
+  key: string
+  params?: Record<string, LogParam>
 }
 
 /** Draw order (card indices) plus a pointer into it; reshuffles on wrap. */
 export type DeckState = { order: number[]; pos: number }
 
 /** The most recently drawn card, shown until the turn ends. */
-export type DrawnCard = { deck: "chance" | "chest"; text: string }
+export type DrawnCard = { deck: "chance" | "chest"; cardId: string }
 
 /**
  * A net-worth snapshot for the chart. Has a `turn` key plus one entry per

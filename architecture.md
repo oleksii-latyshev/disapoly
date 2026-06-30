@@ -295,7 +295,7 @@ Local storage stays useful, but **not for sync** — rather for:
    - ✅ Sound — procedural SFX synthesized with the Web Audio API (no audio files): dice, buy, build, card, trade, jail, win. State-driven so it works in hot-seat and online; mute toggle in settings. *(`src/sound/`, `useGameSounds`.)*
    - ✅ Net-worth charts + end-game screen — per-turn net-worth history, a Recharts line chart (lazy-loaded), a "Stats" dialog during play, and a results overlay on finish (winner, final standings, the chart). *(`history` in state, `NetWorthChart`, `StatsButton`, `GameResults`.)*
    - ✅ Disconnect handling — when the current player drops mid-turn the game would stall, so any connected player can skip a disconnected player's turn (server-validated: only the offline current player can be skipped). *(`skip` room message → `FORCE_END_TURN`; offline banner in `NetworkGame`.)*
-   - ⬜ Remaining: localized card/log text.
+   - ✅ Localized log & cards — the log is structured events (`{ key, params }`) and cards are referenced by id; both render through i18n (en/ru). Tile names stay as proper nouns. *(`LogEntry`, `card.<id>` keys.)*
 
 ### Running locally
 

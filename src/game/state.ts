@@ -67,7 +67,7 @@ export function createInitialState(
     pendingTrade: null,
     turnCount: 0,
     history: [],
-    log: [{ id: 0, text: `Game started with ${players.length} players.` }],
+    log: [{ id: 0, key: "log.started", params: { n: players.length } }],
     nextLogId: 1,
     winnerId: null,
   }
