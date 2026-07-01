@@ -193,7 +193,13 @@ See [README.md](README.md) for exact commands.
 - ✅ Board themes (Classic / Minimal / Neon), tile icons, house badges, monopoly
   highlight, click-a-tile-for-rent-details.
 - ✅ Animated token movement + 3D dice (Motion), respects
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`. Token travel is paced to stay legible (per-tile hops
+  + a landing pop), so jumps to jail / card destinations read clearly.
+- ✅ **Visual juice** — center-screen event callouts for pivotal moments (bought
+  / rent / tax / jail / bankrupt, derived from the log), a slot-machine card
+  reveal that rattles through effects before landing, floating +$/−$ deltas over
+  tokens, and win confetti. Bundled in `GameEvents` + `TokenLayer`; shared by
+  both play modes and gated by reduced motion.
 - ✅ Procedural sound effects (Web Audio); mute toggle.
 - ✅ Net-worth chart (Stats dialog) + end-game results overlay.
 - ✅ i18n (en/ru) across UI, game log (structured events), and cards.
@@ -227,8 +233,6 @@ Not yet done — rough priority order:
   match survives a worker restart/eviction.
 - **Auto-skip timeout** for a disconnected player via a DO alarm (currently a
   manual skip button).
-- **Visual juice** — confetti on win, floating +$/−$ deltas, land-on-tile flash,
-  card-flip animation.
 - **House/hotel scarcity** (32/12 bank) for full authenticity.
 - **Player cap > 8** would need more token colors.
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow

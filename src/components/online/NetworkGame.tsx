@@ -8,6 +8,7 @@ import { useTurnNotification } from "@/hooks/useTurnNotification"
 
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
+import { GameEvents } from "@/components/game/GameEvents"
 import { GameLog } from "@/components/game/GameLog"
 import { GameResults } from "@/components/game/GameResults"
 import { ManagePanel } from "@/components/game/ManagePanel"
@@ -101,6 +102,7 @@ export function NetworkGame({
         onNewGame={() => send({ type: "reset" })}
         canReset={self?.isHost ?? false}
       />
+      <GameEvents state={game} />
     </div>
   )
 }

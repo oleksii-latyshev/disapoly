@@ -4,6 +4,7 @@ import { useGameSounds } from "@/hooks/useGameSounds"
 
 import { CardBanner } from "./CardBanner"
 import { GameBoard } from "./GameBoard"
+import { GameEvents } from "./GameEvents"
 import { GameLog } from "./GameLog"
 import { GameResults } from "./GameResults"
 import { ManagePanel } from "./ManagePanel"
@@ -39,6 +40,7 @@ export function GameScreen({
       </aside>
 
       <GameResults state={state} onNewGame={onNewGame} />
+      <GameEvents state={state} />
     </div>
   )
 }
