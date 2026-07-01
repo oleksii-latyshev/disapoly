@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { GameScreen } from "@/components/game/GameScreen"
+import { HowToPlayButton } from "@/components/game/HowToPlayButton"
 import { SettingsButton } from "@/components/game/SettingsButton"
 import { SetupScreen } from "@/components/game/SetupScreen"
 import { HomeScreen } from "@/components/online/HomeScreen"
@@ -50,6 +51,7 @@ export function App() {
     <>
       {screen}
       <SettingsButton />
+      <HowToPlayButton />
     </>
   )
 }

@@ -154,6 +154,65 @@ export function rentFor(
   return 0
 }
 
+/**
+ * Decision-support for the buy prompt: what a player stands to gain by buying
+ * `tileId` right now. Pure and rendering-agnostic (the UI localizes it).
+ */
+export type PurchasePreview =
+  | {
+      kind: "street"
+      baseRent: number
+      /** Rent on bare land once the whole color group is held (×2). */
+      rentWithSet: number
+      owned: number // group tiles the player would own after buying
+      total: number
+      completesSet: boolean
+    }
+  | { kind: "railroad"; owned: number; total: number; rentAfter: number }
+  | { kind: "utility"; owned: number; total: number; multiplierAfter: number }
+
+export function purchasePreview(
+  state: GameState,
+  tileId: number,
+  playerId: string
+): PurchasePreview | null {
+  const def = tileDef(tileId)
+  if (def.type === "street") {
+    const ids = GROUP_TILE_IDS[def.group]
+    const ownedNow = ids.filter(
+      (id) => state.tiles[id].ownerId === playerId
+    ).length
+    const owned = ownedNow + 1
+    return {
+      kind: "street",
+      baseRent: def.rent[0],
+      rentWithSet: def.rent[0] * 2,
+      owned,
+      total: ids.length,
+      completesSet: owned === ids.length,
+    }
+  }
+  if (def.type === "railroad") {
+    const owned = countOwnedOfType(state, playerId, "railroad") + 1
+    return {
+      kind: "railroad",
+      owned,
+      total: 4,
+      rentAfter: RAILROAD_RENT[Math.min(owned, 4) - 1] ?? 0,
+    }
+  }
+  if (def.type === "utility") {
+    const owned = countOwnedOfType(state, playerId, "utility") + 1
+    return {
+      kind: "utility",
+      owned,
+      total: 2,
+      multiplierAfter: UTILITY_MULTIPLIER[Math.min(owned, 2) - 1] ?? 0,
+    }
+  }
+  return null
+}
+
 // --- property management (Stage 2) ---
 
 /** Price of a purchasable tile, or 0 for non-ownable tiles. */

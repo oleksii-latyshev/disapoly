@@ -207,6 +207,9 @@ See [README.md](README.md) for exact commands.
 - ✅ Net-worth chart (Stats dialog) + end-game results overlay.
 - ✅ i18n (en/ru) across UI, game log (structured events), and cards.
 - ✅ Hot-seat mode preserved as an offline option.
+- ✅ Onboarding: a "How to play" rules reference (bottom-left, alongside
+  Settings) and a decision-support buy prompt (`purchasePreview`) showing the
+  rent you'd earn and set/collection progress before you buy.
 
 ---
 

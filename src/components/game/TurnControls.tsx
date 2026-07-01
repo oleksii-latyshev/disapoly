@@ -1,14 +1,76 @@
-import { Dices } from "lucide-react"
+import { Dices, PartyPopper } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   BOARD,
   currentPlayer,
   JAIL_FINE,
+  purchasePreview,
   type GameAction,
   type GameState,
 } from "@/game"
 import { useT } from "@/i18n"
+
+/** Compact decision-support shown in the buy step: rent + set/collection progress. */
+function BuyInfo({
+  state,
+  tileId,
+  playerId,
+}: {
+  state: GameState
+  tileId: number
+  playerId: string
+}) {
+  const t = useT()
+  const info = purchasePreview(state, tileId, playerId)
+  if (!info) return null
+
+  return (
+    <div className="flex flex-col gap-1 rounded-md border bg-muted/40 p-2 text-xs">
+      {info.kind === "street" && (
+        <>
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">{t("buy.rentLabel")}</span>
+            <span className="font-medium tabular-nums">
+              ${info.baseRent}
+              <span className="text-muted-foreground">
+                {" "}
+                · {t("buy.withSet", { rent: info.rentWithSet })}
+              </span>
+            </span>
+          </div>
+          {info.completesSet ? (
+            <div className="flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+              <PartyPopper className="size-3.5" /> {t("buy.completesSet")}
+            </div>
+          ) : (
+            <div className="text-muted-foreground">
+              {t("buy.setProgress", { owned: info.owned, total: info.total })}
+            </div>
+          )}
+        </>
+      )}
+      {info.kind === "railroad" && (
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">
+            {t("buy.railroads", { owned: info.owned, total: info.total })}
+          </span>
+          <span className="font-medium tabular-nums">${info.rentAfter}</span>
+        </div>
+      )}
+      {info.kind === "utility" && (
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">
+            {t("buy.utilities", { owned: info.owned, total: info.total })}
+          </span>
+          <span className="font-medium tabular-nums">
+            {t("buy.timesDice", { mult: info.multiplierAfter })}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function TurnControls({
   state,
@@ -110,6 +172,13 @@ export function TurnControls({
           <p className="text-xs text-muted-foreground">
             {t("turn.buyPrompt", { name: pending.name, price: pendingPrice })}
           </p>
+          {state.pendingPurchase !== null && (
+            <BuyInfo
+              state={state}
+              tileId={state.pendingPurchase}
+              playerId={player.id}
+            />
+          )}
           <div className="flex gap-2">
             <Button
               className="flex-1"

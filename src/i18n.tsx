@@ -50,6 +50,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "turn.buyPrompt": "Buy {name} for ${price}?",
     "turn.buy": "Buy ${price}",
     "turn.decline": "Decline",
+    "buy.rentLabel": "Rent",
+    "buy.withSet": "${rent} with full set",
+    "buy.completesSet": "Completes the color set!",
+    "buy.setProgress": "{owned}/{total} in this color",
+    "buy.railroads": "{owned}/{total} railroads → rent",
+    "buy.utilities": "{owned}/{total} utilities → rent",
+    "buy.timesDice": "{mult}× dice",
     "turn.end": "End turn",
     "turn.wins": "🏆 {name} wins!",
     "turn.gameOver": "Game over.",
@@ -127,6 +134,35 @@ const DICT: Record<Lang, Record<string, string>> = {
     "stats.title": "Net worth over time",
     "results.standings": "Final standings",
     "results.bankrupt": "bankrupt",
+
+    "howto.title": "How to play",
+    "howto.goal.title": "Goal",
+    "howto.goal.body":
+      "Be the last player standing — bankrupt everyone else through rent and smart deals. You start with ${start}.",
+    "howto.turn.title": "Your turn",
+    "howto.turn.body":
+      "Roll and move. Doubles let you roll again, but three in a row send you to jail. Passing GO pays ${go}.",
+    "howto.buy.title": "Buying & rent",
+    "howto.buy.body":
+      "Land on an unowned property to buy it; land on someone else's and you pay them rent. The buy panel shows the rent you'd earn.",
+    "howto.build.title": "Monopolies & building",
+    "howto.build.body":
+      "Own a whole color group to form a monopoly: rent doubles, and you can build houses then a hotel (evenly across the set) to raise rent sharply.",
+    "howto.mortgage.title": "Mortgage",
+    "howto.mortgage.body":
+      "Short on cash? Mortgage properties for half price and lift them later (plus 10%). You can't build while any property in the set is mortgaged.",
+    "howto.jail.title": "Jail",
+    "howto.jail.body":
+      "In jail, roll doubles to escape, pay ${fine}, or use a Get-Out-of-Jail card. After three failed rolls you must pay the fine.",
+    "howto.cards.title": "Chance & Community Chest",
+    "howto.cards.body":
+      "These tiles draw a card: money in or out, a move around the board, or a trip to jail.",
+    "howto.trade.title": "Trading",
+    "howto.trade.body":
+      "Deal with anyone at any time — swap properties, cash and jail cards. A trade that completes a set can decide the game.",
+    "howto.win.title": "Bankruptcy & winning",
+    "howto.win.body":
+      "Can't pay a debt? You auto-sell buildings and mortgage to cover it; if you still fall short, you're bankrupt. The last player left wins.",
 
     "log.started": "Game started with {n} players.",
     "log.rolled": "{name} rolled {a} + {b} = {sum}.",
@@ -223,6 +259,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "turn.buyPrompt": "Купить {name} за ${price}?",
     "turn.buy": "Купить ${price}",
     "turn.decline": "Отказаться",
+    "buy.rentLabel": "Аренда",
+    "buy.withSet": "${rent} с монополией",
+    "buy.completesSet": "Завершает цветной набор!",
+    "buy.setProgress": "{owned}/{total} в этом цвете",
+    "buy.railroads": "{owned}/{total} ж/д → аренда",
+    "buy.utilities": "{owned}/{total} компаний → аренда",
+    "buy.timesDice": "{mult}× по кубикам",
     "turn.end": "Завершить ход",
     "turn.wins": "🏆 {name} побеждает!",
     "turn.gameOver": "Игра окончена.",
@@ -300,6 +343,35 @@ const DICT: Record<Lang, Record<string, string>> = {
     "stats.title": "Капитал по ходам",
     "results.standings": "Итоговый рейтинг",
     "results.bankrupt": "банкрот",
+
+    "howto.title": "Как играть",
+    "howto.goal.title": "Цель",
+    "howto.goal.body":
+      "Останься последним игроком — разори остальных арендой и выгодными сделками. Старт — ${start}.",
+    "howto.turn.title": "Твой ход",
+    "howto.turn.body":
+      "Брось кубики и походи. Дубль — ходишь ещё раз, но три подряд отправляют в тюрьму. За проход «Старта» — ${go}.",
+    "howto.buy.title": "Покупка и аренда",
+    "howto.buy.body":
+      "Попал на свободный участок — можешь купить; попал на чужой — платишь аренду. В панели покупки видно, сколько будешь получать.",
+    "howto.build.title": "Монополии и стройка",
+    "howto.build.body":
+      "Собери все участки одного цвета — это монополия: аренда удваивается, и можно строить дома, а затем отель (равномерно по набору), резко поднимая аренду.",
+    "howto.mortgage.title": "Залог",
+    "howto.mortgage.body":
+      "Не хватает денег? Заложи участки за половину цены и выкупи позже (плюс 10%). Строить нельзя, пока в наборе есть заложенный участок.",
+    "howto.jail.title": "Тюрьма",
+    "howto.jail.body":
+      "В тюрьме: выбрось дубль, заплати ${fine} или используй карту «выйти из тюрьмы». После трёх неудачных бросков платишь штраф.",
+    "howto.cards.title": "Шанс и Казна",
+    "howto.cards.body":
+      "Эти клетки тянут карту: деньги плюс или минус, перемещение по доске или отправка в тюрьму.",
+    "howto.trade.title": "Сделки",
+    "howto.trade.body":
+      "Меняйся с кем угодно и когда угодно — участки, деньги и карты тюрьмы. Сделка, завершающая набор, может решить партию.",
+    "howto.win.title": "Банкротство и победа",
+    "howto.win.body":
+      "Не можешь заплатить? Автоматически продаёшь постройки и закладываешь имущество; если всё равно не хватает — банкрот. Побеждает последний оставшийся.",
 
     "log.started": "Игра началась, игроков: {n}.",
     "log.rolled": "{name} выбрасывает {a} + {b} = {sum}.",
