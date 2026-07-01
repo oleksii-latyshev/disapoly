@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { WifiOff } from "lucide-react"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
+import type { ReactionEvent } from "@/hooks/useRoom"
 import { useT } from "@/i18n"
 import { useGameSounds } from "@/hooks/useGameSounds"
 import { useTabAlert } from "@/hooks/useTabAlert"
@@ -13,20 +15,36 @@ import { GameLog } from "@/components/game/GameLog"
 import { GameResults } from "@/components/game/GameResults"
 import { ManagePanel } from "@/components/game/ManagePanel"
 import { PlayersList } from "@/components/game/PlayersList"
+import { ReactionBar } from "@/components/game/ReactionBar"
 import { StatsButton } from "@/components/game/StatsButton"
 import { TradePanel } from "@/components/game/TradePanel"
 import { TurnControls } from "@/components/game/TurnControls"
+
+/** Live countdown (whole seconds) to the auto-skip deadline. */
+function useSecondsUntil(deadline: number | null): number | null {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (deadline == null) return
+    // The interval refreshes `now`; a fresh tick lands within 500ms.
+    const id = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(id)
+  }, [deadline])
+  if (deadline == null) return null
+  return Math.max(0, Math.ceil((deadline - now) / 1000))
+}
 
 export function NetworkGame({
   state,
   self,
   send,
   connected,
+  reactions,
 }: {
   state: RoomState
   self: RoomMember | undefined
   send: (message: ClientMessage) => void
   connected: boolean
+  reactions: ReactionEvent[]
 }) {
   const t = useT()
   const game = state.game!
@@ -44,10 +62,12 @@ export function NetworkGame({
   useTabAlert(isMyTurn, t("notify.yourTurn"))
   useTabAlert(incomingOffer, t("notify.tradeOffer"))
 
+  const autoSkipIn = useSecondsUntil(turnPlayerOffline ? state.autoSkipAt : null)
+
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
-        <GameBoard state={game} />
+        <GameBoard state={game} reactions={reactions} />
       </div>
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">
@@ -67,6 +87,11 @@ export function NetworkGame({
               <WifiOff className="size-3.5" />
               {t("net.playerOffline", { name: turnPlayer.nickname })}
             </span>
+            {autoSkipIn !== null && (
+              <span className="text-muted-foreground">
+                {t("net.autoSkipIn", { n: autoSkipIn })}
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -96,6 +121,7 @@ export function NetworkGame({
           localPlayerId={self?.id}
         />
         <PlayersList state={game} />
+        <ReactionBar onReact={(emoji) => send({ type: "reaction", emoji })} />
         <StatsButton state={game} />
         <GameLog state={game} />
       </aside>

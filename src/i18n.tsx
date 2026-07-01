@@ -97,6 +97,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.connectingRoom": "Connecting to room…",
     "net.playerOffline": "{name} is offline",
     "net.skip": "Skip their turn",
+    "net.autoSkipIn": "Auto-skip in {n}s",
     "notify.yourTurn": "Your turn!",
     "notify.tradeOffer": "Trade offer!",
 
@@ -306,6 +307,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.connectingRoom": "Подключение к комнате…",
     "net.playerOffline": "{name} не в сети",
     "net.skip": "Пропустить его ход",
+    "net.autoSkipIn": "Авто-пропуск через {n}с",
     "notify.yourTurn": "Твой ход!",
     "notify.tradeOffer": "Предложение сделки!",
 

@@ -30,7 +30,16 @@ export type RoomState = {
   phase: "lobby" | "in-game"
   members: RoomMember[]
   game: GameState | null
+  /**
+   * When set, the disconnected current player's turn will be auto-skipped at
+   * this epoch-ms deadline (the server owns the timestamp + the DO alarm). Null
+   * when nobody is stalling. Clients render a countdown from it.
+   */
+  autoSkipAt: number | null
 }
+
+/** Emoji reactions players can fling during a live game. */
+export const REACTIONS: readonly string[] = ["👍", "😂", "😮", "🔥", "😢", "🎉"]
 
 /** Client → server intents. */
 export type ClientMessage =
@@ -39,12 +48,15 @@ export type ClientMessage =
   | { type: "action"; action: GameAction }
   | { type: "reset" }
   | { type: "skip" } // skip a disconnected player's turn
+  | { type: "reaction"; emoji: string } // ephemeral emoji burst (not state)
 
 /** Server → client broadcasts. */
-export type ServerMessage = { type: "state"; state: RoomState }
+export type ServerMessage =
+  | { type: "state"; state: RoomState }
+  | { type: "reaction"; playerId: string; emoji: string }
 
 export function createRoom(roomId: string): RoomState {
-  return { roomId, phase: "lobby", members: [], game: null }
+  return { roomId, phase: "lobby", members: [], game: null, autoSkipAt: null }
 }
 
 /** Apply a client message from `senderId`, returning the next room state. */
@@ -112,7 +124,7 @@ function start(state: RoomState, senderId: string): RoomState {
       color: m.color,
     }))
   )
-  return { ...state, phase: "in-game", game }
+  return { ...state, phase: "in-game", game, autoSkipAt: null }
 }
 
 /**
@@ -165,11 +177,61 @@ function skip(state: RoomState, senderId: string): RoomState {
   return { ...state, game: gameReducer(state.game, { type: "FORCE_END_TURN" }) }
 }
 
+/** True while it's a disconnected player's turn (candidate for auto-skip). */
+export function currentPlayerDisconnected(state: RoomState): boolean {
+  if (state.phase !== "in-game" || !state.game) return false
+  if (state.game.status !== "playing") return false
+  const current = state.game.players[state.game.currentPlayerIndex]
+  const member = state.members.find((m) => m.id === current.id)
+  return !!member && !member.connected
+}
+
+/** True if anyone is still connected — i.e. someone is present to play. */
+export function anyMemberConnected(state: RoomState): boolean {
+  return state.members.some((m) => m.connected)
+}
+
+/**
+ * Whether the current turn should be auto-skipped: it's a disconnected player's
+ * turn *and* at least one other member is still here to benefit. If the room has
+ * emptied out, we never skip — the match just pauses until someone returns
+ * (rather than "playing itself" in a loop with nobody watching).
+ */
+export function shouldAutoSkip(state: RoomState): boolean {
+  return currentPlayerDisconnected(state) && anyMemberConnected(state)
+}
+
+/**
+ * Force-skip the current player's turn — the server-side counterpart to `skip`,
+ * invoked from the DO alarm rather than a client request (so it needs no
+ * connected sender). Self-guards via `shouldAutoSkip`.
+ */
+export function autoSkip(state: RoomState): RoomState {
+  if (!shouldAutoSkip(state)) return state
+  return { ...state, game: gameReducer(state.game!, { type: "FORCE_END_TURN" }) }
+}
+
+/**
+ * A match with nobody left connected — eligible to be abandoned once a grace
+ * period elapses (so an empty room doesn't linger indefinitely).
+ */
+export function isAbandonable(state: RoomState): boolean {
+  return state.phase === "in-game" && !!state.game && !anyMemberConnected(state)
+}
+
+/**
+ * Discard an abandoned match: return the room to the lobby (members are kept so
+ * anyone who reconnects can simply start a fresh game).
+ */
+export function abandonMatch(state: RoomState): RoomState {
+  return { ...state, phase: "lobby", game: null, autoSkipAt: null }
+}
+
 /** Host returns the room to the lobby for a new match (members preserved). */
 function reset(state: RoomState, senderId: string): RoomState {
   const host = state.members.find((m) => m.id === senderId)
   if (!host?.isHost) return state
-  return { ...state, phase: "lobby", game: null }
+  return { ...state, phase: "lobby", game: null, autoSkipAt: null }
 }
 
 /** Flip a member's connection flag (called by the server on connect/close). */

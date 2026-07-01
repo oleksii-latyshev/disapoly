@@ -5,35 +5,7 @@ import { BOARD_SIZE, type GameState, type Player } from "@/game"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
-import { tileCenter } from "./board-meta"
-
-/** Small fan-out offsets (in % of board) when several tokens share a tile. */
-const OFFSETS: [number, number][] = [
-  [0, 0],
-  [-1.7, -1.7],
-  [1.7, -1.7],
-  [-1.7, 1.7],
-  [1.7, 1.7],
-  [0, -2],
-  [0, 2],
-  [-2, 0],
-]
-
-type Target = { x: number; y: number }
-
-/** Per-player token targets, fanning out co-located tokens so they don't stack. */
-function buildTargets(active: Player[]): Map<string, Target> {
-  const counters: Record<number, number> = {}
-  const targets = new Map<string, Target>()
-  for (const player of active) {
-    const seen = counters[player.position] ?? 0
-    counters[player.position] = seen + 1
-    const [dx, dy] = OFFSETS[Math.min(seen, OFFSETS.length - 1)]
-    const c = tileCenter(player.position)
-    targets.set(player.id, { x: c.x + dx, y: c.y + dy })
-  }
-  return targets
-}
+import { tileCenter, tokenTargets, type TokenTarget as Target } from "./board-meta"
 
 function Token({
   player,
@@ -158,7 +130,7 @@ export function TokenLayer({ state }: { state: GameState }) {
   const active = state.players.filter((p) => !p.isBankrupt)
 
   // Per-player target including the fan-out offset for co-located tokens.
-  const targets = buildTargets(active)
+  const targets = tokenTargets(active)
 
   // Floating money deltas, derived from each player's balance change.
   const [deltas, setDeltas] = useState<Delta[]>([])
@@ -173,7 +145,7 @@ export function TokenLayer({ state }: { state: GameState }) {
 
     // Recompute targets here (rather than reading a render value) so the effect
     // stays self-contained and lint-clean.
-    const at = buildTargets(state.players.filter((p) => !p.isBankrupt))
+    const at = tokenTargets(state.players.filter((p) => !p.isBankrupt))
     const spawned: Delta[] = []
     for (const player of state.players) {
       const pos = at.get(player.id)

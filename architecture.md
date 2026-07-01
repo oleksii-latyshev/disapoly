@@ -185,7 +185,18 @@ See [README.md](README.md) for exact commands.
 **Online:**
 
 - ✅ Lobby, link sharing, turn order across devices; authoritative DO server.
-- ✅ Reconnect by `playerId`; skip a disconnected player's turn.
+- ✅ Reconnect by `playerId`; skip a disconnected player's turn — manually, or
+  automatically after a 30s grace period via a **DO alarm** (`autoSkipAt` in the
+  room state drives a live countdown; `onAlarm` force-ends the absent turn).
+  Auto-skip is gated on *someone still being present* (`shouldAutoSkip`): it
+  never "plays itself" in an empty room.
+- ✅ Empty-room cleanup: if **everyone** disconnects mid-match the game pauses,
+  and is **abandoned back to the lobby** after a 60s grace period (a second use
+  of the same DO alarm — `isAbandonable`/`abandonMatch`). Reconnecting within the
+  minute resumes the match; the two alarm uses (skip vs. abandon) are mutually
+  exclusive, so one alarm slot serves both.
+- ✅ Emoji reactions — an ephemeral `reaction` message relayed by the server
+  (never stored in state) that floats over the reacting player's token.
 - ✅ "Your turn" + "trade offer" notifications — a chime (distinct ding for an
   offer addressed to you) plus a flashing tab title when backgrounded
   (`useTabAlert`, coordinated so concurrent alerts don't fight over the title).
@@ -237,10 +248,8 @@ Not yet done — rough priority order:
   with the bank).
 - **Room persistence** — mirror `RoomState` into the DO's SQLite storage so a
   match survives a worker restart/eviction.
-- **Auto-skip timeout** for a disconnected player via a DO alarm (currently a
-  manual skip button).
 - **House/hotel scarcity** (32/12 bank) for full authenticity.
 - **Player cap > 8** would need more token colors.
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow
   long (currently full-state broadcast; fine at this scale).
-- Spectators / late join, reactions/mini-chat, avatars.
+- Spectators / late join, mini-chat, avatars.

@@ -11,9 +11,12 @@ import {
 import { cn } from "@/lib/utils"
 import { useT } from "@/i18n"
 
+import type { ReactionEvent } from "@/hooks/useRoom"
+
 import { useBoardTheme } from "./board-theme"
 import { tileCell } from "./board-meta"
 import { Dice } from "./Dice"
+import { ReactionLayer } from "./ReactionLayer"
 import { TileDetails } from "./TileDetails"
 import { TokenLayer } from "./TokenLayer"
 import { isCornerTile, tileVisual } from "./tile-visuals"
@@ -161,7 +164,14 @@ function Tile({
   )
 }
 
-export function GameBoard({ state }: { state: GameState }) {
+export function GameBoard({
+  state,
+  reactions,
+}: {
+  state: GameState
+  /** Live emoji reactions to float over tokens (online play only). */
+  reactions?: ReactionEvent[]
+}) {
   const { theme } = useBoardTheme()
   const t = useT()
   const active = state.status === "playing" ? currentPlayer(state) : undefined
@@ -240,6 +250,7 @@ export function GameBoard({ state }: { state: GameState }) {
           </div>
 
           <TokenLayer state={state} />
+          {reactions && <ReactionLayer state={state} reactions={reactions} />}
         </div>
       </div>
 

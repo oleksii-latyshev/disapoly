@@ -1,6 +1,6 @@
 /** Visual metadata for rendering the board: grid placement and group colors. */
 
-import type { ColorGroup } from "@/game"
+import type { ColorGroup, Player } from "@/game"
 
 /**
  * Map a tile id (0–39) to its cell in an 11×11 CSS grid. The perimeter runs
@@ -26,6 +26,38 @@ export function isVerticalEdge(id: number): boolean {
 export function tileCenter(id: number): { x: number; y: number } {
   const { row, col } = tileCell(id)
   return { x: ((col - 0.5) / 11) * 100, y: ((row - 0.5) / 11) * 100 }
+}
+
+/** Small fan-out offsets (in % of board) when several tokens share a tile. */
+const TOKEN_OFFSETS: [number, number][] = [
+  [0, 0],
+  [-1.7, -1.7],
+  [1.7, -1.7],
+  [-1.7, 1.7],
+  [1.7, 1.7],
+  [0, -2],
+  [0, 2],
+  [-2, 0],
+]
+
+export type TokenTarget = { x: number; y: number }
+
+/**
+ * Screen position (% of board) of each player's token, fanning out co-located
+ * tokens so they don't fully overlap. Shared by the token layer and any overlay
+ * that needs to anchor to a token (e.g. reactions).
+ */
+export function tokenTargets(players: Player[]): Map<string, TokenTarget> {
+  const counters: Record<number, number> = {}
+  const targets = new Map<string, TokenTarget>()
+  for (const player of players) {
+    const seen = counters[player.position] ?? 0
+    counters[player.position] = seen + 1
+    const [dx, dy] = TOKEN_OFFSETS[Math.min(seen, TOKEN_OFFSETS.length - 1)]
+    const c = tileCenter(player.position)
+    targets.set(player.id, { x: c.x + dx, y: c.y + dy })
+  }
+  return targets
 }
 
 export const GROUP_COLOR: Record<ColorGroup, string> = {

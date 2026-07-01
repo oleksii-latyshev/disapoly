@@ -6,6 +6,9 @@ import { PARTY_HOST, PARTY_NAME } from "@/net/config"
 
 export type RoomIdentity = { playerId: string; nickname: string }
 
+/** A received emoji reaction, tagged with a local id so overlays can dedupe. */
+export type ReactionEvent = { id: number; playerId: string; emoji: string }
+
 /**
  * Connects to the authoritative PartyKit room over a WebSocket, sends the join
  * intent on open, and exposes the broadcast room state plus a typed sender.
@@ -14,6 +17,8 @@ export type RoomIdentity = { playerId: string; nickname: string }
 export function useRoom(roomId: string, identity: RoomIdentity) {
   const [state, setState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
+  const [reactions, setReactions] = useState<ReactionEvent[]>([])
+  const reactionId = useRef(0)
   const socketRef = useRef<PartySocket | null>(null)
 
   useEffect(() => {
@@ -37,7 +42,14 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
     const onClose = () => setConnected(false)
     const onMessage = (event: MessageEvent) => {
       const message = JSON.parse(event.data) as ServerMessage
-      if (message.type === "state") setState(message.state)
+      if (message.type === "state") {
+        setState(message.state)
+      } else if (message.type === "reaction") {
+        const id = ++reactionId.current
+        setReactions((cur) =>
+          [...cur, { id, playerId: message.playerId, emoji: message.emoji }].slice(-40)
+        )
+      }
     }
 
     socket.addEventListener("open", onOpen)
@@ -56,5 +68,5 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
     socketRef.current?.send(JSON.stringify(message))
   }, [])
 
-  return { state, connected, send }
+  return { state, connected, send, reactions }
 }
