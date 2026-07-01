@@ -32,6 +32,7 @@ const CALLOUTS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   "log.bankrupt": { icon: Skull, tone: "bad" },
   "log.builtHouse": { icon: Hammer, tone: "good" },
   "log.builtHotel": { icon: Building2, tone: "good" },
+  "log.tradeProposed": { icon: ArrowRightLeft, tone: "neutral" },
   "log.tradeAccepted": { icon: ArrowRightLeft, tone: "neutral" },
 }
 

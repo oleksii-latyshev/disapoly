@@ -1,6 +1,8 @@
 import { useState } from "react"
+import { motion } from "motion/react"
 import { ArrowLeftRight, Check, X } from "lucide-react"
 
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -251,15 +253,33 @@ function PendingTrade({
   localPlayerId?: string
 }) {
   const t = useT()
+  const reduce = usePrefersReducedMotion()
   const from = state.players.find((p) => p.id === offer.fromId)
   const to = state.players.find((p) => p.id === offer.toId)
   const hotSeat = localPlayerId === undefined
   const canRespond = hotSeat || localPlayerId === offer.toId
   const canCancel = hotSeat || localPlayerId === offer.fromId
+  // Draw the eye when a decision is on this player: it's easy to miss an offer
+  // that arrives out of turn.
+  const awaitingMe = canRespond
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border bg-card p-3">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+    <motion.div
+      key={`${offer.fromId}-${offer.toId}`}
+      initial={reduce || !awaitingMe ? false : { scale: 0.96, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={cn(
+        "flex flex-col gap-2 rounded-md border bg-card p-3",
+        awaitingMe && "border-primary/60 shadow-lg ring-2 ring-primary/50"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-1.5 text-xs font-medium",
+          awaitingMe ? "text-primary" : "text-muted-foreground"
+        )}
+      >
         <ArrowLeftRight className="size-3.5" /> {t("trade.pendingTitle")}
       </div>
       <div className="space-y-1 text-sm">
@@ -316,7 +336,7 @@ function PendingTrade({
           {t("trade.cancel")}
         </Button>
       )}
-    </div>
+    </motion.div>
   )
 }
 

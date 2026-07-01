@@ -91,6 +91,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.playerOffline": "{name} is offline",
     "net.skip": "Skip their turn",
     "notify.yourTurn": "Your turn!",
+    "notify.tradeOffer": "Trade offer!",
 
     "settings.title": "Settings",
     "settings.boardTheme": "Board theme",
@@ -263,6 +264,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.playerOffline": "{name} не в сети",
     "net.skip": "Пропустить его ход",
     "notify.yourTurn": "Твой ход!",
+    "notify.tradeOffer": "Предложение сделки!",
 
     "settings.title": "Настройки",
     "settings.boardTheme": "Тема доски",

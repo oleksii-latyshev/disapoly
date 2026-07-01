@@ -186,7 +186,10 @@ See [README.md](README.md) for exact commands.
 
 - ✅ Lobby, link sharing, turn order across devices; authoritative DO server.
 - ✅ Reconnect by `playerId`; skip a disconnected player's turn.
-- ✅ "Your turn" notification — chime + flashing tab title when backgrounded.
+- ✅ "Your turn" + "trade offer" notifications — a chime (distinct ding for an
+  offer addressed to you) plus a flashing tab title when backgrounded
+  (`useTabAlert`, coordinated so concurrent alerts don't fight over the title).
+  Incoming trade offers also raise a center callout and highlight the panel.
 
 **Polish / QoL:**
 

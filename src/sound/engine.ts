@@ -12,6 +12,7 @@ export type SoundName =
   | "build"
   | "card"
   | "trade"
+  | "offer"
   | "jail"
   | "win"
   | "turn"
@@ -119,6 +120,12 @@ export function playSound(name: SoundName): void {
     case "trade":
       blip(c, t, { freq: 600, dur: 0.1, type: "sine", gain: 0.26 })
       blip(c, t + 0.09, { freq: 760, dur: 0.14, type: "sine", gain: 0.26 })
+      break
+    case "offer":
+      // A brighter "ding-dong" for an offer addressed to you specifically.
+      blip(c, t, { freq: 880, dur: 0.16, type: "triangle", gain: 0.3 })
+      blip(c, t + 0.15, { freq: 1320, dur: 0.2, type: "triangle", gain: 0.3 })
+      blip(c, t + 0.32, { freq: 1760, dur: 0.24, type: "sine", gain: 0.26 })
       break
     case "jail":
       blip(c, t, { freq: 200, dur: 0.28, type: "square", gain: 0.2, slideTo: 110 })

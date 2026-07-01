@@ -4,7 +4,7 @@ import { WifiOff } from "lucide-react"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
 import { useT } from "@/i18n"
 import { useGameSounds } from "@/hooks/useGameSounds"
-import { useTurnNotification } from "@/hooks/useTurnNotification"
+import { useTabAlert } from "@/hooks/useTabAlert"
 
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
@@ -30,7 +30,7 @@ export function NetworkGame({
 }) {
   const t = useT()
   const game = state.game!
-  useGameSounds(game)
+  useGameSounds(game, self?.id)
 
   const turnPlayer = game.players[game.currentPlayerIndex]
   const turnMember = state.members.find((m) => m.id === turnPlayer?.id)
@@ -39,7 +39,10 @@ export function NetworkGame({
 
   const isMyTurn =
     game.status === "playing" && !!self && turnPlayer?.id === self.id
-  useTurnNotification(isMyTurn, t("notify.yourTurn"))
+  const incomingOffer =
+    game.status === "playing" && !!self && game.pendingTrade?.toId === self.id
+  useTabAlert(isMyTurn, t("notify.yourTurn"))
+  useTabAlert(incomingOffer, t("notify.tradeOffer"))
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
