@@ -4,6 +4,7 @@ import { WifiOff } from "lucide-react"
 import type { ClientMessage, RoomMember, RoomState } from "@/game"
 import { useT } from "@/i18n"
 import { useGameSounds } from "@/hooks/useGameSounds"
+import { useTurnNotification } from "@/hooks/useTurnNotification"
 
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
@@ -34,6 +35,10 @@ export function NetworkGame({
   const turnMember = state.members.find((m) => m.id === turnPlayer?.id)
   const turnPlayerOffline =
     game.status === "playing" && !!turnMember && !turnMember.connected
+
+  const isMyTurn =
+    game.status === "playing" && !!self && turnPlayer?.id === self.id
+  useTurnNotification(isMyTurn, t("notify.yourTurn"))
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">

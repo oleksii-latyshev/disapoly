@@ -14,6 +14,7 @@ export type SoundName =
   | "trade"
   | "jail"
   | "win"
+  | "turn"
 
 let ctx: AudioContext | null = null
 let master: GainNode | null = null
@@ -125,6 +126,10 @@ export function playSound(name: SoundName): void {
       break
     case "win":
       arp(c, t, [523, 659, 784, 1046], 0.11, "triangle")
+      break
+    case "turn":
+      blip(c, t, { freq: 784, dur: 0.16, type: "sine", gain: 0.3 })
+      blip(c, t + 0.14, { freq: 1046, dur: 0.22, type: "sine", gain: 0.3 })
       break
   }
 }
