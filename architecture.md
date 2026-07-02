@@ -2,7 +2,8 @@
 
 A 2D, browser-based take on Monopoly for playing with friends — no sign-up. One
 person creates a room and shares a link; others join, pick a nickname, and play.
-Game state is in-memory only (no database).
+Game state lives in the room's Durable Object (persisted to its own SQLite
+storage) — no external database.
 
 This document reflects the **current implementation**. For a step-by-step
 history see the git log; for how to run/deploy see [README.md](README.md).
@@ -146,8 +147,8 @@ dropped tab rejoins the same member by id and resumes.
 Server and client deploy separately, both on Cloudflare's **free** tier.
 
 - **Server** → Cloudflare Worker (Durable Object). `wrangler.jsonc` binds the
-  `Game` DO class; it's declared as a `new_sqlite_classes` migration because the
-  free plan requires the SQLite-backed DO backend (we don't use its storage yet).
+  `Game` DO class; it's declared as a `new_sqlite_classes` migration (required on
+  the free plan), and we use that SQLite-backed storage to persist room state.
 - **Client** → Cloudflare Pages (any static host works). The worker host is baked
   in at build time via `VITE_PARTYKIT_HOST`.
 - **CI:** pushing to `master` runs `.github/workflows/deploy.yml` →
@@ -161,7 +162,8 @@ Server and client deploy separately, both on Cloudflare's **free** tier.
 > limits, free DO tier, and the `partysocket` client is unchanged.
 
 > **Cost:** $0 for our scale. Free Workers = 100k requests/day; a few friends are
-> a fraction of a percent. In-memory room state means no storage billing.
+> a fraction of a percent. Persisted room state is a few KB of DO storage per
+> active room — negligible on the free tier.
 
 See [README.md](README.md) for exact commands.
 
@@ -200,6 +202,10 @@ See [README.md](README.md) for exact commands.
   exclusive, so one alarm slot serves both.
 - ✅ Emoji reactions — an ephemeral `reaction` message relayed by the server
   (never stored in state) that floats over the reacting player's token.
+- ✅ Room persistence — the whole `RoomState` is mirrored into the DO's own
+  SQLite storage on each change and reloaded on cold start, so a match survives a
+  worker restart / deploy / eviction (reconnecting members resume where they
+  left off). The blob is dropped once a match is abandoned.
 - ✅ "Your turn" + "trade offer" notifications — a chime (distinct ding for an
   offer addressed to you) plus a flashing tab title when backgrounded
   (`useTabAlert`, coordinated so concurrent alerts don't fight over the title).
@@ -237,9 +243,10 @@ See [README.md](README.md) for exact commands.
   decoupled from rendering.
 - **The log is data, not strings.** Entries are `{ key, params }` and cards are
   ids; the client localizes them. Tile names stay as proper nouns.
-- **No database.** Room state is in the DO's memory; when the room empties, it's
-  gone. localStorage only holds `playerId`, nickname, and UI settings — never
-  shared game state (it can't sync between users).
+- **No external database.** Room state lives in the DO's memory and is mirrored
+  into that same DO's SQLite storage (reloaded on cold start); it's dropped when
+  a match is abandoned. localStorage only holds `playerId`, nickname, and UI
+  settings — never shared game state (it can't sync between users).
 
 ---
 
@@ -247,8 +254,6 @@ See [README.md](README.md) for exact commands.
 
 Not yet done — rough priority order:
 
-- **Room persistence** — mirror `RoomState` into the DO's SQLite storage so a
-  match survives a worker restart/eviction.
 - **House/hotel scarcity** (32/12 bank) for full authenticity.
 - **Player cap > 8** would need more token colors.
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow

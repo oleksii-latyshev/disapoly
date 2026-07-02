@@ -4,8 +4,9 @@
  *
  * One DO instance per room id. It owns the room state, applies validated client
  * intents through the pure `applyClientMessage` reducer, and broadcasts the full
- * state. No database: state lives only in this object's memory for the duration
- * of the match.
+ * state. The state is mirrored into the DO's own (SQLite-backed) storage on each
+ * change and reloaded on cold start, so a match survives a worker restart,
+ * deploy, or eviction — no external database needed.
  *
  * Run locally: `bun run dev:party`  (wrangler dev, no account needed).
  * Deploy:      `bun run deploy:party` (needs `wrangler login`).
@@ -41,6 +42,9 @@ const ABANDON_MS = 60_000
 /** Which purpose the single DO alarm is currently serving, if any. */
 type AlarmKind = "skip" | "abandon" | null
 
+/** Storage key under which the whole room state is persisted. */
+const STORAGE_KEY = "room"
+
 /** Per-connection state: which player this socket belongs to (after join). */
 type ConnState = { playerId?: string }
 
@@ -52,9 +56,31 @@ export class DisapolyServer extends Server<Env> {
   private state: RoomState = createRoom("")
   private alarmKind: AlarmKind = null
 
-  onStart() {
-    // `this.name` is the DO name == the room id used in the URL.
-    this.state = createRoom(this.name)
+  async onStart() {
+    // Reload a persisted match after a restart/deploy/eviction; otherwise start
+    // fresh. `this.name` is the DO name == the room id used in the URL.
+    const saved = await this.ctx.storage.get<RoomState>(STORAGE_KEY)
+    if (saved) {
+      // Every socket dropped on restart — members flip back to connected as they
+      // rejoin. Clear the stale countdown; `syncAlarm` re-derives it on rejoin.
+      this.state = {
+        ...saved,
+        autoSkipAt: null,
+        members: saved.members.map((m) => ({ ...m, connected: false })),
+      }
+    } else {
+      this.state = createRoom(this.name)
+    }
+  }
+
+  /** Mirror the current state into DO storage (fire-and-forget; durable at gate). */
+  private persist() {
+    void this.ctx.storage.put(STORAGE_KEY, this.state)
+  }
+
+  /** Drop the persisted state once a match is over and the room is dead. */
+  private clearPersisted() {
+    void this.ctx.storage.delete(STORAGE_KEY)
   }
 
   onConnect(connection: Connection<ConnState>) {
@@ -91,6 +117,7 @@ export class DisapolyServer extends Server<Env> {
     }
 
     this.syncAlarm()
+    this.persist()
     this.broadcast(this.encode())
   }
 
@@ -99,6 +126,7 @@ export class DisapolyServer extends Server<Env> {
     if (!playerId) return
     this.state = setConnected(this.state, playerId, false)
     this.syncAlarm()
+    this.persist()
     this.broadcast(this.encode())
   }
 
@@ -108,13 +136,18 @@ export class DisapolyServer extends Server<Env> {
    */
   async onAlarm() {
     this.alarmKind = null // this alarm has now fired
+    let abandoned = false
     if (shouldAutoSkip(this.state)) {
       this.state = autoSkip(this.state)
       this.state = { ...this.state, autoSkipAt: null }
     } else if (isAbandonable(this.state)) {
       this.state = abandonMatch(this.state)
+      abandoned = true
     }
     this.syncAlarm() // a chained skip or a fresh grace period may be needed
+    // An abandoned match is dead — drop its blob; otherwise keep it durable.
+    if (abandoned) this.clearPersisted()
+    else this.persist()
     this.broadcast(this.encode())
   }
 
