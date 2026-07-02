@@ -2,6 +2,7 @@ import type { PlayerSetup } from "@/game"
 import { useGame } from "@/hooks/useGame"
 import { useGameSounds } from "@/hooks/useGameSounds"
 
+import { AuctionPanel } from "./AuctionPanel"
 import { CardBanner } from "./CardBanner"
 import { GameBoard } from "./GameBoard"
 import { GameEvents } from "./GameEvents"
@@ -31,6 +32,7 @@ export function GameScreen({
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">
         <TurnControls state={state} send={send} onNewGame={onNewGame} />
+        <AuctionPanel state={state} send={send} />
         {state.lastCard && <CardBanner card={state.lastCard} />}
         <ManagePanel state={state} send={send} />
         <TradePanel state={state} send={send} />

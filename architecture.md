@@ -173,6 +173,9 @@ See [README.md](README.md) for exact commands.
 
 - ✅ 40-tile board, 2×d6 dice, doubles (extra turn / 3× → jail), GO payout.
 - ✅ Buying, rent (monopoly ×2, railroad by count, utility by dice), taxes.
+- ✅ Auction on a declined/unaffordable tile — sequential bidding among all
+  players (`auction` phase; `PLACE_BID`/`PASS_BID`), high bidder wins or the
+  bank keeps it if nobody bids. Bids are server-stamped (spoof-proof).
 - ✅ Monopolies + houses/hotels with the even-building rule; sell buildings.
 - ✅ Mortgage / unmortgage; automatic liquidation → bankruptcy.
 - ✅ Jail: roll for doubles (no extra turn), pay the fine, or use a card; forced
@@ -244,8 +247,6 @@ See [README.md](README.md) for exact commands.
 
 Not yet done — rough priority order:
 
-- **Auction on declined purchase** (classic rule; currently a declined tile stays
-  with the bank).
 - **Room persistence** — mirror `RoomState` into the DO's SQLite storage so a
   match survives a worker restart/eviction.
 - **House/hotel scarcity** (32/12 bank) for full authenticity.

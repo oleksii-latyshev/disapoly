@@ -128,9 +128,9 @@ function start(state: RoomState, senderId: string): RoomState {
 }
 
 /**
- * Forward a game action. Trade actions are allowed out of turn (the server
- * stamps the sender's id so it can't be spoofed); everything else is gated to
- * the player whose turn it is.
+ * Forward a game action. Trade and auction-bid actions are allowed out of turn
+ * (the server stamps the sender's id so it can't be spoofed); everything else is
+ * gated to the player whose turn it is.
  */
 function action(
   state: RoomState,
@@ -149,8 +149,12 @@ function action(
     }
   } else if (
     gameAction.type === "RESPOND_TRADE" ||
-    gameAction.type === "CANCEL_TRADE"
+    gameAction.type === "CANCEL_TRADE" ||
+    gameAction.type === "PLACE_BID" ||
+    gameAction.type === "PASS_BID"
   ) {
+    // Out-of-turn actions: stamp the sender so bids/responses can't be spoofed.
+    // The reducer still checks it's actually this player's move (bid rotation).
     stamped = { ...gameAction, playerId: senderId }
   } else {
     const current = state.game.players[state.game.currentPlayerIndex]

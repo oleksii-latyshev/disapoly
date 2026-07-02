@@ -92,7 +92,25 @@ export type Player = {
 export type TurnPhase =
   | "awaiting-roll" // current player may roll the dice
   | "awaiting-buy" // current player landed on an unowned tile they can afford
+  | "auction" // a declined/unaffordable tile is up for auction among all players
   | "awaiting-end" // resolution done, current player must end the turn
+
+/**
+ * A live auction for one tile, triggered when the player who landed on it
+ * declines (or can't afford) the purchase. Bidding is sequential: `bidderOrder`
+ * fixes the rotation and `currentBidderId` points at whoever must act next;
+ * each acts by raising above `highBid` or passing (leaving `activeBidderIds`).
+ * Ends when only the high bidder remains (they win) or everyone passes (bank
+ * keeps the tile).
+ */
+export type AuctionState = {
+  tileId: number
+  highBid: number
+  highBidderId: string | null
+  bidderOrder: string[]
+  activeBidderIds: string[]
+  currentBidderId: string
+}
 
 /** A log param is plain text/number, or `{ t }` for a translatable value. */
 export type LogParam = string | number | { t: string }
@@ -139,6 +157,8 @@ export type GameState = {
   doublesCount: number
   /** Tile id awaiting a buy/decline decision, or null. */
   pendingPurchase: number | null
+  /** Live auction for a declined/unaffordable tile, or null. */
+  auction: AuctionState | null
   /** Seed for the deterministic PRNG; advances on every roll. */
   rngSeed: number
   /** Chance / Community Chest draw piles. */
@@ -163,6 +183,9 @@ export type GameAction =
   | { type: "BUY_PROPERTY" }
   | { type: "DECLINE_PROPERTY" }
   | { type: "END_TURN" }
+  // Auction — bids are allowed out of turn; the server stamps the bidder's id.
+  | { type: "PLACE_BID"; amount: number; playerId: string }
+  | { type: "PASS_BID"; playerId: string }
   // Property management — legal on your own turn outside the buy step.
   | { type: "BUILD_HOUSE"; tileId: number }
   | { type: "SELL_HOUSE"; tileId: number }

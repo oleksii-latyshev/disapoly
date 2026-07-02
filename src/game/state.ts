@@ -60,6 +60,7 @@ export function createInitialState(
     dice: null,
     doublesCount: 0,
     pendingPurchase: null,
+    auction: null,
     rngSeed: cc.seed,
     chance,
     chest,

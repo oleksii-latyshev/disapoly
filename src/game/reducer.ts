@@ -25,11 +25,13 @@ import {
   historyPoint,
   isTradeValid,
   mortgageValue,
+  playerById,
   rentFor,
   tileDef,
   unmortgageCost,
 } from "./state"
 import type {
+  AuctionState,
   GameAction,
   GameState,
   LogParam,
@@ -53,6 +55,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "FORCE_END_TURN":
       // Abandon the current player's turn from any phase (disconnect skip).
       return endTurn(clone(state))
+    case "PLACE_BID":
+      return state.phase === "auction"
+        ? placeBid(clone(state), action.playerId, action.amount)
+        : state
+    case "PASS_BID":
+      return state.phase === "auction"
+        ? passBid(clone(state), action.playerId)
+        : state
     case "BUILD_HOUSE":
       return canManage(state) ? buildHouse(clone(state), action.tileId) : state
     case "SELL_HOUSE":
@@ -287,6 +297,7 @@ function resolveLanding(d: GameState, diceSum: number): void {
             tile: def.name,
             price: def.price,
           })
+          openAuction(d, def.id)
         }
       } else if (tile.ownerId !== player.id) {
         const rent = rentFor(d, def.id, diceSum)
@@ -405,10 +416,112 @@ function buy(d: GameState): GameState {
 
 function decline(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
-  const def = tileDef(d.pendingPurchase!)
-  log(d, "log.declinedBuy", { name: player.nickname, tile: def.name })
+  const tileId = d.pendingPurchase!
+  log(d, "log.declinedBuy", { name: player.nickname, tile: tileDef(tileId).name })
   d.pendingPurchase = null
-  d.phase = "awaiting-end" // clear the buy gate so settle() can recompute
+  // A declined tile goes to auction among all players (classic rule).
+  return openAuction(d, tileId)
+}
+
+// --- auction (declined-purchase rule) ---
+
+/**
+ * Open an auction for `tileId`. Bidding rotates through the active (non-bankrupt)
+ * players starting from the one who landed on the tile.
+ */
+function openAuction(d: GameState, tileId: number): GameState {
+  const order = activePlayers(d).map((p) => p.id)
+  if (order.length === 0) {
+    d.phase = "awaiting-end"
+    return d
+  }
+  // Rotate the order so bidding starts with the current player.
+  const start = Math.max(0, order.indexOf(d.players[d.currentPlayerIndex].id))
+  const rotated = [...order.slice(start), ...order.slice(0, start)]
+  d.auction = {
+    tileId,
+    highBid: 0,
+    highBidderId: null,
+    bidderOrder: rotated,
+    activeBidderIds: [...rotated],
+    currentBidderId: rotated[0],
+  }
+  d.phase = "auction"
+  log(d, "log.auctionStart", { tile: tileDef(tileId).name })
+  return d
+}
+
+/** The next still-active bidder after `fromId` in the fixed rotation, if any. */
+function nextActiveBidder(a: AuctionState, fromId: string): string | null {
+  const order = a.bidderOrder
+  const start = order.indexOf(fromId)
+  for (let i = 1; i <= order.length; i++) {
+    const id = order[(start + i) % order.length]
+    if (a.activeBidderIds.includes(id)) return id
+  }
+  return null
+}
+
+function placeBid(d: GameState, playerId: string, amount: number): GameState {
+  const a = d.auction
+  if (!a || playerId !== a.currentBidderId) return d
+  if (!a.activeBidderIds.includes(playerId)) return d
+  const bidder = playerById(d, playerId)
+  if (!bidder) return d
+  if (!Number.isInteger(amount) || amount <= a.highBid || amount > bidder.balance) {
+    return d
+  }
+  a.highBid = amount
+  a.highBidderId = playerId
+  log(d, "log.bid", {
+    name: bidder.nickname,
+    amount,
+    tile: tileDef(a.tileId).name,
+  })
+  const next = nextActiveBidder(a, playerId)
+  if (next) a.currentBidderId = next
+  return resolveAuctionIfDone(d)
+}
+
+function passBid(d: GameState, playerId: string): GameState {
+  const a = d.auction
+  if (!a || playerId !== a.currentBidderId) return d
+  if (playerId === a.highBidderId) return d // the leader can't fold their own bid
+  if (!a.activeBidderIds.includes(playerId)) return d
+  const bidder = playerById(d, playerId)
+  log(d, "log.auctionPass", { name: bidder?.nickname ?? "?" })
+  a.activeBidderIds = a.activeBidderIds.filter((id) => id !== playerId)
+  const next = nextActiveBidder(a, playerId)
+  if (next) a.currentBidderId = next
+  return resolveAuctionIfDone(d)
+}
+
+/**
+ * Close the auction if it's decided: the high bidder wins once they're the only
+ * one left in, or the tile stays with the bank if everyone passed without a bid.
+ * Then hand back to the normal turn `settle`.
+ */
+function resolveAuctionIfDone(d: GameState): GameState {
+  const a = d.auction!
+  const decided =
+    (a.highBidderId !== null && a.activeBidderIds.length <= 1) ||
+    a.activeBidderIds.length === 0
+  if (!decided) return d
+
+  if (a.highBidderId !== null && a.highBid > 0) {
+    const winner = playerById(d, a.highBidderId)!
+    winner.balance -= a.highBid
+    d.tiles[a.tileId].ownerId = winner.id
+    log(d, "log.auctionWon", {
+      name: winner.nickname,
+      tile: tileDef(a.tileId).name,
+      price: a.highBid,
+    })
+  } else {
+    log(d, "log.auctionNoBids", { tile: tileDef(a.tileId).name })
+  }
+  d.auction = null
+  d.phase = "awaiting-end" // clear the auction gate so settle() can recompute
   return settle(d)
 }
 
@@ -416,6 +529,7 @@ function endTurn(d: GameState): GameState {
   d.doublesCount = 0
   d.pendingPurchase = null
   d.lastCard = null
+  d.auction = null
 
   const count = d.players.length
   let next = d.currentPlayerIndex
@@ -494,7 +608,7 @@ function unmortgage(d: GameState, tileId: number): GameState {
  */
 function settle(d: GameState): GameState {
   if (d.status !== "playing") return d
-  if (d.phase === "awaiting-buy") return d
+  if (d.phase === "awaiting-buy" || d.phase === "auction") return d
 
   const player = d.players[d.currentPlayerIndex]
   const isDouble = !!d.dice && d.dice[0] === d.dice[1]
@@ -508,7 +622,9 @@ function settle(d: GameState): GameState {
 /** Like `settle`, but never grants an extra roll (a jail-exit roll doesn't). */
 function settleNoExtra(d: GameState): GameState {
   if (d.status !== "playing") return d
-  if (d.phase !== "awaiting-buy") d.phase = "awaiting-end"
+  if (d.phase !== "awaiting-buy" && d.phase !== "auction") {
+    d.phase = "awaiting-end"
+  }
   return d
 }
 
@@ -614,6 +730,13 @@ function clone(state: GameState): GameState {
     tiles: state.tiles.map((t) => ({ ...t })),
     chance: { order: [...state.chance.order], pos: state.chance.pos },
     chest: { order: [...state.chest.order], pos: state.chest.pos },
+    auction: state.auction
+      ? {
+          ...state.auction,
+          bidderOrder: [...state.auction.bidderOrder],
+          activeBidderIds: [...state.auction.activeBidderIds],
+        }
+      : null,
     log: [...state.log],
   }
 }

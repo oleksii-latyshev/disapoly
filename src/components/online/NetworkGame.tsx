@@ -8,6 +8,7 @@ import { useT } from "@/i18n"
 import { useGameSounds } from "@/hooks/useGameSounds"
 import { useTabAlert } from "@/hooks/useTabAlert"
 
+import { AuctionPanel } from "@/components/game/AuctionPanel"
 import { CardBanner } from "@/components/game/CardBanner"
 import { GameBoard } from "@/components/game/GameBoard"
 import { GameEvents } from "@/components/game/GameEvents"
@@ -108,6 +109,11 @@ export function NetworkGame({
           onNewGame={() => send({ type: "reset" })}
           localPlayerId={self?.id}
           canReset={self?.isHost ?? false}
+        />
+        <AuctionPanel
+          state={game}
+          send={(action) => send({ type: "action", action })}
+          localPlayerId={self?.id}
         />
         {game.lastCard && <CardBanner card={game.lastCard} />}
         <ManagePanel
