@@ -96,6 +96,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "details.tax": "Tax",
 
     "manage.title": "Your properties",
+    "manage.supplyTitle": "Houses / hotels left in the bank",
     "manage.empty": "You don’t own any properties yet.",
     "manage.mortgaged": "(mortgaged)",
     "manage.build": "Build (${cost})",
@@ -323,6 +324,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "details.tax": "Налог",
 
     "manage.title": "Твоё имущество",
+    "manage.supplyTitle": "Осталось домов / отелей в банке",
     "manage.empty": "У тебя пока нет участков.",
     "manage.mortgaged": "(заложено)",
     "manage.build": "Построить (${cost})",

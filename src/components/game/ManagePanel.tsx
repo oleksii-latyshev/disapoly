@@ -45,9 +45,17 @@ export function ManagePanel({
 
   return (
     <div className="flex flex-col gap-1.5 rounded-md border bg-card p-3">
-      <span className="text-xs font-medium text-muted-foreground">
-        {t("manage.title")}
-      </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted-foreground">
+          {t("manage.title")}
+        </span>
+        <span
+          className="text-[11px] tabular-nums text-muted-foreground"
+          title={t("manage.supplyTitle")}
+        >
+          🏠 {state.bank.houses} · 🏨 {state.bank.hotels}
+        </span>
+      </div>
 
       {tiles.length === 0 && (
         <p className="text-xs text-muted-foreground">{t("manage.empty")}</p>

@@ -179,6 +179,11 @@ See [README.md](README.md) for exact commands.
   players (`auction` phase; `PLACE_BID`/`PASS_BID`), high bidder wins or the
   bank keeps it if nobody bids. Bids are server-stamped (spoof-proof).
 - ✅ Monopolies + houses/hotels with the even-building rule; sell buildings.
+- ✅ Finite building supply (32 houses / 12 hotels in `bank`): you can only build
+  when the bank stocks the piece, a hotel returns its 4 houses to the bank, and
+  sold/reclaimed buildings flow back — enabling the classic "house shortage"
+  tactic. (Selling a hotel is softened if the bank is short on houses so
+  liquidation never deadlocks.)
 - ✅ Mortgage / unmortgage; automatic liquidation → bankruptcy.
 - ✅ Jail: roll for doubles (no extra turn), pay the fine, or use a card; forced
   fine on the 3rd failed attempt.
@@ -254,7 +259,6 @@ See [README.md](README.md) for exact commands.
 
 Not yet done — rough priority order:
 
-- **House/hotel scarcity** (32/12 bank) for full authenticity.
 - **Player cap > 8** would need more token colors.
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow
   long (currently full-state broadcast; fine at this scale).

@@ -3,6 +3,8 @@
 import {
   BOARD,
   GROUP_TILE_IDS,
+  HOTELS_SUPPLY,
+  HOUSES_SUPPLY,
   PLAYER_COLORS,
   RAILROAD_RENT,
   STARTING_BALANCE,
@@ -61,6 +63,7 @@ export function createInitialState(
     doublesCount: 0,
     pendingPurchase: null,
     auction: null,
+    bank: { houses: HOUSES_SUPPLY, hotels: HOTELS_SUPPLY },
     rngSeed: cc.seed,
     chance,
     chest,
@@ -257,6 +260,9 @@ export function canBuildHouse(
   if (!hasMonopoly(state, playerId, def.group)) return false
   // Even building: never more than one ahead of the least-built tile.
   if (tile.houses !== groupHouseRange(state, def.group).min) return false
+  // The bank must still stock the piece being placed (house, or hotel on the 5th).
+  const needsHotel = tile.houses === 4
+  if (needsHotel ? state.bank.hotels < 1 : state.bank.houses < 1) return false
   const player = playerById(state, playerId)
   return !!player && player.balance >= def.houseCost
 }

@@ -122,6 +122,9 @@ export type LogEntry = {
   params?: Record<string, LogParam>
 }
 
+/** The bank's remaining building stock (classic 32 houses / 12 hotels). */
+export type BankSupply = { houses: number; hotels: number }
+
 /** Draw order (card indices) plus a pointer into it; reshuffles on wrap. */
 export type DeckState = { order: number[]; pos: number }
 
@@ -159,6 +162,8 @@ export type GameState = {
   pendingPurchase: number | null
   /** Live auction for a declined/unaffordable tile, or null. */
   auction: AuctionState | null
+  /** Remaining houses/hotels the bank can still hand out. */
+  bank: BankSupply
   /** Seed for the deterministic PRNG; advances on every roll. */
   rngSeed: number
   /** Chance / Community Chest draw piles. */

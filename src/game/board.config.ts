@@ -66,6 +66,10 @@ export const STARTING_BALANCE = 1500
 export const JAIL_TILE_ID = 10
 export const JAIL_FINE = 50
 
+/** The bank's finite building supply (classic scarcity: build only if in stock). */
+export const HOUSES_SUPPLY = 32
+export const HOTELS_SUPPLY = 12
+
 /** Rent for a railroad by the number the owner holds (1–4). */
 export const RAILROAD_RENT = [25, 50, 100, 200] as const
 

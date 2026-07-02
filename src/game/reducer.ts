@@ -546,12 +546,53 @@ function endTurn(d: GameState): GameState {
 
 // --- property management (Stage 2) ---
 
+/**
+ * Place one building on a tile and draw it from the bank. Precondition: the
+ * bank stocks the piece (checked by `canBuildHouse`). Upgrading to a hotel
+ * (the 5th step) takes a hotel and returns its 4 houses to the bank.
+ */
+function takeBuilding(d: GameState, tileId: number): void {
+  const tile = d.tiles[tileId]
+  tile.houses += 1
+  if (tile.houses === 5) {
+    d.bank.hotels -= 1
+    d.bank.houses += 4
+  } else {
+    d.bank.houses -= 1
+  }
+}
+
+/**
+ * Remove one building from a tile, returning it to the bank. Selling a hotel
+ * "breaks down" into 4 houses drawn from the bank; if the bank is short (rule A
+ * softened), we take whatever's available so liquidation never deadlocks.
+ */
+function returnBuilding(d: GameState, tileId: number): void {
+  const tile = d.tiles[tileId]
+  const wasHotel = tile.houses === 5
+  tile.houses -= 1
+  if (wasHotel) {
+    d.bank.hotels += 1
+    d.bank.houses -= Math.min(4, d.bank.houses)
+  } else {
+    d.bank.houses += 1
+  }
+}
+
+/** Return all of a tile's buildings to the bank (e.g. on bankruptcy transfer). */
+function reclaimBuildings(d: GameState, tileId: number): void {
+  const tile = d.tiles[tileId]
+  if (tile.houses === 5) d.bank.hotels += 1
+  else d.bank.houses += tile.houses
+  tile.houses = 0
+}
+
 function buildHouse(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
   if (!canBuildHouse(d, player.id, tileId)) return d
   const def = tileDef(tileId) as StreetTile
   player.balance -= def.houseCost
-  d.tiles[tileId].houses += 1
+  takeBuilding(d, tileId)
   log(d, d.tiles[tileId].houses === 5 ? "log.builtHotel" : "log.builtHouse", {
     name: player.nickname,
     tile: def.name,
@@ -565,7 +606,7 @@ function sellHouse(d: GameState, tileId: number): GameState {
   if (!canSellHouse(d, player.id, tileId)) return d
   const def = tileDef(tileId) as StreetTile
   const refund = Math.floor(def.houseCost / 2)
-  d.tiles[tileId].houses -= 1
+  returnBuilding(d, tileId)
   player.balance += refund
   log(d, "log.soldBuilding", { name: player.nickname, tile: def.name, refund })
   return d
@@ -664,10 +705,12 @@ function pay(
   ) {
     d.pendingTrade = null
   }
-  for (const tile of d.tiles) {
+  for (let id = 0; id < d.tiles.length; id++) {
+    const tile = d.tiles[id]
     if (tile.ownerId === debtor.id) {
+      // Buildings can't be transferred — they go back to the bank's stock.
+      reclaimBuildings(d, id)
       tile.ownerId = creditorId
-      tile.houses = 0
       // A creditor inherits the mortgage; assets returned to the bank are clear.
       if (!creditorId) tile.mortgaged = false
     }
@@ -687,7 +730,7 @@ function raiseCash(d: GameState, debtor: Player, target: number): void {
     const tile = d.tiles[def.id]
     if (tile.ownerId !== debtor.id) continue
     while (tile.houses > 0 && debtor.balance < target) {
-      tile.houses -= 1
+      returnBuilding(d, def.id)
       debtor.balance += Math.floor(def.houseCost / 2)
     }
   }
@@ -730,6 +773,7 @@ function clone(state: GameState): GameState {
     tiles: state.tiles.map((t) => ({ ...t })),
     chance: { order: [...state.chance.order], pos: state.chance.pos },
     chest: { order: [...state.chest.order], pos: state.chest.pos },
+    bank: { ...state.bank },
     auction: state.auction
       ? {
           ...state.auction,
