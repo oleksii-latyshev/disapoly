@@ -1,17 +1,40 @@
-name: Deploy
+name: CI & Deploy
 
 on:
   push:
     branches: [master]
+  pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: deploy
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  # Gate: typecheck, lint, and the game-core test suite. Runs on every push
+  # and PR; a failure here blocks the deploy job below.
+  check:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Test
+        run: bun run test
+
+  # Deploys only after checks pass, and never for pull requests.
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 

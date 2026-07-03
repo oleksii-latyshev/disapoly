@@ -29,11 +29,12 @@ history see the git log; for how to run/deploy see [README.md](README.md).
 |-------|------|
 | UI | **React 19** + **Vite** + **TypeScript** |
 | Styling | **Tailwind CSS 4**, **shadcn + Base UI** components |
-| Animation | **Motion** (token movement, dice) |
+| Animation | **Motion** (board tilt, tokens, dice, card reveal, banners) |
 | Charts | **Recharts** (net-worth chart, lazy-loaded) |
 | Icons | **lucide-react** |
 | Realtime server | **Cloudflare Durable Object** via **`partyserver`**, client via **`partysocket`** |
 | Sound | **Web Audio API** (synthesized, no assets) |
+| Tests | **Vitest** — unit tests for the pure game core (`src/game/__tests__/`) |
 | Deploy | Cloudflare **Workers** (server) + **Pages** (client), GitHub Actions |
 
 ---
@@ -151,9 +152,11 @@ Server and client deploy separately, both on Cloudflare's **free** tier.
   the free plan), and we use that SQLite-backed storage to persist room state.
 - **Client** → Cloudflare Pages (any static host works). The worker host is baked
   in at build time via `VITE_PARTYKIT_HOST`.
-- **CI:** pushing to `master` runs `.github/workflows/deploy.yml` →
-  `bun run deploy:all` (worker → client build → Pages). Needs repo secrets
-  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
+- **CI/CD:** `.github/workflows/deploy.yml` runs a `check` job (typecheck →
+  lint → **Vitest** game-core tests) on every push and pull request; on a
+  `master` push a `deploy` job then runs `bun run deploy:all` (worker → client
+  build → Pages), but **only if the checks pass** — a broken rule can't ship.
+  Needs repo secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
 
 > **Why self-hosted Cloudflare, not PartyKit's cloud?** PartyKit's hosted
 > platform (`*.partykit.dev`) is in maintenance after the Cloudflare acquisition
@@ -224,15 +227,38 @@ See [README.md](README.md) for exact commands.
 
 - ✅ Board themes (Classic / Minimal / Neon), tile icons, house badges, monopoly
   highlight, click-a-tile-for-rent-details.
-- ✅ Animated token movement + 3D dice (Motion), respects
-  `prefers-reduced-motion`. Token travel is paced to stay legible (per-tile hops
-  + a landing pop), so jumps to jail / card destinations read clearly.
-- ✅ **Visual juice** — center-screen event callouts for pivotal moments (bought
-  / rent / tax / jail / bankrupt, derived from the log), a slot-machine card
-  reveal that rattles through effects before landing, floating +$/−$ deltas over
-  tokens, and win confetti. Bundled in `GameEvents` + `TokenLayer`; shared by
-  both play modes and gated by reduced motion.
-- ✅ Procedural sound effects (Web Audio); mute toggle.
+- ✅ **Premium motion pass** (every effect below is gated by
+  `prefers-reduced-motion`):
+  - 3D board tilt — the board tilts a few degrees toward the mouse in
+    perspective, with a depth shadow that shifts against the tilt (`BoardTilt`;
+    mouse-only, touch never tilts).
+  - Sphere-shaded 3D tokens with a ground shadow that detaches as the piece
+    arcs. Travel is paced to stay legible (per-tile hop arcs + a landing pop),
+    so jumps to jail / card destinations read clearly.
+  - Dice: 3D cube tumble plus a throw arc — a landing bounce with a floor
+    shadow that contracts mid-air.
+  - Card reveal flips in with 3D perspective and gets a shine sweep when the
+    result settles; house/hotel badges drop onto the tile with a spring bounce
+    and a construction dust puff; the ownership bar sweeps in on purchase.
+  - Turn-handoff banner (`TurnBanner`) — a ribbon in the next player's color
+    expands across the screen while their name slides through.
+  - Ambient drifting background gradients, a periodic logo shine, and rolling
+    money counters with green/red gain-loss flashes in the players list.
+- ✅ **Visual juice** — event callouts for pivotal moments (bought / rent / tax
+  / jail / bankrupt, derived from the log) anchored inside the board above the
+  dice (`EventAnnouncer`, rendered by `GameBoard`), a slot-machine card reveal
+  that rattles through effects before landing, floating +$/−$ deltas over
+  tokens, and win confetti. Shared by both play modes.
+- ✅ **Landing-synced feedback** — effects caused by landing on a tile (card
+  reveal, event callouts, card/jail sounds, money deltas) wait for the token's
+  travel animation via a shared `settleDelayMs` helper (`board-meta.ts`), so
+  the outcome isn't revealed before the piece arrives. Stationary events (buy,
+  trade, auction) stay instant, and reduced motion drops the delay entirely.
+- ✅ Procedural sound effects (Web Audio) — every voice feeds a shared bus with
+  a synthesized room reverb (generated impulse response) and a gentle
+  compressor; per-event sound design: randomized dice rattle, cash
+  "cha-ching", hammer knocks, card swish, bell-partial chimes, a metallic jail
+  clang, and a layered win fanfare. Mute toggle.
 - ✅ Net-worth chart (Stats dialog) + end-game results overlay.
 - ✅ i18n (en/ru) across UI, game log (structured events), and cards.
 - ✅ Hot-seat mode preserved as an offline option.
@@ -263,9 +289,28 @@ See [README.md](README.md) for exact commands.
 
 Not yet done — rough priority order:
 
-- **Player cap > 8** would need more token colors.
+- **Tests for the multiplayer authority.** The game core is covered by Vitest
+  (rolls, rent, auctions, building, cards, trades, bankruptcy — see
+  `src/game/__tests__/`), but `room.ts` (`applyClientMessage`: turn gating,
+  trade stamping, host-only actions, skip/abandon) isn't yet.
+- **Missing classic card nuances.** The Chance deck has no "advance to the
+  nearest Railroad (pay double rent)" / "nearest Utility (pay 10× dice)" cards
+  — only fixed-destination moves. Related: a movement card resolves in a single
+  state update, so the token glides straight to the final destination instead
+  of stopping on Chance first; sequencing it would need the reducer to split
+  the move into two phases.
+- **Choosable token pieces / avatars** — players are letter circles in a fixed
+  color palette; picking a piece (and freeing the palette) also unlocks a
+  **player cap > 8**.
+- **House-rule settings at game creation** — starting cash, GO payout, auction
+  on/off, Free Parking jackpot, and an online **turn timer** (the 30s
+  disconnect auto-skip exists, but a present-but-slow player can stall
+  forever).
+- **Bot players** — fill empty seats or play solo; the pure reducer makes a
+  heuristic AI cheap to run on either side of the wire.
+- **Spectators / late join, mini-chat.**
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow
   long (currently full-state broadcast; fine at this scale). The `log` is capped
   at 100 entries in state (`LOG_CAP`) so it no longer grows unbounded; `history`
   (net-worth chart) is still sent in full.
-- Spectators / late join, mini-chat, avatars.
+- **Sound volume slider** (currently mute-only).
