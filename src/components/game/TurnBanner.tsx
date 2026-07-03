@@ -20,6 +20,17 @@ export function TurnBanner({ state }: { state: GameState }) {
   const [banner, setBanner] = useState<Banner | null>(null)
   const prevId = useRef<string | null>(null)
   const nextKey = useRef(0)
+  // The hide timer lives in a ref and is never cancelled by effect re-runs:
+  // `state.players` is a fresh array on every update, so a cleanup-based timer
+  // would be cancelled by any action within the 1.6s window, freezing the
+  // banner on screen. Cleared on unmount or when a newer banner replaces it.
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current)
+    },
+    []
+  )
 
   useEffect(() => {
     const current =
@@ -37,8 +48,8 @@ export function TurnBanner({ state }: { state: GameState }) {
       name: current.nickname,
       color: current.color,
     })
-    const timer = setTimeout(() => setBanner(null), 1600)
-    return () => clearTimeout(timer)
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => setBanner(null), 1600)
   }, [state.currentPlayerIndex, state.status, state.players])
 
   return (

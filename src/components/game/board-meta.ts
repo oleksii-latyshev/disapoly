@@ -1,6 +1,6 @@
 /** Visual metadata for rendering the board: grid placement and group colors. */
 
-import type { ColorGroup, Player } from "@/game"
+import { BOARD_SIZE, type ColorGroup, type Player } from "@/game"
 
 /**
  * Map a tile id (0–39) to its cell in an 11×11 CSS grid. The perimeter runs
@@ -58,6 +58,42 @@ export function tokenTargets(players: Player[]): Map<string, TokenTarget> {
     targets.set(player.id, { x: c.x + dx, y: c.y + dy })
   }
   return targets
+}
+
+/**
+ * How long the token layer animates a move from `from` to `to` (seconds) —
+ * per-tile hops for forward rolls, a single glide for teleports. Must stay in
+ * sync with the travel animation in TokenLayer.
+ */
+export function travelSeconds(from: number, to: number): number {
+  const forward = (to - from + BOARD_SIZE) % BOARD_SIZE
+  if (forward >= 1 && forward <= 12) return Math.min(0.2 * forward, 2.2)
+  return 0.75
+}
+
+/** Snapshot of every player's position, for diffing across state updates. */
+export function positionsOf(players: Player[]): Map<string, number> {
+  return new Map(players.map((p) => [p.id, p.position]))
+}
+
+/**
+ * How long reactive UI (card reveal, callouts, sounds, money deltas) should
+ * wait so it lands *after* the moving token does: the longest travel among
+ * players who moved in this update, plus a small landing beat. 0 if nobody
+ * moved (e.g. a buy or trade), so stationary events stay instant.
+ */
+export function settleDelayMs(
+  prev: Map<string, number> | null,
+  players: Player[]
+): number {
+  if (!prev) return 0
+  let max = 0
+  for (const p of players) {
+    const before = prev.get(p.id)
+    if (before === undefined || before === p.position) continue
+    max = Math.max(max, travelSeconds(before, p.position))
+  }
+  return max === 0 ? 0 : Math.round(max * 1000) + 250
 }
 
 export const GROUP_COLOR: Record<ColorGroup, string> = {

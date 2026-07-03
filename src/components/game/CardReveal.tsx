@@ -6,6 +6,8 @@ import { CHANCE, COMMUNITY_CHEST, type DrawnCard, type GameState } from "@/game"
 import { useT } from "@/i18n"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
+import { positionsOf, settleDelayMs } from "./board-meta"
+
 type Deck = DrawnCard["deck"]
 
 type Reveal = {
@@ -47,13 +49,25 @@ export function CardReveal({ state }: { state: GameState }) {
   const reduce = usePrefersReducedMotion()
   const [reveal, setReveal] = useState<Reveal | null>(null)
 
-  const lastCard = state.lastCard
   const seen = useRef<DrawnCard | null>(null)
   const runId = useRef(0)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const prevPositions = useRef<Map<string, number> | null>(null)
+  // Pending timers must survive unrelated state updates (they'd otherwise be
+  // cancelled by any action landing mid-reveal), so clear on unmount only;
+  // a genuinely new draw clears them explicitly below.
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   useEffect(() => {
+    // The update that draws a card is the same one that moves the player onto
+    // the tile — hold the reveal until the token actually lands there.
+    const delay = reduce
+      ? 0
+      : settleDelayMs(prevPositions.current, state.players)
+    prevPositions.current = positionsOf(state.players)
+
     // Only react to a genuinely new draw (identity + id both change per draw).
+    const lastCard = state.lastCard
     const prev = seen.current
     seen.current = lastCard
     if (!lastCard) {
@@ -85,30 +99,35 @@ export function CardReveal({ state }: { state: GameState }) {
       return
     }
 
-    let face = pickFace(deck, cardId)
-    setReveal({ run, deck, faceId: face, tick: 0, settled: false })
+    const start = () => {
+      if (runId.current !== run) return
+      let face = pickFace(deck, cardId)
+      setReveal({ run, deck, faceId: face, tick: 0, settled: false })
 
-    const step = (i: number) => {
-      if (i >= SPINS) {
-        setReveal({ run, deck, faceId: cardId, tick: i, settled: true })
-        timers.current.push(
-          setTimeout(() => {
-            setReveal((r) => (r?.run === run ? null : r))
-          }, 1900)
-        )
-        return
+      const step = (i: number) => {
+        if (i >= SPINS) {
+          setReveal({ run, deck, faceId: cardId, tick: i, settled: true })
+          timers.current.push(
+            setTimeout(() => {
+              setReveal((r) => (r?.run === run ? null : r))
+            }, 1900)
+          )
+          return
+        }
+        face = i === SPINS - 1 ? cardId : pickFace(deck, face)
+        setReveal({
+          run,
+          deck,
+          faceId: face,
+          tick: i,
+          settled: i === SPINS - 1,
+        })
+        timers.current.push(setTimeout(() => step(i + 1), gapFor(i)))
       }
-      face = i === SPINS - 1 ? cardId : pickFace(deck, face)
-      setReveal({ run, deck, faceId: face, tick: i, settled: i === SPINS - 1 })
-      timers.current.push(setTimeout(() => step(i + 1), gapFor(i)))
+      timers.current.push(setTimeout(() => step(0), gapFor(0)))
     }
-    timers.current.push(setTimeout(() => step(0), gapFor(0)))
-
-    return () => {
-      for (const tm of timers.current) clearTimeout(tm)
-      timers.current = []
-    }
-  }, [lastCard, reduce])
+    timers.current.push(setTimeout(start, delay))
+  }, [state, reduce])
 
   const isChance = reveal?.deck === "chance"
   const accent = isChance ? "#f59e0b" : "#2563eb"

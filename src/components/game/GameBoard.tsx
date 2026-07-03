@@ -19,6 +19,7 @@ import { useBoardTheme } from "./board-theme"
 import { tileCell } from "./board-meta"
 import { BoardTilt } from "./BoardTilt"
 import { Dice } from "./Dice"
+import { EventAnnouncer } from "./EventAnnouncer"
 import { ReactionLayer } from "./ReactionLayer"
 import { TileDetails } from "./TileDetails"
 import { TokenLayer } from "./TokenLayer"
@@ -289,6 +290,7 @@ export function GameBoard({
 
             <TokenLayer state={state} />
             {reactions && <ReactionLayer state={state} reactions={reactions} />}
+            <EventAnnouncer state={state} />
           </div>
         </div>
       </BoardTilt>

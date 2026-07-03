@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react"
 
 import type { GameState } from "@/game"
+import { positionsOf, settleDelayMs } from "@/components/game/board-meta"
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import { useSound } from "@/sound/SoundProvider"
 
 /**
@@ -12,6 +14,7 @@ import { useSound } from "@/sound/SoundProvider"
  */
 export function useGameSounds(state: GameState, localPlayerId?: string): void {
   const { play } = useSound()
+  const reduce = usePrefersReducedMotion()
   const prevRef = useRef<GameState | null>(null)
 
   useEffect(() => {
@@ -19,8 +22,20 @@ export function useGameSounds(state: GameState, localPlayerId?: string): void {
     prevRef.current = state
     if (!prev) return // first render: just record the baseline
 
+    // Cues tied to landing on a tile (card draw, jail) wait for the token's
+    // travel animation, so the sound plays when the piece actually arrives.
+    const delay = reduce
+      ? 0
+      : settleDelayMs(positionsOf(prev.players), state.players)
+    const onLanding = (fn: () => void) => {
+      if (delay === 0) fn()
+      else setTimeout(fn, delay)
+    }
+
     if (prev.dice !== state.dice && state.dice) play("dice")
-    if (prev.lastCard !== state.lastCard && state.lastCard) play("card")
+    if (prev.lastCard !== state.lastCard && state.lastCard) {
+      onLanding(() => play("card"))
+    }
     if (!prev.pendingTrade && state.pendingTrade) {
       // A distinct chime when the offer is addressed to you.
       play(
@@ -55,9 +70,9 @@ export function useGameSounds(state: GameState, localPlayerId?: string): void {
     }
     for (let i = 0; i < state.players.length; i++) {
       if (state.players[i].inJail && !prev.players[i].inJail) {
-        play("jail")
+        onLanding(() => play("jail"))
         break
       }
     }
-  }, [state, play, localPlayerId])
+  }, [state, play, localPlayerId, reduce])
 }

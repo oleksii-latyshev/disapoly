@@ -18,6 +18,7 @@ import type { GameState, LogEntry } from "@/game"
 import { useT } from "@/i18n"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
+import { positionsOf, settleDelayMs } from "./board-meta"
 import { renderLog } from "./log-format"
 
 type Tone = "good" | "bad" | "neutral"
@@ -54,9 +55,11 @@ const ICON_CLASS: Record<Tone, string> = {
 type Callout = { id: number; text: string; tone: Tone; icon: LucideIcon }
 
 /**
- * Center-of-screen callouts for the pivotal, easy-to-miss moments (bought a
- * property, sent to jail, went bankrupt…). Derived from newly added log entries
- * — the same localized events the log shows — so it works in both play modes.
+ * Callouts for the pivotal, easy-to-miss moments (bought a property, sent to
+ * jail, went bankrupt…). Derived from newly added log entries — the same
+ * localized events the log shows — so it works in both play modes. Rendered as
+ * an absolute overlay inside the board, stacked above the dice; when the
+ * triggering update also moved a token, the callout waits for it to land.
  */
 export function EventAnnouncer({ state }: { state: GameState }) {
   const t = useT()
@@ -64,9 +67,19 @@ export function EventAnnouncer({ state }: { state: GameState }) {
   const [items, setItems] = useState<Callout[]>([])
   // Start from the latest entry so a fresh mount / reconnect doesn't replay history.
   const lastId = useRef<number | null>(null)
+  const prevPositions = useRef<Map<string, number> | null>(null)
+  // Show/hide timers survive unrelated effect re-runs (every state update
+  // would otherwise cancel them and strand callouts); cleared on unmount only.
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   useEffect(() => {
+    // Hold callouts until the moving token lands on its tile (rent, jail…).
+    const delay = reduce
+      ? 0
+      : settleDelayMs(prevPositions.current, state.players)
+    prevPositions.current = positionsOf(state.players)
+
     const seenUpTo = lastId.current
     const maxId = state.log.length ? state.log[state.log.length - 1].id : -1
     lastId.current = maxId
@@ -83,20 +96,20 @@ export function EventAnnouncer({ state }: { state: GameState }) {
       })
     if (picked.length === 0) return
 
-    setItems((cur) => [...cur, ...picked].slice(-3))
     const ids = new Set(picked.map((p) => p.id))
-    const tm = setTimeout(
-      () => setItems((cur) => cur.filter((c) => !ids.has(c.id))),
-      2600
-    )
-    timers.current.push(tm)
-    return () => clearTimeout(tm)
-  }, [state.log, t])
-
-  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+    const show = setTimeout(() => {
+      setItems((cur) => [...cur, ...picked].slice(-3))
+      const hide = setTimeout(
+        () => setItems((cur) => cur.filter((c) => !ids.has(c.id))),
+        2600
+      )
+      timers.current.push(hide)
+    }, delay)
+    timers.current.push(show)
+  }, [state, t, reduce])
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[12svh] z-30 flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none absolute inset-x-[6%] top-[11%] z-30 flex flex-col items-center gap-[max(4px,0.6cqw)]">
       <AnimatePresence>
         {items.map((c) => {
           const Icon = c.icon
@@ -113,12 +126,16 @@ export function EventAnnouncer({ state }: { state: GameState }) {
               }
               transition={{ duration: 0.25, ease: "easeOut" }}
               className={
-                "flex max-w-[min(90vw,26rem)] items-center gap-2.5 rounded-full border px-4 py-2 text-sm font-semibold shadow-lg backdrop-blur-sm " +
+                "flex max-w-full items-center gap-[max(6px,0.9cqw)] rounded-full border px-[max(10px,1.5cqw)] py-[max(4px,0.7cqw)] text-[length:max(10px,1.5cqw)] font-semibold shadow-lg backdrop-blur-sm " +
                 TONE_CLASS[c.tone]
               }
             >
-              <Icon className={"size-5 shrink-0 " + ICON_CLASS[c.tone]} />
-              <span className="min-w-0">{c.text}</span>
+              <Icon
+                className={
+                  "size-[max(13px,1.9cqw)] shrink-0 " + ICON_CLASS[c.tone]
+                }
+              />
+              <span className="min-w-0 truncate">{c.text}</span>
             </motion.div>
           )
         })}

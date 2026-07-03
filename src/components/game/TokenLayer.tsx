@@ -6,8 +6,11 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
 import {
+  positionsOf,
+  settleDelayMs,
   tileCenter,
   tokenTargets,
+  travelSeconds,
   type TokenTarget as Target,
 } from "./board-meta"
 
@@ -110,7 +113,7 @@ function Token({
       }
       xs[xs.length - 1] = target.x
       ys[ys.length - 1] = target.y
-      const duration = Math.min(0.2 * forward, 2.2)
+      const duration = travelSeconds(from, to)
       bounce(forward, "-55%", duration)
       animate(
         el,
@@ -120,11 +123,12 @@ function Token({
     } else {
       // Teleport (e.g. go to jail) or long card move: glide directly, a bit
       // slower so the jump is legible rather than an instant snap. One big arc.
-      bounce(1, "-130%", 0.75)
+      const duration = travelSeconds(from, to)
+      bounce(1, "-130%", duration)
       animate(
         el,
         { left: `${target.x}%`, top: `${target.y}%` },
-        { duration: 0.75, ease: "easeInOut" }
+        { duration, ease: "easeInOut" }
       ).then(pop, () => {})
     }
   }, [player.position, target.x, target.y, reduce])
@@ -200,13 +204,24 @@ export function TokenLayer({ state }: { state: GameState }) {
   // Floating money deltas, derived from each player's balance change.
   const [deltas, setDeltas] = useState<Delta[]>([])
   const prevBalances = useRef<Map<string, number> | null>(null)
+  const prevPositions = useRef<Map<string, number> | null>(null)
   const nextKey = useRef(0)
+  // Show/hide timers must survive unrelated effect re-runs (every state
+  // update recreates `state.players`), so they're only cleared on unmount.
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   useEffect(() => {
     const prev = prevBalances.current
+    const prevPos = prevPositions.current
     const nextMap = new Map(state.players.map((p) => [p.id, p.balance]))
     prevBalances.current = nextMap
+    prevPositions.current = positionsOf(state.players)
     if (!prev || reduce) return
+
+    // If this update also moved a token (rent, tax, GO…), hold the delta
+    // until the token lands so the money appears where the piece actually is.
+    const delay = settleDelayMs(prevPos, state.players)
 
     // Recompute targets here (rather than reading a render value) so the effect
     // stays self-contained and lint-clean.
@@ -229,15 +244,15 @@ export function TokenLayer({ state }: { state: GameState }) {
     if (spawned.length === 0) return
 
     const keys = new Set(spawned.map((d) => d.key))
-    // Ephemeral, self-clearing animation queue driven by balance changes — an
-    // effect is the right tool here (this can't be derived during render).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDeltas((cur) => [...cur, ...spawned])
-    const timer = setTimeout(
-      () => setDeltas((cur) => cur.filter((d) => !keys.has(d.key))),
-      1500
-    )
-    return () => clearTimeout(timer)
+    const show = setTimeout(() => {
+      setDeltas((cur) => [...cur, ...spawned])
+      const hide = setTimeout(
+        () => setDeltas((cur) => cur.filter((d) => !keys.has(d.key))),
+        1500
+      )
+      timers.current.push(hide)
+    }, delay)
+    timers.current.push(show)
   }, [state.players, reduce])
 
   return (
