@@ -379,7 +379,11 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
       return
     }
     case "moveTo": {
-      moveBy(d, player, (effect.tile - player.position + BOARD_SIZE) % BOARD_SIZE)
+      moveBy(
+        d,
+        player,
+        (effect.tile - player.position + BOARD_SIZE) % BOARD_SIZE
+      )
       resolveLanding(d, diceSum)
       return
     }
@@ -417,7 +421,10 @@ function buy(d: GameState): GameState {
 function decline(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
   const tileId = d.pendingPurchase!
-  log(d, "log.declinedBuy", { name: player.nickname, tile: tileDef(tileId).name })
+  log(d, "log.declinedBuy", {
+    name: player.nickname,
+    tile: tileDef(tileId).name,
+  })
   d.pendingPurchase = null
   // A declined tile goes to auction among all players (classic rule).
   return openAuction(d, tileId)
@@ -468,7 +475,11 @@ function placeBid(d: GameState, playerId: string, amount: number): GameState {
   if (!a.activeBidderIds.includes(playerId)) return d
   const bidder = playerById(d, playerId)
   if (!bidder) return d
-  if (!Number.isInteger(amount) || amount <= a.highBid || amount > bidder.balance) {
+  if (
+    !Number.isInteger(amount) ||
+    amount <= a.highBid ||
+    amount > bidder.balance
+  ) {
     return d
   }
   a.highBid = amount
@@ -683,7 +694,7 @@ function pay(
   creditorId: string | null
 ): void {
   const creditor = creditorId
-    ? d.players.find((p) => p.id === creditorId) ?? null
+    ? (d.players.find((p) => p.id === creditorId) ?? null)
     : null
 
   if (debtor.balance < amount) raiseCash(d, debtor, amount)
@@ -768,7 +779,11 @@ function checkGameOver(d: GameState): void {
  */
 const LOG_CAP = 100
 
-function log(d: GameState, key: string, params?: Record<string, LogParam>): void {
+function log(
+  d: GameState,
+  key: string,
+  params?: Record<string, LogParam>
+): void {
   d.log.push({ id: d.nextLogId, key, params })
   d.nextLogId += 1
   if (d.log.length > LOG_CAP) d.log = d.log.slice(-LOG_CAP)

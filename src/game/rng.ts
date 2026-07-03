@@ -25,10 +25,7 @@ export function rollDice(seed: number): {
   const second = nextRandom(first.seed)
   return {
     seed: second.seed,
-    dice: [
-      1 + Math.floor(first.value * 6),
-      1 + Math.floor(second.value * 6),
-    ],
+    dice: [1 + Math.floor(first.value * 6), 1 + Math.floor(second.value * 6)],
   }
 }
 

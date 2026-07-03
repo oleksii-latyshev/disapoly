@@ -3,12 +3,7 @@ import { Gavel } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  BOARD,
-  playerById,
-  type GameAction,
-  type GameState,
-} from "@/game"
+import { BOARD, playerById, type GameAction, type GameState } from "@/game"
 import { useT } from "@/i18n"
 import { cn } from "@/lib/utils"
 
@@ -40,11 +35,17 @@ function BidControls({
         min={minBid}
         max={balance}
         value={amount || ""}
-        onChange={(e) => setAmount(Math.max(0, Math.floor(Number(e.target.value)) || 0))}
+        onChange={(e) =>
+          setAmount(Math.max(0, Math.floor(Number(e.target.value)) || 0))
+        }
         className="h-8 w-24"
         disabled={!canAfford}
       />
-      <Button className="flex-1" disabled={!valid} onClick={() => onBid(amount)}>
+      <Button
+        className="flex-1"
+        disabled={!valid}
+        onClick={() => onBid(amount)}
+      >
         {t("auction.bid", { amount })}
       </Button>
       <Button variant="outline" onClick={onPass}>
@@ -76,14 +77,17 @@ export function AuctionPanel({
   const def = BOARD[a.tileId]
   const highBidder = a.highBidderId ? playerById(state, a.highBidderId) : null
   const bidder = playerById(state, a.currentBidderId)
-  const myTurn = localPlayerId === undefined || localPlayerId === a.currentBidderId
+  const myTurn =
+    localPlayerId === undefined || localPlayerId === a.currentBidderId
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 shadow-sm">
       <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
         <Gavel className="size-3.5" /> {t("auction.title")}
       </div>
-      <p className="text-sm font-medium">{t("auction.tileUp", { tile: def.name })}</p>
+      <p className="text-sm font-medium">
+        {t("auction.tileUp", { tile: def.name })}
+      </p>
 
       <p className="text-xs">
         {highBidder ? (
@@ -112,7 +116,7 @@ export function AuctionPanel({
               key={id}
               className={cn(
                 "flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px]",
-                out && "opacity-40 line-through",
+                out && "line-through opacity-40",
                 isCurrent && "border-amber-500 ring-1 ring-amber-500"
               )}
             >

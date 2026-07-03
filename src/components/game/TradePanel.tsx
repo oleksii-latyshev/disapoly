@@ -31,7 +31,9 @@ import { GROUP_COLOR } from "./board-meta"
 const EMPTY: TradeBundle = { tiles: [], money: 0, jailCards: 0 }
 
 function shortName(name: string): string {
-  return name.replace(/ (Avenue|Place|Railroad|Gardens|Company|Works)$/i, "").trim()
+  return name
+    .replace(/ (Avenue|Place|Railroad|Gardens|Company|Works)$/i, "")
+    .trim()
 }
 
 function summarize(bundle: TradeBundle, t: TFunction): string {
@@ -81,7 +83,8 @@ function BundleEditor({
         )}
         {tiles.map((id) => {
           const def = BOARD[id]
-          const color = def.type === "street" ? GROUP_COLOR[def.group] : undefined
+          const color =
+            def.type === "street" ? GROUP_COLOR[def.group] : undefined
           const sel = bundle.tiles.includes(id)
           return (
             <button
@@ -97,7 +100,9 @@ function BundleEditor({
                 className="size-2 shrink-0 rounded-full"
                 style={{ backgroundColor: color ?? "var(--muted-foreground)" }}
               />
-              <span className="min-w-0 flex-1 truncate">{shortName(def.name)}</span>
+              <span className="min-w-0 flex-1 truncate">
+                {shortName(def.name)}
+              </span>
               {sel && <Check className="size-3 shrink-0 text-primary" />}
             </button>
           )
@@ -111,7 +116,10 @@ function BundleEditor({
           max={player.balance}
           value={bundle.money || ""}
           onChange={(e) =>
-            onChange({ ...bundle, money: clamp(Number(e.target.value), player.balance) })
+            onChange({
+              ...bundle,
+              money: clamp(Number(e.target.value), player.balance),
+            })
           }
           className="h-7 w-20"
         />
@@ -127,7 +135,10 @@ function BundleEditor({
             onChange={(e) =>
               onChange({
                 ...bundle,
-                jailCards: clamp(Number(e.target.value), player.getOutOfJailCards),
+                jailCards: clamp(
+                  Number(e.target.value),
+                  player.getOutOfJailCards
+                ),
               })
             }
             className="h-7 w-20"
@@ -302,7 +313,11 @@ function PendingTrade({
           <Button
             className="flex-1"
             onClick={() =>
-              send({ type: "RESPOND_TRADE", accept: true, playerId: offer.toId })
+              send({
+                type: "RESPOND_TRADE",
+                accept: true,
+                playerId: offer.toId,
+              })
             }
           >
             <Check /> {t("trade.accept")}
@@ -311,7 +326,11 @@ function PendingTrade({
             variant="outline"
             className="flex-1"
             onClick={() =>
-              send({ type: "RESPOND_TRADE", accept: false, playerId: offer.toId })
+              send({
+                type: "RESPOND_TRADE",
+                accept: false,
+                playerId: offer.toId,
+              })
             }
           >
             <X /> {t("trade.decline")}
@@ -329,9 +348,7 @@ function PendingTrade({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() =>
-            send({ type: "CANCEL_TRADE", playerId: offer.fromId })
-          }
+          onClick={() => send({ type: "CANCEL_TRADE", playerId: offer.fromId })}
         >
           {t("trade.cancel")}
         </Button>
@@ -361,5 +378,7 @@ export function TradePanel({
       />
     )
   }
-  return <TradeBuilder state={state} send={send} localPlayerId={localPlayerId} />
+  return (
+    <TradeBuilder state={state} send={send} localPlayerId={localPlayerId} />
+  )
 }

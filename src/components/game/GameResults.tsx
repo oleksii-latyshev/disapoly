@@ -32,7 +32,9 @@ export function GameResults({
         <div className="flex flex-col items-center gap-1 text-center">
           <Trophy className="size-8 text-amber-400" />
           <h2 className="text-lg font-bold">
-            {winner ? t("turn.wins", { name: winner.nickname }) : t("turn.gameOver")}
+            {winner
+              ? t("turn.wins", { name: winner.nickname })
+              : t("turn.gameOver")}
           </h2>
         </div>
 

@@ -61,7 +61,11 @@ export function ReactionLayer({
           <motion.div
             key={it.key}
             className="absolute text-[length:max(20px,3cqw)] drop-shadow"
-            style={{ left: `${it.x}%`, top: `${it.y}%`, translate: "-50% -50%" }}
+            style={{
+              left: `${it.x}%`,
+              top: `${it.y}%`,
+              translate: "-50% -50%",
+            }}
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.4, y: 0 }}
             animate={
               reduce

@@ -64,7 +64,10 @@ export function TileDetails({
               {def.type === "street" && (
                 <>
                   <Row label={t("details.price")} value={`$${def.price}`} />
-                  <Row label={t("details.baseRent")} value={`$${def.rent[0]}`} />
+                  <Row
+                    label={t("details.baseRent")}
+                    value={`$${def.rent[0]}`}
+                  />
                   <Row
                     label={t("details.withSet")}
                     value={`$${def.rent[0] * 2}`}

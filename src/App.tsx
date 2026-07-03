@@ -49,6 +49,7 @@ export function App() {
 
   return (
     <>
+      <div className="app-ambient" aria-hidden="true" />
       {screen}
       <SettingsButton />
       <HowToPlayButton />

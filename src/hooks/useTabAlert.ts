@@ -35,7 +35,11 @@ export function useTabAlert(active: boolean, label: string): void {
 
     const update = () => {
       const shouldFlash = active && document.hidden
-      if (shouldFlash && timer === null && (flashOwner === null || flashOwner === me)) {
+      if (
+        shouldFlash &&
+        timer === null &&
+        (flashOwner === null || flashOwner === me)
+      ) {
         flashOwner = me
         let on = false
         timer = window.setInterval(() => {

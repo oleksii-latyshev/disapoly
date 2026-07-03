@@ -23,7 +23,10 @@ export default function NetWorthChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={state.history} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+      <LineChart
+        data={state.history}
+        margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" />
         <XAxis
           dataKey="turn"

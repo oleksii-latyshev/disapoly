@@ -26,10 +26,18 @@ function ThemeSwatch({ id }: { id: BoardThemeId }) {
   return (
     <span
       className="flex h-8 w-12 shrink-0 items-center overflow-hidden rounded border"
-      style={{ backgroundColor: theme.vars["--board-inner" as keyof typeof theme.vars] as string }}
+      style={{
+        backgroundColor: theme.vars[
+          "--board-inner" as keyof typeof theme.vars
+        ] as string,
+      }}
     >
       {colors.map((c, i) => (
-        <span key={i} className="h-full flex-1" style={{ backgroundColor: c }} />
+        <span
+          key={i}
+          className="h-full flex-1"
+          style={{ backgroundColor: c }}
+        />
       ))}
     </span>
   )

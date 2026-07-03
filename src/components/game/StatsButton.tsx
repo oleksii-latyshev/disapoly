@@ -19,7 +19,9 @@ export function StatsButton({ state }: { state: GameState }) {
   const t = useT()
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="w-full" />}>
+      <DialogTrigger
+        render={<Button variant="outline" size="sm" className="w-full" />}
+      >
         <ChartLine /> {t("stats.open")}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">

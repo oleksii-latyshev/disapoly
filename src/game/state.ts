@@ -287,7 +287,11 @@ export function canMortgage(
   tileId: number
 ): boolean {
   const def = tileDef(tileId)
-  if (def.type !== "street" && def.type !== "railroad" && def.type !== "utility")
+  if (
+    def.type !== "street" &&
+    def.type !== "railroad" &&
+    def.type !== "utility"
+  )
     return false
   const tile = state.tiles[tileId]
   if (tile.ownerId !== playerId || tile.mortgaged) return false
@@ -303,7 +307,11 @@ export function canUnmortgage(
   tileId: number
 ): boolean {
   const def = tileDef(tileId)
-  if (def.type !== "street" && def.type !== "railroad" && def.type !== "utility")
+  if (
+    def.type !== "street" &&
+    def.type !== "railroad" &&
+    def.type !== "utility"
+  )
     return false
   const tile = state.tiles[tileId]
   if (tile.ownerId !== playerId || !tile.mortgaged) return false
@@ -324,7 +332,8 @@ export function ownedTiles(state: GameState, playerId: string): number[] {
 export function tradableTiles(state: GameState, playerId: string): number[] {
   return ownedTiles(state, playerId).filter((id) => {
     const def = tileDef(id)
-    if (def.type === "street") return groupHouseRange(state, def.group).max === 0
+    if (def.type === "street")
+      return groupHouseRange(state, def.group).max === 0
     return true
   })
 }

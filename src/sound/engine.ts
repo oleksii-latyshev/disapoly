@@ -23,7 +23,10 @@ let noiseBuffer: AudioBuffer | null = null
 
 function ensure(): AudioContext | null {
   if (typeof window === "undefined") return null
-  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  const Ctor =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
   if (!Ctor) return null
   if (!ctx) {
     ctx = new Ctor()
@@ -59,7 +62,10 @@ function blip(
   osc.type = opts.type ?? "sine"
   osc.frequency.setValueAtTime(opts.freq, t0)
   if (opts.slideTo) {
-    osc.frequency.exponentialRampToValueAtTime(Math.max(1, opts.slideTo), t0 + opts.dur)
+    osc.frequency.exponentialRampToValueAtTime(
+      Math.max(1, opts.slideTo),
+      t0 + opts.dur
+    )
   }
   const g = c.createGain()
   const peak = opts.gain ?? 0.3
@@ -71,7 +77,13 @@ function blip(
   osc.stop(t0 + opts.dur + 0.02)
 }
 
-function noise(c: AudioContext, t0: number, dur: number, freq: number, gain = 0.25): void {
+function noise(
+  c: AudioContext,
+  t0: number,
+  dur: number,
+  freq: number,
+  gain = 0.25
+): void {
   const src = c.createBufferSource()
   src.buffer = noiseBuffer
   const bp = c.createBiquadFilter()
@@ -94,7 +106,9 @@ function arp(
   step: number,
   type: OscillatorType = "sine"
 ): void {
-  freqs.forEach((f, i) => blip(c, t0 + i * step, { freq: f, dur: step * 2, type, gain: 0.28 }))
+  freqs.forEach((f, i) =>
+    blip(c, t0 + i * step, { freq: f, dur: step * 2, type, gain: 0.28 })
+  )
 }
 
 export function playSound(name: SoundName): void {
@@ -111,7 +125,13 @@ export function playSound(name: SoundName): void {
       arp(c, t, [523, 659, 784], 0.07)
       break
     case "build":
-      blip(c, t, { freq: 240, dur: 0.13, type: "square", gain: 0.22, slideTo: 150 })
+      blip(c, t, {
+        freq: 240,
+        dur: 0.13,
+        type: "square",
+        gain: 0.22,
+        slideTo: 150,
+      })
       break
     case "card":
       blip(c, t, { freq: 740, dur: 0.12, type: "triangle", gain: 0.26 })
@@ -128,7 +148,13 @@ export function playSound(name: SoundName): void {
       blip(c, t + 0.32, { freq: 1760, dur: 0.24, type: "sine", gain: 0.26 })
       break
     case "jail":
-      blip(c, t, { freq: 200, dur: 0.28, type: "square", gain: 0.2, slideTo: 110 })
+      blip(c, t, {
+        freq: 200,
+        dur: 0.28,
+        type: "square",
+        gain: 0.2,
+        slideTo: 110,
+      })
       noise(c, t, 0.1, 900, 0.15)
       break
     case "win":

@@ -33,7 +33,9 @@ export function ConnectionIndicator({
     >
       <span className={cn("size-2 rounded-full", DOT[q])} />
       {showMs && ms !== undefined && (
-        <span className="text-[10px] tabular-nums text-muted-foreground">{ms}ms</span>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {ms}ms
+        </span>
       )}
     </span>
   )

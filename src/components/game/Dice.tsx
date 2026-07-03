@@ -1,4 +1,5 @@
-import { motion } from "motion/react"
+import { useEffect, useRef } from "react"
+import { animate, motion } from "motion/react"
 
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
@@ -39,11 +40,13 @@ function Face({ value, transform }: { value: number; transform: string }) {
   const pips = new Set(PIPS[value])
   return (
     <div
-      className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px rounded-[5px] bg-white p-1.5"
+      className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px rounded-[6px] p-1.5"
       style={{
         transform,
         backfaceVisibility: "hidden",
-        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.08)",
+        background: "linear-gradient(145deg, #ffffff 0%, #e9e9f0 100%)",
+        boxShadow:
+          "inset 0 0 0 1px rgba(0,0,0,0.08), inset 0 -4px 6px rgba(0,0,0,0.06)",
       }}
     >
       {Array.from({ length: 9 }, (_, i) => (
@@ -69,28 +72,59 @@ function Die({
   reduce: boolean
 }) {
   const target = SHOW[value]
+  const bounceRef = useRef<HTMLDivElement>(null)
+  const shadowRef = useRef<HTMLDivElement>(null)
+
+  // Throw arc: the cube lifts off and lands with a small bounce while its
+  // floor shadow shrinks mid-air and snaps back on impact. Re-runs per roll.
+  useEffect(() => {
+    const cube = bounceRef.current
+    const shadow = shadowRef.current
+    if (reduce || !cube || !shadow) return
+    const times = [0, 0.32, 0.62, 0.8, 1]
+    const options = { duration: 0.9, delay, times, ease: "easeInOut" as const }
+    animate(cube, { y: [0, -16, 0, -5, 0] }, options)
+    animate(
+      shadow,
+      {
+        scale: [1, 0.6, 1.08, 0.88, 1],
+        opacity: [0.35, 0.14, 0.4, 0.28, 0.35],
+      },
+      options
+    )
+  }, [spins, delay, reduce])
+
   return (
-    <motion.div
-      className="relative"
-      style={{
-        width: SIZE,
-        height: SIZE,
-        transformStyle: "preserve-3d",
-      }}
-      animate={{
-        rotateX: target.x + 360 * 2 * spins,
-        rotateY: target.y + 360 * 2 * spins,
-      }}
-      transition={
-        reduce
-          ? { duration: 0 }
-          : { duration: 0.85, ease: [0.2, 0.8, 0.2, 1], delay }
-      }
-    >
-      {FACES.map((f) => (
-        <Face key={f.value} value={f.value} transform={f.transform} />
-      ))}
-    </motion.div>
+    <div className="relative">
+      <div
+        ref={shadowRef}
+        className="absolute top-full left-1/2 h-2.5 w-11 rounded-full bg-black/60 blur-[3px]"
+        style={{ translate: "-50% 2px", opacity: 0.35 }}
+      />
+      <div ref={bounceRef}>
+        <motion.div
+          className="relative"
+          style={{
+            width: SIZE,
+            height: SIZE,
+            transformStyle: "preserve-3d",
+          }}
+          animate={{
+            rotateX: target.x + 360 * 2 * spins,
+            rotateY: target.y + 360 * 2 * spins,
+          }}
+          transition={
+            reduce
+              ? { duration: 0 }
+              : { duration: 0.85, ease: [0.2, 0.8, 0.2, 1], delay }
+          }
+        >
+          {FACES.map((f) => (
+            <Face key={f.value} value={f.value} transform={f.transform} />
+          ))}
+        </motion.div>
+      </div>
+    </div>
   )
 }
 

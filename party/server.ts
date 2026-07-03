@@ -108,7 +108,11 @@ export class DisapolyServer extends Server<Env> {
     if (message.type === "reaction") {
       const playerId = connection.state?.playerId
       if (!playerId || !REACTIONS.includes(message.emoji)) return
-      const relay: ServerMessage = { type: "reaction", playerId, emoji: message.emoji }
+      const relay: ServerMessage = {
+        type: "reaction",
+        playerId,
+        emoji: message.emoji,
+      }
       this.broadcast(JSON.stringify(relay))
       return
     }

@@ -14,7 +14,14 @@ type Particle = {
   color: string
 }
 
-const FALLBACK = ["#f5a623", "#16a34a", "#2563eb", "#dc2626", "#a855f7", "#eab308"]
+const FALLBACK = [
+  "#f5a623",
+  "#16a34a",
+  "#2563eb",
+  "#dc2626",
+  "#a855f7",
+  "#eab308",
+]
 const DURATION = 5000
 
 /**
@@ -67,7 +74,10 @@ export function WinConfetti({ state }: { state: GameState }) {
     const frame = (now: number) => {
       const elapsed = now - start
       ctx.clearRect(0, 0, w, h)
-      const fade = Math.max(0, 1 - Math.max(0, elapsed - DURATION * 0.7) / (DURATION * 0.3))
+      const fade = Math.max(
+        0,
+        1 - Math.max(0, elapsed - DURATION * 0.7) / (DURATION * 0.3)
+      )
       for (const p of particles) {
         p.x += p.vx
         p.y += p.vy

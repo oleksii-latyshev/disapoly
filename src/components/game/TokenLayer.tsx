@@ -5,7 +5,28 @@ import { BOARD_SIZE, type GameState, type Player } from "@/game"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
-import { tileCenter, tokenTargets, type TokenTarget as Target } from "./board-meta"
+import {
+  tileCenter,
+  tokenTargets,
+  type TokenTarget as Target,
+} from "./board-meta"
+
+/**
+ * Bounce keyframes for a travel animation: the piece arcs up once per hop
+ * while its ground shadow shrinks and fades, so tokens read as jumping
+ * tile-to-tile instead of sliding.
+ */
+function hopKeyframes(hops: number, lift: string) {
+  const y: string[] = ["0%"]
+  const shadowScale: number[] = [1]
+  const shadowOpacity: number[] = [1]
+  for (let i = 0; i < hops; i++) {
+    y.push(lift, "0%")
+    shadowScale.push(0.55, 1)
+    shadowOpacity.push(0.4, 1)
+  }
+  return { y, shadowScale, shadowOpacity }
+}
 
 function Token({
   player,
@@ -17,6 +38,8 @@ function Token({
   glow: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const shadowRef = useRef<HTMLDivElement>(null)
   const prevPos = useRef(player.position)
   const mounted = useRef(false)
   const gen = useRef(0)
@@ -38,8 +61,26 @@ function Token({
     // A short pop when a token settles onto a new tile, so landings read clearly.
     const myGen = ++gen.current
     const pop = () => {
-      if (reduce || gen.current !== myGen || !ref.current) return
-      animate(ref.current, { scale: [1, 1.32, 1] }, { duration: 0.34, ease: "easeOut" })
+      if (reduce || gen.current !== myGen || !bodyRef.current) return
+      animate(
+        bodyRef.current,
+        { scale: [1, 1.32, 1] },
+        { duration: 0.34, ease: "easeOut" }
+      )
+    }
+
+    // Arc the piece itself while the wrapper travels (see hopKeyframes).
+    const bounce = (hops: number, lift: string, duration: number) => {
+      const body = bodyRef.current
+      const shadow = shadowRef.current
+      if (reduce || !body || !shadow) return
+      const kf = hopKeyframes(hops, lift)
+      animate(body, { y: kf.y }, { duration, ease: "easeInOut" })
+      animate(
+        shadow,
+        { scale: kf.shadowScale, opacity: kf.shadowOpacity },
+        { duration, ease: "easeInOut" }
+      )
     }
 
     // First paint, reduced motion, or offset-only shuffle: no travel animation.
@@ -47,7 +88,11 @@ function Token({
       if (!mounted.current || reduce) {
         place()
       } else {
-        animate(el, { left: `${target.x}%`, top: `${target.y}%` }, { duration: 0.28 })
+        animate(
+          el,
+          { left: `${target.x}%`, top: `${target.y}%` },
+          { duration: 0.28 }
+        )
       }
       mounted.current = true
       return
@@ -65,14 +110,17 @@ function Token({
       }
       xs[xs.length - 1] = target.x
       ys[ys.length - 1] = target.y
+      const duration = Math.min(0.2 * forward, 2.2)
+      bounce(forward, "-55%", duration)
       animate(
         el,
         { left: xs.map((n) => `${n}%`), top: ys.map((n) => `${n}%`) },
-        { duration: Math.min(0.2 * forward, 2.2), ease: "easeInOut" }
+        { duration, ease: "easeInOut" }
       ).then(pop, () => {})
     } else {
       // Teleport (e.g. go to jail) or long card move: glide directly, a bit
-      // slower so the jump is legible rather than an instant snap.
+      // slower so the jump is legible rather than an instant snap. One big arc.
+      bounce(1, "-130%", 0.75)
       animate(
         el,
         { left: `${target.x}%`, top: `${target.y}%` },
@@ -84,15 +132,32 @@ function Token({
   return (
     <div
       ref={ref}
-      className="absolute flex size-[4.6%] items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white shadow-md"
-      style={{
-        translate: "-50% -50%",
-        backgroundColor: player.color,
-        boxShadow: glow ? `0 0 8px ${player.color}` : undefined,
-      }}
+      className="absolute size-[4.6%]"
+      style={{ translate: "-50% -50%" }}
       title={player.nickname}
     >
-      {player.nickname.charAt(0).toUpperCase()}
+      {/* Ground shadow — stays on the "floor" while the piece arcs above it. */}
+      <div
+        ref={shadowRef}
+        className="absolute top-[68%] left-1/2 h-[38%] w-[82%] rounded-full bg-black/35 blur-[2px]"
+        style={{ translate: "-50% 0" }}
+      />
+      {/* The piece: sphere-shaded so it reads as a 3D pawn, not a flat disc. */}
+      <div
+        ref={bodyRef}
+        className="relative flex size-full items-center justify-center rounded-full border border-white/80 text-[10px] font-bold text-white"
+        style={{
+          background: `radial-gradient(circle at 32% 28%, color-mix(in srgb, ${player.color} 55%, white), ${player.color} 58%, color-mix(in srgb, ${player.color} 68%, black))`,
+          boxShadow: glow
+            ? `0 0 10px ${player.color}, inset 0 -3px 5px rgba(0, 0, 0, 0.28)`
+            : "inset 0 -3px 5px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.3)",
+        }}
+      >
+        <span className="pointer-events-none absolute top-[10%] left-[16%] h-[28%] w-[40%] rounded-full bg-white/45 blur-[1px]" />
+        <span className="relative drop-shadow-sm">
+          {player.nickname.charAt(0).toUpperCase()}
+        </span>
+      </div>
     </div>
   )
 }
@@ -153,7 +218,12 @@ export function TokenLayer({ state }: { state: GameState }) {
       if (!pos || before === undefined) continue
       const diff = player.balance - before
       if (diff !== 0) {
-        spawned.push({ key: nextKey.current++, amount: diff, x: pos.x, y: pos.y - 3 })
+        spawned.push({
+          key: nextKey.current++,
+          amount: diff,
+          x: pos.x,
+          y: pos.y - 3,
+        })
       }
     }
     if (spawned.length === 0) return

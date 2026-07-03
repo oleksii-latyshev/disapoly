@@ -216,7 +216,10 @@ export function shouldAutoSkip(state: RoomState): boolean {
  */
 export function autoSkip(state: RoomState): RoomState {
   if (!shouldAutoSkip(state)) return state
-  return { ...state, game: gameReducer(state.game!, { type: "FORCE_END_TURN" }) }
+  return {
+    ...state,
+    game: gameReducer(state.game!, { type: "FORCE_END_TURN" }),
+  }
 }
 
 /**

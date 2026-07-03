@@ -94,12 +94,16 @@ export function TurnControls({
     return (
       <div className="flex flex-col gap-3 rounded-md border bg-card p-3 text-center">
         <p className="text-sm font-medium">
-          {winner ? t("turn.wins", { name: winner.nickname }) : t("turn.gameOver")}
+          {winner
+            ? t("turn.wins", { name: winner.nickname })
+            : t("turn.gameOver")}
         </p>
         {canReset ? (
           <Button onClick={onNewGame}>{t("turn.newGame")}</Button>
         ) : (
-          <p className="text-xs text-muted-foreground">{t("turn.waitHostNew")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("turn.waitHostNew")}
+          </p>
         )}
       </div>
     )

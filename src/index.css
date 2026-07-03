@@ -146,8 +146,105 @@
   animation: tile-pulse 1.8s ease-in-out infinite;
 }
 
+/* Ambient backdrop: two large blurred color fields drifting slowly behind
+   the app, so screens sit on gentle depth instead of a flat page color. */
+.app-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.app-ambient::before,
+.app-ambient::after {
+  content: "";
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.app-ambient::before {
+  top: -18%;
+  left: -12%;
+  background: radial-gradient(circle, oklch(0.87 0.08 165 / 45%), transparent 65%);
+  animation: ambient-drift-a 26s ease-in-out infinite alternate;
+}
+
+.app-ambient::after {
+  right: -14%;
+  bottom: -20%;
+  background: radial-gradient(circle, oklch(0.86 0.07 250 / 40%), transparent 65%);
+  animation: ambient-drift-b 32s ease-in-out infinite alternate;
+}
+
+.dark .app-ambient::before {
+  background: radial-gradient(circle, oklch(0.45 0.09 165 / 28%), transparent 65%);
+}
+
+.dark .app-ambient::after {
+  background: radial-gradient(circle, oklch(0.42 0.11 280 / 30%), transparent 65%);
+}
+
+@keyframes ambient-drift-a {
+  to {
+    transform: translate(10vw, 8vh) scale(1.15);
+  }
+}
+
+@keyframes ambient-drift-b {
+  to {
+    transform: translate(-9vw, -7vh) scale(0.9);
+  }
+}
+
+/* Periodic shine sweeping across the board's center logo. */
+.board-logo {
+  color: var(--center-fg);
+  background: linear-gradient(
+    105deg,
+    var(--center-fg) 42%,
+    #ffffff 50%,
+    var(--center-fg) 58%
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: logo-shine 6s ease-in-out infinite;
+}
+
+@keyframes logo-shine {
+  0%, 55% {
+    background-position: 100% 0;
+  }
+  90%, 100% {
+    background-position: 0% 0;
+  }
+}
+
+/* Ownership bar sweeps in from the left when a property is claimed. */
+@keyframes strip-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.owner-strip {
+  transform-origin: left;
+  animation: strip-in 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .tile-current {
+  .tile-current,
+  .app-ambient::before,
+  .app-ambient::after,
+  .board-logo,
+  .owner-strip {
     animation: none;
   }
 }

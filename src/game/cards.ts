@@ -26,7 +26,10 @@ export const CHANCE: readonly Card[] = [
   { id: "ch_jailfree", effect: { kind: "getOutOfJail" } },
   { id: "ch_back3", effect: { kind: "moveBack", steps: 3 } },
   { id: "ch_jail", effect: { kind: "goToJail" } },
-  { id: "ch_repairs", effect: { kind: "repairs", perHouse: 25, perHotel: 100 } },
+  {
+    id: "ch_repairs",
+    effect: { kind: "repairs", perHouse: 25, perHotel: 100 },
+  },
   { id: "ch_poortax", effect: { kind: "money", amount: -15 } },
   { id: "ch_chairman", effect: { kind: "payEach", amount: 50 } },
 ] as const
@@ -43,5 +46,8 @@ export const COMMUNITY_CHEST: readonly Card[] = [
   { id: "cc_inherit", effect: { kind: "money", amount: 100 } },
   { id: "cc_insurance", effect: { kind: "money", amount: 100 } },
   { id: "cc_school", effect: { kind: "money", amount: -50 } },
-  { id: "cc_streets", effect: { kind: "repairs", perHouse: 40, perHotel: 115 } },
+  {
+    id: "cc_streets",
+    effect: { kind: "repairs", perHouse: 40, perHotel: 115 },
+  },
 ] as const

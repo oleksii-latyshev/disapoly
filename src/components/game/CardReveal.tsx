@@ -62,7 +62,11 @@ export function CardReveal({ state }: { state: GameState }) {
       setReveal(null)
       return
     }
-    if (prev && prev.deck === lastCard.deck && prev.cardId === lastCard.cardId) {
+    if (
+      prev &&
+      prev.deck === lastCard.deck &&
+      prev.cardId === lastCard.cardId
+    ) {
       return
     }
 
@@ -111,16 +115,27 @@ export function CardReveal({ state }: { state: GameState }) {
   const Icon = isChance ? CircleHelp : Gift
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center p-4">
+    <div
+      className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center p-4"
+      style={{ perspective: 1200 }}
+    >
       <AnimatePresence>
         {reveal && (
           <motion.div
             key={reveal.run}
-            initial={{ opacity: 0, scale: 0.8, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={
+              reduce
+                ? { opacity: 0 }
+                : { opacity: 0, rotateY: -100, scale: 0.92 }
+            }
+            animate={{ opacity: 1, rotateY: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9, y: -8 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="w-[min(88vw,300px)] rounded-2xl border-2 bg-card p-5 text-center shadow-2xl"
+            transition={
+              reduce
+                ? { duration: 0.2 }
+                : { duration: 0.5, ease: [0.16, 1, 0.3, 1] }
+            }
+            className="relative w-[min(88vw,300px)] rounded-2xl border-2 bg-card p-5 text-center shadow-2xl"
             style={{
               borderColor: accent,
               boxShadow: reveal.settled
@@ -130,7 +145,9 @@ export function CardReveal({ state }: { state: GameState }) {
           >
             <motion.div
               animate={
-                reveal.settled ? { scale: [1, 1.18, 1] } : { rotate: [0, -6, 6, 0] }
+                reveal.settled
+                  ? { scale: [1, 1.18, 1] }
+                  : { rotate: [0, -6, 6, 0] }
               }
               transition={
                 reveal.settled
@@ -162,6 +179,19 @@ export function CardReveal({ state }: { state: GameState }) {
             >
               {t(`card.${reveal.faceId}`)}
             </motion.p>
+
+            {/* Shine sweep across the card face once the result settles. */}
+            {reveal.settled && !reduce && (
+              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+                <motion.div
+                  className="absolute inset-y-[-30%] w-[38%] bg-white/25 blur-md"
+                  style={{ rotate: 14 }}
+                  initial={{ x: "-180%" }}
+                  animate={{ x: "440%" }}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
+                />
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

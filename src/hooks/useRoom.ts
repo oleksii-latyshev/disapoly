@@ -40,7 +40,8 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
     }
 
     let pingTimer: ReturnType<typeof setInterval> | null = null
-    const ping = () => socket.send(JSON.stringify({ type: "ping", t: Date.now() }))
+    const ping = () =>
+      socket.send(JSON.stringify({ type: "ping", t: Date.now() }))
 
     const onOpen = () => {
       setConnected(true)
@@ -59,11 +60,16 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
       } else if (message.type === "reaction") {
         const id = ++reactionId.current
         setReactions((cur) =>
-          [...cur, { id, playerId: message.playerId, emoji: message.emoji }].slice(-40)
+          [
+            ...cur,
+            { id, playerId: message.playerId, emoji: message.emoji },
+          ].slice(-40)
         )
       } else if (message.type === "pong") {
         // Round-trip measured; report it so everyone sees our connection quality.
-        socket.send(JSON.stringify({ type: "latency", ms: Date.now() - message.t }))
+        socket.send(
+          JSON.stringify({ type: "latency", ms: Date.now() - message.t })
+        )
       } else if (message.type === "latency") {
         setLatencies((cur) => ({ ...cur, [message.playerId]: message.ms }))
       }

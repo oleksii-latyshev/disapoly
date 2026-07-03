@@ -2,6 +2,7 @@ import type { GameState } from "@/game"
 
 import { CardReveal } from "./CardReveal"
 import { EventAnnouncer } from "./EventAnnouncer"
+import { TurnBanner } from "./TurnBanner"
 import { WinConfetti } from "./WinConfetti"
 
 /**
@@ -15,6 +16,7 @@ export function GameEvents({ state }: { state: GameState }) {
     <>
       <EventAnnouncer state={state} />
       <CardReveal state={state} />
+      <TurnBanner state={state} />
       <WinConfetti state={state} />
     </>
   )

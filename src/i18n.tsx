@@ -13,7 +13,8 @@ export type Lang = "en" | "ru"
 /** Translation dictionaries. `{param}` placeholders are filled by `t(key, params)`. */
 const DICT: Record<Lang, Record<string, string>> = {
   en: {
-    "home.tagline": "Create a room and share the link with friends — no sign-up.",
+    "home.tagline":
+      "Create a room and share the link with friends — no sign-up.",
     "home.createRoom": "Create online room",
     "home.roomCode": "Room code",
     "home.join": "Join",
@@ -242,7 +243,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "card.cc_streets": "Street repairs: $40 per house, $115 per hotel.",
   },
   ru: {
-    "home.tagline": "Создай комнату и поделись ссылкой с друзьями — без регистрации.",
+    "home.tagline":
+      "Создай комнату и поделись ссылкой с друзьями — без регистрации.",
     "home.createRoom": "Создать онлайн-комнату",
     "home.roomCode": "Код комнаты",
     "home.join": "Войти",
@@ -340,7 +342,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.playerOffline": "{name} не в сети",
     "net.skip": "Пропустить его ход",
     "net.autoSkipIn": "Авто-пропуск через {n}с",
-    "net.slowConnection": "У {name} медленное соединение ({ms}мс) — немного подождите…",
+    "net.slowConnection":
+      "У {name} медленное соединение ({ms}мс) — немного подождите…",
     "notify.yourTurn": "Твой ход!",
     "notify.tradeOffer": "Предложение сделки!",
 
@@ -411,7 +414,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.started": "Игра началась, игроков: {n}.",
     "log.rolled": "{name} выбрасывает {a} + {b} = {sum}.",
     "log.rolledDoubles": "{name} выбрасывает {a} + {b} = {sum} (дубль).",
-    "log.threeDoubles": "{name} выбрасывает три дубля подряд и попадает в тюрьму!",
+    "log.threeDoubles":
+      "{name} выбрасывает три дубля подряд и попадает в тюрьму!",
     "log.rolledFromJail": "{name} в тюрьме выбрасывает {a} + {b} = {sum}.",
     "log.jailDoubles": "{name} выбрасывает дубль и выходит из тюрьмы.",
     "log.jailStay": "{name} не выбрасывает дубль и остаётся в тюрьме.",
@@ -510,7 +514,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [lang]
   )
 
-  const value = useMemo<I18nState>(() => ({ lang, setLang, t }), [lang, setLang, t])
+  const value = useMemo<I18nState>(
+    () => ({ lang, setLang, t }),
+    [lang, setLang, t]
+  )
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 

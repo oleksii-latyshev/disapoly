@@ -51,7 +51,9 @@ export function HowToPlayButton() {
           {SECTIONS.map((s) => (
             <div key={s}>
               <div className="font-semibold">{t(`howto.${s}.title`)}</div>
-              <p className="text-muted-foreground">{t(`howto.${s}.body`, nums)}</p>
+              <p className="text-muted-foreground">
+                {t(`howto.${s}.body`, nums)}
+              </p>
             </div>
           ))}
         </div>

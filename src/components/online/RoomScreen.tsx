@@ -33,10 +33,7 @@ function ConnectedRoom({
   onLeave: () => void
 }) {
   const t = useT()
-  const identity = useMemo(
-    () => ({ playerId, nickname }),
-    [playerId, nickname]
-  )
+  const identity = useMemo(() => ({ playerId, nickname }), [playerId, nickname])
   const { state, connected, send, reactions, latencies } = useRoom(
     roomId,
     identity

@@ -50,7 +50,7 @@ export function ManagePanel({
           {t("manage.title")}
         </span>
         <span
-          className="text-[11px] tabular-nums text-muted-foreground"
+          className="text-[11px] text-muted-foreground tabular-nums"
           title={t("manage.supplyTitle")}
         >
           🏠 {state.bank.houses} · 🏨 {state.bank.hotels}
@@ -65,7 +65,8 @@ export function ManagePanel({
         {tiles.map((id) => {
           const def = BOARD[id]
           const tile = state.tiles[id]
-          const groupColor = def.type === "street" ? GROUP_COLOR[def.group] : undefined
+          const groupColor =
+            def.type === "street" ? GROUP_COLOR[def.group] : undefined
 
           return (
             <div
@@ -74,7 +75,9 @@ export function ManagePanel({
             >
               <span
                 className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: groupColor ?? "var(--muted-foreground)" }}
+                style={{
+                  backgroundColor: groupColor ?? "var(--muted-foreground)",
+                }}
               />
               <span className="min-w-0 flex-1 truncate">
                 {def.name}

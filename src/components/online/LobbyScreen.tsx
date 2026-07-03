@@ -104,7 +104,10 @@ export function LobbyScreen({
           </div>
 
           {self?.isHost ? (
-            <Button onClick={() => send({ type: "start" })} disabled={!canStart}>
+            <Button
+              onClick={() => send({ type: "start" })}
+              disabled={!canStart}
+            >
               <Play /> {t("setup.start")}{" "}
               {!canStart &&
                 state.members.length < MIN_MEMBERS &&

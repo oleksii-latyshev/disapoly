@@ -72,7 +72,9 @@ export function NetworkGame({
   useTabAlert(isMyTurn, t("notify.yourTurn"))
   useTabAlert(incomingOffer, t("notify.tradeOffer"))
 
-  const autoSkipIn = useSecondsUntil(turnPlayerOffline ? state.autoSkipAt : null)
+  const autoSkipIn = useSecondsUntil(
+    turnPlayerOffline ? state.autoSkipAt : null
+  )
 
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">

@@ -1,7 +1,58 @@
+import { useEffect, useRef, useState } from "react"
+import { animate } from "motion/react"
+
 import { netWorth, type GameState, type RoomMember } from "@/game"
 import { cn } from "@/lib/utils"
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { ConnectionIndicator } from "./ConnectionIndicator"
+
+/**
+ * A balance that rolls to its new value instead of snapping, with a brief
+ * green/red flash so gains and losses register at a glance.
+ */
+function AnimatedBalance({ value }: { value: number }) {
+  const reduce = usePrefersReducedMotion()
+  const [display, setDisplay] = useState(value)
+  const shown = useRef(value)
+  const [flash, setFlash] = useState<"up" | "down" | null>(null)
+
+  useEffect(() => {
+    const from = shown.current
+    if (from === value) return
+    if (reduce) {
+      shown.current = value
+      return
+    }
+    // Ephemeral count-up animation — can't be derived during render.
+    setFlash(value > from ? "up" : "down")
+    const controls = animate(from, value, {
+      duration: 0.8,
+      ease: "easeOut",
+      onUpdate: (v) => {
+        shown.current = Math.round(v)
+        setDisplay(shown.current)
+      },
+    })
+    const timer = setTimeout(() => setFlash(null), 1100)
+    return () => {
+      controls.stop()
+      clearTimeout(timer)
+    }
+  }, [value, reduce])
+
+  return (
+    <span
+      className={cn(
+        "block font-semibold transition-colors duration-700",
+        flash === "up" && "text-emerald-600 dark:text-emerald-400",
+        flash === "down" && "text-rose-600 dark:text-rose-400"
+      )}
+    >
+      ${reduce ? value : display}
+    </span>
+  )
+}
 
 export function PlayersList({
   state,
@@ -35,10 +86,14 @@ export function PlayersList({
             <span className="min-w-0 flex-1 truncate font-medium">
               {player.nickname}
               {player.inJail && (
-                <span className="ml-1 text-xs text-muted-foreground">(jail)</span>
+                <span className="ml-1 text-xs text-muted-foreground">
+                  (jail)
+                </span>
               )}
               {player.isBankrupt && (
-                <span className="ml-1 text-xs text-destructive">(bankrupt)</span>
+                <span className="ml-1 text-xs text-destructive">
+                  (bankrupt)
+                </span>
               )}
             </span>
             {member && (
@@ -48,7 +103,7 @@ export function PlayersList({
               />
             )}
             <span className="text-right tabular-nums">
-              <span className="block font-semibold">${player.balance}</span>
+              <AnimatedBalance value={player.balance} />
               <span className="block text-[10px] text-muted-foreground">
                 net ${netWorth(state, player.id)}
               </span>

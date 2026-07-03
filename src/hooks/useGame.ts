@@ -14,10 +14,8 @@ import {
  * intents through the sync layer, leaving components untouched.
  */
 export function useGame(setups: PlayerSetup[], seed?: number) {
-  const [state, dispatch] = useReducer(
-    gameReducer,
-    undefined,
-    (): GameState => createInitialState(setups, seed)
+  const [state, dispatch] = useReducer(gameReducer, undefined, (): GameState =>
+    createInitialState(setups, seed)
   )
 
   const send = useCallback((action: GameAction) => dispatch(action), [])
