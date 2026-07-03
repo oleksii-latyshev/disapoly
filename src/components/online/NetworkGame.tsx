@@ -15,6 +15,7 @@ import { GameEvents } from "@/components/game/GameEvents"
 import { GameLog } from "@/components/game/GameLog"
 import { GameResults } from "@/components/game/GameResults"
 import { ManagePanel } from "@/components/game/ManagePanel"
+import { connectionQuality } from "@/components/game/connection"
 import { PlayersList } from "@/components/game/PlayersList"
 import { ReactionBar } from "@/components/game/ReactionBar"
 import { StatsButton } from "@/components/game/StatsButton"
@@ -40,12 +41,14 @@ export function NetworkGame({
   send,
   connected,
   reactions,
+  latencies,
 }: {
   state: RoomState
   self: RoomMember | undefined
   send: (message: ClientMessage) => void
   connected: boolean
   reactions: ReactionEvent[]
+  latencies: Record<string, number>
 }) {
   const t = useT()
   const game = state.game!
@@ -58,6 +61,12 @@ export function NetworkGame({
 
   const isMyTurn =
     game.status === "playing" && !!self && turnPlayer?.id === self.id
+  // Flag a laggy (but still connected) current player, so everyone sees why the
+  // turn is slow to advance — it's their upstream connection, not the game.
+  const turnPlayerSlow =
+    !isMyTurn &&
+    !turnPlayerOffline &&
+    connectionQuality(true, latencies[turnPlayer?.id]) === "poor"
   const incomingOffer =
     game.status === "playing" && !!self && game.pendingTrade?.toId === self.id
   useTabAlert(isMyTurn, t("notify.yourTurn"))
@@ -103,6 +112,16 @@ export function NetworkGame({
           </div>
         )}
 
+        {turnPlayerSlow && (
+          <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+            <WifiOff className="size-3.5 shrink-0" />
+            {t("net.slowConnection", {
+              name: turnPlayer.nickname,
+              ms: latencies[turnPlayer.id],
+            })}
+          </div>
+        )}
+
         <TurnControls
           state={game}
           send={(action) => send({ type: "action", action })}
@@ -126,7 +145,11 @@ export function NetworkGame({
           send={(action) => send({ type: "action", action })}
           localPlayerId={self?.id}
         />
-        <PlayersList state={game} />
+        <PlayersList
+          state={game}
+          members={state.members}
+          latencies={latencies}
+        />
         <ReactionBar onReact={(emoji) => send({ type: "reaction", emoji })} />
         <StatsButton state={game} />
         <GameLog state={game} />

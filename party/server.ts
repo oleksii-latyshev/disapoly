@@ -97,11 +97,31 @@ export class DisapolyServer extends Server<Env> {
       return
     }
 
+    // Latency probe: echo it straight back so the client can time the round-trip.
+    if (message.type === "ping") {
+      const pong: ServerMessage = { type: "pong", t: message.t }
+      connection.send(JSON.stringify(pong))
+      return
+    }
+
     // Reactions are ephemeral: relayed straight to everyone, never stored.
     if (message.type === "reaction") {
       const playerId = connection.state?.playerId
       if (!playerId || !REACTIONS.includes(message.emoji)) return
       const relay: ServerMessage = { type: "reaction", playerId, emoji: message.emoji }
+      this.broadcast(JSON.stringify(relay))
+      return
+    }
+
+    // A client's measured round-trip: relayed so everyone sees each other's ping.
+    if (message.type === "latency") {
+      const playerId = connection.state?.playerId
+      if (!playerId) return
+      const relay: ServerMessage = {
+        type: "latency",
+        playerId,
+        ms: Math.max(0, Math.min(99999, Math.round(message.ms))),
+      }
       this.broadcast(JSON.stringify(relay))
       return
     }

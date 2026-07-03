@@ -49,11 +49,15 @@ export type ClientMessage =
   | { type: "reset" }
   | { type: "skip" } // skip a disconnected player's turn
   | { type: "reaction"; emoji: string } // ephemeral emoji burst (not state)
+  | { type: "ping"; t: number } // latency probe; server echoes it back
+  | { type: "latency"; ms: number } // client's measured round-trip, to share
 
 /** Server → client broadcasts. */
 export type ServerMessage =
   | { type: "state"; state: RoomState }
   | { type: "reaction"; playerId: string; emoji: string }
+  | { type: "pong"; t: number } // echo of a ping, to the prober only
+  | { type: "latency"; playerId: string; ms: number } // a member's connection quality
 
 export function createRoom(roomId: string): RoomState {
   return { roomId, phase: "lobby", members: [], game: null, autoSkipAt: null }

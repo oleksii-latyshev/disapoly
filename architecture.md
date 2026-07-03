@@ -207,6 +207,10 @@ See [README.md](README.md) for exact commands.
   exclusive, so one alarm slot serves both.
 - ✅ Emoji reactions — an ephemeral `reaction` message relayed by the server
   (never stored in state) that floats over the reacting player's token.
+- ✅ Per-player connection quality — each client measures its round-trip
+  (`ping`/`pong`) and shares it (`latency`, relayed like reactions, not stored);
+  the players list shows a signal dot + ms, and a "slow connection" notice flags
+  a laggy current player so everyone sees why the turn is slow to advance.
 - ✅ Room persistence — the whole `RoomState` is mirrored into the DO's own
   SQLite storage on each change and reloaded on cold start, so a match survives a
   worker restart / deploy / eviction (reconnecting members resume where they
@@ -261,5 +265,7 @@ Not yet done — rough priority order:
 
 - **Player cap > 8** would need more token colors.
 - **Delta sync** — broadcast diffs instead of the whole state once matches grow
-  long (currently full-state broadcast; fine at this scale).
+  long (currently full-state broadcast; fine at this scale). The `log` is capped
+  at 100 entries in state (`LOG_CAP`) so it no longer grows unbounded; `history`
+  (net-worth chart) is still sent in full.
 - Spectators / late join, mini-chat, avatars.

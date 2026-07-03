@@ -37,7 +37,10 @@ function ConnectedRoom({
     () => ({ playerId, nickname }),
     [playerId, nickname]
   )
-  const { state, connected, send, reactions } = useRoom(roomId, identity)
+  const { state, connected, send, reactions, latencies } = useRoom(
+    roomId,
+    identity
+  )
 
   if (!state) return <Centered>{t("net.connectingRoom")}</Centered>
 
@@ -51,6 +54,7 @@ function ConnectedRoom({
         send={send}
         connected={connected}
         reactions={reactions}
+        latencies={latencies}
       />
     )
   }
