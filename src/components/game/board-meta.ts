@@ -3,6 +3,7 @@
 import {
   BOARD,
   BOARD_SIZE,
+  JAIL_TILE_ID,
   type ColorGroup,
   type GameState,
   type Player,
@@ -92,24 +93,43 @@ const LANDING_BEAT_MS = 250
  */
 export const STOPOVER_PAUSE_MS = 2400
 
+/** Shorter beat on the "Go To Jail" corner before the piece is hauled off. */
+export const JAIL_STOPOVER_PAUSE_MS = 900
+
+export type Stopover = { tile: number; pauseMs: number }
+
 /**
- * If the update that set `state.lastCard` also moved the drawer *past* the
- * deck tile (a movement card resolved in the same state update), return the
- * deck tile the card was drawn on — the token should stop there for the
- * reveal. `from` is the drawer's position before the update.
+ * If a single state update carried the acting player *past* the tile their
+ * roll actually landed on, return that tile so the token visibly stops there
+ * first. Two cases: a movement card (pause for the reveal) and the "Go To
+ * Jail" corner (a beat before being hauled to jail). `from` is the mover's
+ * position before the update.
  */
-export function cardStopoverTile(
+export function travelStopover(
   state: GameState,
   from: number
-): number | null {
-  if (!state.lastCard || !state.dice) return null
+): Stopover | null {
+  if (!state.dice) return null
   const mover = state.players[state.currentPlayerIndex]
   if (!mover) return null
-  const cardTile = (from + state.dice[0] + state.dice[1]) % BOARD_SIZE
-  const deckType =
-    state.lastCard.deck === "chance" ? "chance" : "communityChest"
-  if (BOARD[cardTile].type !== deckType) return null
-  return cardTile === mover.position ? null : cardTile
+  const rolledTo = (from + state.dice[0] + state.dice[1]) % BOARD_SIZE
+  if (rolledTo === mover.position) return null
+
+  if (state.lastCard) {
+    const deckType =
+      state.lastCard.deck === "chance" ? "chance" : "communityChest"
+    if (BOARD[rolledTo].type === deckType) {
+      return { tile: rolledTo, pauseMs: STOPOVER_PAUSE_MS }
+    }
+  }
+  if (
+    mover.inJail &&
+    mover.position === JAIL_TILE_ID &&
+    BOARD[rolledTo].type === "goToJail"
+  ) {
+    return { tile: rolledTo, pauseMs: JAIL_STOPOVER_PAUSE_MS }
+  }
+  return null
 }
 
 /**
@@ -137,18 +157,18 @@ export function travelPlan(
   }
   if (maxMs === 0) return { cardRevealMs: 0, totalMs: 0 }
 
-  // A movement card splits the drawer's travel in two around the reveal.
+  // A stop-over (movement card, Go To Jail) splits the travel in two legs.
   const mover = state.players[state.currentPlayerIndex]
   const before = mover ? prev.get(mover.id) : undefined
   if (mover && before !== undefined && before !== mover.position) {
-    const via = cardStopoverTile(state, before)
-    if (via !== null) {
-      const leg1 = Math.round(travelSeconds(before, via) * 1000)
-      const leg2 = Math.round(travelSeconds(via, mover.position) * 1000)
+    const stop = travelStopover(state, before)
+    if (stop !== null) {
+      const leg1 = Math.round(travelSeconds(before, stop.tile) * 1000)
+      const leg2 = Math.round(travelSeconds(stop.tile, mover.position) * 1000)
       return {
         cardRevealMs: leg1 + LANDING_BEAT_MS,
         totalMs:
-          Math.max(maxMs, leg1 + STOPOVER_PAUSE_MS + leg2) + LANDING_BEAT_MS,
+          Math.max(maxMs, leg1 + stop.pauseMs + leg2) + LANDING_BEAT_MS,
       }
     }
   }

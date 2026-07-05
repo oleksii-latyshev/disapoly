@@ -36,6 +36,20 @@ function shortName(name: string): string {
 }
 
 /**
+ * Which board edge a tile sits on. Drives the band/strip placement: the group
+ * color always faces *outward*, the owner/value strip faces the board center.
+ */
+type Side = "bottom" | "left" | "top" | "right" | "corner"
+
+function tileSide(id: number): Side {
+  if (isCornerTile(id)) return "corner"
+  if (id < 10) return "bottom"
+  if (id < 20) return "left"
+  if (id < 30) return "top"
+  return "right"
+}
+
+/**
  * The value strip along the tile's bottom edge: the price while the bank owns
  * it, the rent a visitor would pay once someone does (in the owner's color) —
  * so "what will this cost me?" is readable straight off the board.
@@ -78,6 +92,21 @@ function Tile({
     setLastHouses(tile.houses)
     setBuilt(tile.houses > lastHouses)
   }
+
+  // A player→player ownership transfer (trade, bankruptcy to a creditor)
+  // pulses the tile for a couple of seconds so the swap is easy to spot.
+  const [lastOwnerId, setLastOwnerId] = useState(tile.ownerId)
+  const [traded, setTraded] = useState(false)
+  if (tile.ownerId !== lastOwnerId) {
+    setLastOwnerId(tile.ownerId)
+    if (tile.ownerId !== null && lastOwnerId !== null) setTraded(true)
+  }
+  useEffect(() => {
+    if (!traded) return
+    const timer = setTimeout(() => setTraded(false), 2200)
+    return () => clearTimeout(timer)
+  }, [traded])
+
   const owner = tile.ownerId
     ? state.players.find((p) => p.id === tile.ownerId)
     : undefined
@@ -112,6 +141,11 @@ function Tile({
       ? contrastText(visual.color)
       : "var(--tile-fg)"
 
+  // Group color faces outward, the owner/value strip faces the board center.
+  const side = tileSide(id)
+  const isVertical = side === "left" || side === "right"
+  const bandFirst = side === "top" || side === "left"
+
   return (
     <div
       onClick={() => onSelect(id)}
@@ -127,14 +161,20 @@ function Tile({
         outlineOffset: inMonopoly ? "-2px" : undefined,
       }}
       className={cn(
-        "relative flex min-h-0 cursor-pointer flex-col overflow-hidden rounded-md border text-[length:max(8px,1.15cqw)] leading-tight",
+        "relative flex min-h-0 cursor-pointer overflow-hidden rounded-md border text-[length:max(8px,1.15cqw)] leading-tight",
+        isVertical ? "flex-row" : "flex-col",
         "transition-[translate,box-shadow] duration-150 hover:z-10 hover:-translate-y-px hover:shadow-md",
-        isCurrent && "tile-current z-10 ring-2 ring-ring"
+        isCurrent && "tile-current z-10 ring-2 ring-ring",
+        traded && !reduce && "tile-traded z-10"
       )}
     >
       {def.type === "street" && groupColor && (
         <div
-          className="h-[max(5px,0.9cqw)] w-full shrink-0"
+          className={cn(
+            "shrink-0",
+            isVertical ? "h-full w-[max(5px,0.9cqw)]" : "h-[max(5px,0.9cqw)] w-full",
+            bandFirst ? "order-1" : "order-3"
+          )}
           style={{
             backgroundColor: groupColor,
             boxShadow: theme.glow ? `0 0 6px ${groupColor}` : undefined,
@@ -142,15 +182,26 @@ function Tile({
         />
       )}
 
-      {/* Houses / hotel — a clear badge over the color band. Each new level
-          drops in with a spring bounce and kicks up a puff of dust. */}
+      {/* Houses / hotel — a clear badge hugging the outer (color band) edge.
+          Each new level drops in with a spring bounce and a puff of dust. */}
       {def.type === "street" && tile.houses > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 top-[max(5px,0.7cqw)] z-10 flex justify-center">
+        <div
+          className={cn(
+            "pointer-events-none absolute z-10 flex",
+            side === "top" && "inset-x-0 top-[max(5px,0.7cqw)] justify-center",
+            side === "bottom" &&
+              "inset-x-0 bottom-[max(5px,0.7cqw)] justify-center",
+            side === "left" &&
+              "inset-y-0 left-[max(5px,0.7cqw)] flex-col justify-center",
+            side === "right" &&
+              "inset-y-0 right-[max(5px,0.7cqw)] flex-col justify-center items-end"
+          )}
+        >
           {built && !reduce && (
             <motion.span
               key={`dust-${tile.houses}`}
               className={cn(
-                "absolute top-0 h-[max(12px,1.6cqw)] w-[max(24px,3.2cqw)] rounded-full blur-[3px]",
+                "absolute inset-0 m-auto h-[max(12px,1.6cqw)] w-[max(24px,3.2cqw)] rounded-full blur-[3px]",
                 tile.houses === 5 ? "bg-red-400/60" : "bg-emerald-400/60"
               )}
               initial={{ scale: 0.3, opacity: 0.8 }}
@@ -184,7 +235,7 @@ function Tile({
         </div>
       )}
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-[max(2px,0.25cqw)] px-0.5 text-center">
+      <div className="order-2 flex flex-1 flex-col items-center justify-center gap-[max(2px,0.25cqw)] px-0.5 text-center">
         {visual && (
           <span
             className={cn(
@@ -233,7 +284,11 @@ function Tile({
         <div
           key={tile.ownerId ?? "bank"}
           className={cn(
-            "flex h-[max(10px,1.5cqw)] w-full shrink-0 items-center justify-center text-[length:max(7px,1.15cqw)] font-bold tabular-nums",
+            "flex shrink-0 items-center justify-center text-[length:max(7px,1.15cqw)] font-bold tabular-nums",
+            isVertical
+              ? "h-full w-[max(10px,1.5cqw)]"
+              : "h-[max(10px,1.5cqw)] w-full",
+            bandFirst ? "order-3" : "order-1",
             owner && "owner-strip"
           )}
           style={
@@ -250,7 +305,11 @@ function Tile({
           }
           title={owner ? `Owned by ${owner.nickname}` : undefined}
         >
-          {label}
+          <span
+            style={isVertical ? { writingMode: "vertical-rl" } : undefined}
+          >
+            {label}
+          </span>
         </div>
       )}
       {tile.mortgaged && (

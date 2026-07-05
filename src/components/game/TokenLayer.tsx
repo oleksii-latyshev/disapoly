@@ -6,13 +6,13 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
 import {
-  cardStopoverTile,
   positionsOf,
-  STOPOVER_PAUSE_MS,
   tileCenter,
   tokenTargets,
   travelPlan,
   travelSeconds,
+  travelStopover,
+  type Stopover,
   type TokenTarget as Target,
 } from "./board-meta"
 
@@ -42,8 +42,8 @@ function Token({
   player: Player
   target: Target
   glow: boolean
-  /** Card stop-over tile for this player's move, or null (see TokenLayer). */
-  stopoverFor: (playerId: string, from: number) => number | null
+  /** Stop-over for this player's move (card / Go To Jail), or null. */
+  stopoverFor: (playerId: string, from: number) => Stopover | null
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -157,19 +157,20 @@ function Token({
       )
     }
 
-    // A movement card first carries the token to the deck tile it was drawn
-    // on; it pauses there while the card is revealed, then travels onward.
-    const via = stopoverRef.current(player.id, from)
-    if (via !== null && via !== to) {
-      const c = tileCenter(via)
-      leg(from, via, c.x, c.y).then(() => {
+    // A stop-over (movement card, Go To Jail) first carries the token to the
+    // tile the roll landed on; it pauses there (card reveal / a dramatic
+    // beat), then travels onward to where the rules actually put it.
+    const stop = stopoverRef.current(player.id, from)
+    if (stop !== null && stop.tile !== to) {
+      const c = tileCenter(stop.tile)
+      leg(from, stop.tile, c.x, c.y).then(() => {
         if (gen.current !== myGen) return
         pop()
         if (pauseTimer.current) clearTimeout(pauseTimer.current)
         pauseTimer.current = setTimeout(() => {
           if (gen.current !== myGen) return
-          leg(via, to, target.x, target.y).then(pop, () => {})
-        }, STOPOVER_PAUSE_MS)
+          leg(stop.tile, to, target.x, target.y).then(pop, () => {})
+        }, stop.pauseMs)
       }, () => {})
     } else {
       leg(from, to, target.x, target.y).then(pop, () => {})
@@ -202,7 +203,7 @@ function Token({
       >
         <span className="pointer-events-none absolute top-[10%] left-[16%] h-[28%] w-[40%] rounded-full bg-white/45 blur-[1px]" />
         <span className="relative drop-shadow-sm">
-          {player.nickname.charAt(0).toUpperCase()}
+          {player.emoji || player.nickname.charAt(0).toUpperCase()}
         </span>
       </div>
     </div>
@@ -257,7 +258,7 @@ export function TokenLayer({ state }: { state: GameState }) {
   // Stop-over lookup for the acting player's move (others never stop over).
   const current = state.players[state.currentPlayerIndex]
   const stopoverFor = (playerId: string, from: number) =>
-    playerId === current?.id ? cardStopoverTile(state, from) : null
+    playerId === current?.id ? travelStopover(state, from) : null
 
   useEffect(() => {
     const prev = prevBalances.current

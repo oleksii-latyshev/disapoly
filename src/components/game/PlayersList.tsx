@@ -83,8 +83,19 @@ export function PlayersList({
               className="size-3 shrink-0 rounded-full border border-white/70"
               style={{ backgroundColor: player.color }}
             />
+            {player.emoji && (
+              <span className="shrink-0 text-base leading-none">
+                {player.emoji}
+              </span>
+            )}
             <span className="min-w-0 flex-1 truncate font-medium">
               {player.nickname}
+              {state.orderRolls &&
+                (state.orderRolls[player.id] ?? -1) >= 0 && (
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    🎲 {state.orderRolls[player.id]}
+                  </span>
+                )}
               {player.inJail && (
                 <span className="ml-1 text-xs text-muted-foreground">
                   (jail)

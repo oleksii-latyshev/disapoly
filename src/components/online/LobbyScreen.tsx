@@ -10,14 +10,34 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import type { ClientMessage, PayMode, RoomMember, RoomState } from "@/game"
-import { roomUrl } from "@/net/identity"
+import {
+  PLAYER_EMOJIS,
+  type ClientMessage,
+  type PayMode,
+  type RoomMember,
+  type RoomState,
+} from "@/game"
+import { roomUrl, setStoredEmoji } from "@/net/identity"
 import { cn } from "@/lib/utils"
 import { useT } from "@/i18n"
 
 const MIN_MEMBERS = 2
 
 const PAY_MODES: PayMode[] = ["turbo", "normal"]
+
+/** The next avatar after `current` that no other member holds. */
+function nextFreeEmoji(members: RoomMember[], selfId: string): string | null {
+  const self = members.find((m) => m.id === selfId)
+  const taken = new Set(
+    members.filter((m) => m.id !== selfId).map((m) => m.emoji)
+  )
+  const start = Math.max(0, PLAYER_EMOJIS.indexOf(self?.emoji ?? ""))
+  for (let i = 1; i <= PLAYER_EMOJIS.length; i++) {
+    const candidate = PLAYER_EMOJIS[(start + i) % PLAYER_EMOJIS.length]
+    if (!taken.has(candidate) && candidate !== self?.emoji) return candidate
+  }
+  return null
+}
 
 export function LobbyScreen({
   roomId,
@@ -40,6 +60,7 @@ export function LobbyScreen({
   const t = useT()
   const [copied, setCopied] = useState(false)
   const [payMode, setPayMode] = useState<PayMode>("turbo")
+  const [orderRoll, setOrderRoll] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState("")
   const url = roomUrl(roomId)
@@ -101,6 +122,26 @@ export function LobbyScreen({
                     className="size-3 shrink-0 rounded-full border border-white/70"
                     style={{ backgroundColor: member.color }}
                   />
+                  {isSelf ? (
+                    <button
+                      type="button"
+                      className="shrink-0 cursor-pointer rounded text-base leading-none transition-transform hover:scale-125"
+                      title={t("lobby.changeAvatar")}
+                      aria-label={t("lobby.changeAvatar")}
+                      onClick={() => {
+                        const next = nextFreeEmoji(state.members, member.id)
+                        if (!next) return
+                        send({ type: "avatar", emoji: next })
+                        setStoredEmoji(next)
+                      }}
+                    >
+                      {member.emoji ?? "🙂"}
+                    </button>
+                  ) : (
+                    <span className="shrink-0 text-base leading-none">
+                      {member.emoji ?? "🙂"}
+                    </span>
+                  )}
                   {isSelf && editing ? (
                     <form
                       className="flex min-w-0 flex-1 items-center gap-1"
@@ -216,9 +257,26 @@ export function LobbyScreen({
             </div>
           )}
 
+          {self?.isHost && (
+            <div className="flex flex-col gap-1.5">
+              <Button
+                variant={orderRoll ? "default" : "outline"}
+                size="sm"
+                onClick={() => setOrderRoll((v) => !v)}
+              >
+                {t("lobby.orderRoll")}: {orderRoll ? t("common.on") : t("common.off")}
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {t("lobby.orderRoll.desc")}
+              </span>
+            </div>
+          )}
+
           {self?.isHost ? (
             <Button
-              onClick={() => send({ type: "start", settings: { payMode } })}
+              onClick={() =>
+                send({ type: "start", settings: { payMode, orderRoll } })
+              }
               disabled={!canStart}
             >
               <Play /> {t("setup.start")}{" "}

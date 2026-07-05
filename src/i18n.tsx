@@ -46,6 +46,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.copyLink": "Copy link",
     "lobby.rename": "Change nickname",
     "lobby.kick": "Remove {name}",
+    "lobby.changeAvatar": "Change avatar",
+    "lobby.orderRoll": "Roll for turn order",
+    "lobby.orderRoll.desc":
+      "The game opens with everyone rolling once — highest goes first.",
     "lobby.payMode": "Pay mode",
     "payMode.turbo": "Turbo",
     "payMode.normal": "Normal",
@@ -94,8 +98,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "pay.owedTo": "You owe ${amount} to {name} for {tile}.",
     "pay.owedBank": "You owe ${amount} to the bank.",
     "pay.hint": "You can trade, sell buildings or mortgage before paying.",
+    "pay.short":
+      "You're ${need} short — sell buildings, mortgage or trade to cover it.",
     "pay.pay": "Pay ${amount}",
     "pay.waitingFor": "{name} owes ${amount} and is deciding how to pay…",
+
+    "order.title": "Roll-off: highest roll starts the game.",
+    "order.roll": "Roll for turn order",
 
     "bankrupt.declare": "Declare bankruptcy",
     "bankrupt.confirm":
@@ -237,6 +246,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.soldBuilding": "{name} sold a building on {tile} for ${refund}.",
     "log.mortgaged": "{name} mortgaged {tile} for ${value}.",
     "log.unmortgaged": "{name} lifted the mortgage on {tile} for ${cost}.",
+    "log.orderRolled": "{name} rolls {a} + {b} = {sum} for turn order.",
+    "log.orderTie": "{n} players tied at {sum} — they roll again.",
+    "log.orderFirst": "{name} rolled highest and starts the game!",
     "log.bankrupt": "{name} went bankrupt!",
     "log.resigned": "{name} declared bankruptcy and left the game.",
     "log.removedBankrupt":
@@ -303,6 +315,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.copyLink": "Копировать ссылку",
     "lobby.rename": "Изменить ник",
     "lobby.kick": "Выгнать {name}",
+    "lobby.changeAvatar": "Сменить аватар",
+    "lobby.orderRoll": "Бросок за очерёдность",
+    "lobby.orderRoll.desc":
+      "Игра начнётся с броска кубиков — самый большой ходит первым.",
     "lobby.payMode": "Режим оплаты",
     "payMode.turbo": "Турбо",
     "payMode.normal": "Обычный",
@@ -351,8 +367,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "pay.owedTo": "Ты должен ${amount} игроку {name} за «{tile}».",
     "pay.owedBank": "Ты должен банку ${amount}.",
     "pay.hint": "Перед оплатой можно меняться, продавать постройки и закладывать.",
+    "pay.short":
+      "Не хватает ${need} — продай постройки, заложи участки или меняйся.",
     "pay.pay": "Заплатить ${amount}",
     "pay.waitingFor": "{name} должен ${amount} и решает, как заплатить…",
+
+    "order.title": "Бросок за очерёдность: самый большой ходит первым.",
+    "order.roll": "Бросить за очерёдность",
 
     "bankrupt.declare": "Объявить банкротство",
     "bankrupt.confirm":
@@ -496,6 +517,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.soldBuilding": "{name} продаёт постройку на «{tile}» за ${refund}.",
     "log.mortgaged": "{name} закладывает «{tile}» за ${value}.",
     "log.unmortgaged": "{name} выкупает залог «{tile}» за ${cost}.",
+    "log.orderRolled": "{name} бросает {a} + {b} = {sum} за очерёдность.",
+    "log.orderTie": "Ничья ({sum}) у {n} игроков — они бросают ещё раз.",
+    "log.orderFirst": "{name} выбрасывает больше всех и ходит первым!",
     "log.bankrupt": "{name} банкротится!",
     "log.resigned": "{name} объявляет банкротство и выходит из игры.",
     "log.removedBankrupt":

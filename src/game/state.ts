@@ -6,6 +6,7 @@ import {
   HOTELS_SUPPLY,
   HOUSES_SUPPLY,
   PLAYER_COLORS,
+  PLAYER_EMOJIS,
   RAILROAD_RENT,
   STARTING_BALANCE,
   UTILITY_MULTIPLIER,
@@ -28,21 +29,28 @@ export type PlayerSetup = {
   nickname: string
   /** Token color; auto-assigned by join order when omitted. */
   color?: string
+  /** Emoji avatar; auto-assigned by join order when omitted. */
+  emoji?: string
 }
 
-/** Default match rules: classic instant ("turbo") debt collection. */
-export const DEFAULT_SETTINGS: GameSettings = { payMode: "turbo" }
+/** Default match rules: classic instant ("turbo") collection, join order. */
+export const DEFAULT_SETTINGS: GameSettings = {
+  payMode: "turbo",
+  orderRoll: false,
+}
 
 /** Build a fresh match state for the given players (2–8). */
 export function createInitialState(
   setups: PlayerSetup[],
   seed: number = createSeed(),
-  settings: GameSettings = DEFAULT_SETTINGS
+  settings: Partial<GameSettings> = {}
 ): GameState {
+  const rules: GameSettings = { ...DEFAULT_SETTINGS, ...settings }
   const players: Player[] = setups.map((setup, index) => ({
     id: setup.id ?? `p${index + 1}`,
     nickname: setup.nickname.trim() || `Player ${index + 1}`,
     color: setup.color ?? PLAYER_COLORS[index % PLAYER_COLORS.length],
+    emoji: setup.emoji ?? PLAYER_EMOJIS[index % PLAYER_EMOJIS.length],
     balance: STARTING_BALANCE,
     position: 0,
     inJail: false,
@@ -60,16 +68,18 @@ export function createInitialState(
 
   const state: GameState = {
     status: "playing",
-    settings: { ...settings },
+    settings: rules,
     players,
     tiles: BOARD.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
     currentPlayerIndex: 0,
-    phase: "awaiting-roll",
+    // With the roll-off rule the match opens by rolling for turn order.
+    phase: rules.orderRoll ? "order-roll" : "awaiting-roll",
     dice: null,
     doublesCount: 0,
     pendingPurchase: null,
     auction: null,
     pendingDebt: null,
+    orderRolls: rules.orderRoll ? {} : null,
     bank: { houses: HOUSES_SUPPLY, hotels: HOTELS_SUPPLY },
     rngSeed: cc.seed,
     chance,
@@ -371,6 +381,29 @@ export function isTradeValid(state: GameState, offer: TradeOffer): boolean {
     b.tiles.length === 0 && b.money === 0 && b.jailCards === 0
   // Reject a no-op exchange.
   return !(empty(offer.give) && empty(offer.receive))
+}
+
+/**
+ * The most cash a player could possibly hold right now: balance plus every
+ * building sold at half cost plus every clear property mortgaged. Used to
+ * decide whether a debt is payable at all (normal pay mode) before asking the
+ * player to raise the money themselves.
+ */
+export function maxRaisable(state: GameState, playerId: string): number {
+  const player = playerById(state, playerId)
+  if (!player) return 0
+  let total = player.balance
+  for (const def of BOARD) {
+    if (!("price" in def)) continue
+    const tile = state.tiles[def.id]
+    if (tile.ownerId !== playerId) continue
+    if (def.type === "street" && tile.houses > 0) {
+      const perBuilding = Math.floor(def.houseCost / 2)
+      total += tile.houses * perBuilding
+    }
+    if (!tile.mortgaged) total += Math.floor(def.price / 2)
+  }
+  return total
 }
 
 /** Net worth = cash + price of owned tiles (Stage 0 ignores building value). */

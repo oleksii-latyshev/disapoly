@@ -44,6 +44,58 @@ describe("start settings", () => {
   })
 })
 
+describe("emoji avatars", () => {
+  it("assigns unique avatars on join and honors a free preference", () => {
+    let room = lobbyWith("a", "b")
+    const [a, b] = room.members
+    expect(a.emoji).not.toBe(b.emoji)
+
+    room = applyClientMessage(
+      room,
+      { type: "join", playerId: "c", nickname: "C", emoji: "🦖" },
+      "c"
+    )
+    expect(room.members.find((m) => m.id === "c")?.emoji).toBe("🦖")
+
+    // Someone else's avatar can't be claimed — a free one is assigned instead.
+    const d = applyClientMessage(
+      room,
+      { type: "join", playerId: "d", nickname: "D", emoji: "🦖" },
+      "d"
+    )
+    expect(d.members.find((m) => m.id === "d")?.emoji).not.toBe("🦖")
+  })
+
+  it("changes via the avatar message and syncs the in-game player", () => {
+    let room = started(lobbyWith("a", "b"))
+    room = applyClientMessage(room, { type: "avatar", emoji: "🦀" }, "b")
+    expect(room.members.find((m) => m.id === "b")?.emoji).toBe("🦀")
+    expect(room.game?.players.find((p) => p.id === "b")?.emoji).toBe("🦀")
+  })
+
+  it("rejects a taken or unknown emoji", () => {
+    const room = lobbyWith("a", "b")
+    const aEmoji = room.members[0].emoji
+    expect(applyClientMessage(room, { type: "avatar", emoji: aEmoji }, "b"))
+      .toBe(room)
+    expect(applyClientMessage(room, { type: "avatar", emoji: "💩" }, "b"))
+      .toBe(room)
+  })
+
+  it("a reconnect join keeps the changed avatar", () => {
+    let room = started(lobbyWith("a", "b"))
+    room = applyClientMessage(room, { type: "avatar", emoji: "🦀" }, "b")
+    room = setConnected(room, "b", false, 1000)
+    // Reconnect sends the stale localStorage preference — it must not revert.
+    room = applyClientMessage(
+      room,
+      { type: "join", playerId: "b", nickname: "B", emoji: "🐼" },
+      "b"
+    )
+    expect(room.members.find((m) => m.id === "b")?.emoji).toBe("🦀")
+  })
+})
+
 describe("rename", () => {
   it("renames the member and their in-game player", () => {
     let room = started(lobbyWith("a", "b"))

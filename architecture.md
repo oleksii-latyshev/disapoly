@@ -107,10 +107,23 @@ doubles → jail.
 **Pay modes** (host setting at game creation): in `turbo` (default, classic
 behavior) rent/taxes/card charges are deducted the moment they're incurred; in
 `normal` a charge against the acting player pauses the turn in `awaiting-pay`
-until they confirm with `PAY_DEBT` — property management and out-of-turn trades
-stay legal meanwhile, so they can raise cash first. A force-ended turn collects
-the pending debt automatically, so skipping a disconnected player never dodges
-rent.
+until they confirm with `PAY_DEBT` — and **they raise the cash themselves**:
+the payment is only accepted once their balance covers it (sell buildings,
+mortgage, trade meanwhile — `maxRaisable` decides whether the debt is payable
+at all; a hopeless debt liquidates/bankrupts instantly since no choice
+exists). A force-ended turn collects the pending debt automatically (turbo
+style), so skipping a disconnected player never dodges rent.
+
+**Opening roll-off** (`settings.orderRoll`, host toggle): the match opens in an
+`order-roll` phase — every player rolls once (`orderRolls` in state), the
+highest starts and play proceeds clockwise from them; ties re-roll among the
+tied. A disconnected player's opening roll is made for them by the auto-skip
+alarm (`FORCE_END_TURN` rolls instead of skipping during this phase).
+
+**Emoji avatars:** every player has an `emoji` (from `PLAYER_EMOJIS`),
+auto-assigned on join and changeable in the lobby / hot-seat setup (uniqueness
+enforced by the room; the preference persists in localStorage). Shown on the
+board token and in the players list.
 
 **Leaving the game:** `DECLARE_BANKRUPTCY` (any player, self-stamped by the
 server) and the server-only `FORCE_BANKRUPT` retire a player outside the normal
@@ -142,7 +155,8 @@ relay, no database).
   One instance per room id. It holds `RoomState` in memory, feeds validated
   client messages into `applyClientMessage`, and broadcasts the whole state.
 - Clients (`src/hooks/useRoom.ts` over `partysocket`) send **intents**, never
-  state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `kick`.
+  state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `avatar`
+  / `kick`.
 
 **Authority rules enforced server-side:**
 
@@ -240,8 +254,9 @@ See [README.md](README.md) for exact commands.
   for the earliest applicable deadline; `onAlarm` runs every duty whose
   deadline has passed.
 - ✅ Lobby management — host kicks members (with rejoin bar), anyone can edit
-  their nickname in the lobby (persisted to localStorage and synced into a
-  running game), host picks the pay mode (turbo/normal) before starting.
+  their nickname and cycle their emoji avatar in the lobby (both persisted to
+  localStorage and synced into a running game), host picks the pay mode
+  (turbo/normal) and the opening roll-off before starting.
 - ✅ Emoji reactions — an ephemeral `reaction` message relayed by the server
   (never stored in state) that floats over the reacting player's token.
 - ✅ Per-player connection quality — each client measures its round-trip
@@ -264,11 +279,22 @@ See [README.md](README.md) for exact commands.
   what a visitor would actually owe).
 - ✅ **Icon-dominant tiles** — every location has its own vector emblem
   (`tile-visuals.tsx`, lucide icons drawn in code, no image assets), a value
-  strip along the bottom edge (price while unowned → the *current rent* on the
-  owner's color once bought), and the whole tile washes in the owner's color —
-  ownership and cost read straight off the board. Street names hide on small
-  boards (the emblem + details dialog identify the tile). Group palettes put
-  brown/orange/yellow on a dark→light lightness ladder for low color vision.
+  strip (price while unowned → the *current rent* on the owner's color once
+  bought), and the whole tile washes in the owner's color — ownership and cost
+  read straight off the board. Street names hide on small boards (the emblem +
+  details dialog identify the tile). Group palettes put brown/orange/yellow on
+  a dark→light lightness ladder for low color vision.
+- ✅ **Per-side tile orientation** — the group color band always faces the
+  board's *outer* edge and the owner/value strip faces the center, on all four
+  sides (vertical strips use `writing-mode: vertical-rl`); house badges hug
+  the outer edge too.
+- ✅ **Trade legibility** — an incoming offer shows green "you receive" / red
+  "you give" boxes from the viewer's perspective, and tiles that change hands
+  (trade or bankruptcy transfer) pulse gold on the board for ~2s.
+- ✅ **Social/meta polish** — a Neon-theme favicon + apple-touch icon (midnight
+  navy, glowing cyan ring/gem, neon corner tiles) and full OpenGraph/Twitter
+  previews with a generated 1200×630 card in the same neon style
+  (`public/og.jpg`, rendered from an SVG design).
 - ✅ **Premium motion pass** (every effect below is gated by
   `prefers-reduced-motion`):
   - 3D board tilt — the board tilts a few degrees toward the mouse in
@@ -295,9 +321,10 @@ See [README.md](README.md) for exact commands.
   reveal, event callouts, card/jail sounds, money deltas) wait for the token's
   travel animation via a shared `travelPlan` helper (`board-meta.ts`), so the
   outcome isn't revealed before the piece arrives. A **movement card** (e.g.
-  "Advance to GO") animates in two legs: the token hops to the Chance/Chest
-  tile, pauses there while the card reveals, then travels on to the
-  destination (`cardStopoverTile` + `STOPOVER_PAUSE_MS`). Turn buttons
+  "Advance to GO") and a roll onto **Go To Jail** animate in two legs: the
+  token first visibly lands on the tile the roll hit, pauses (card reveal /
+  a dramatic beat), then travels on to the destination (`travelStopover` in
+  `board-meta.ts`). Turn buttons
   (roll/buy/end/pay) are disabled until the travel settles
   (`useTravelSettled`), so a turn can't be ended while a piece is still
   flying. Stationary events (buy, trade, auction) stay instant, and reduced
@@ -346,13 +373,14 @@ Not yet done — rough priority order:
   — only fixed-destination moves. (A movement card still resolves in a single
   state update; the client now *animates* it as two legs with a stop-over on
   the deck tile, but the reducer-level split is still open.)
-- **Choosable token pieces / avatars** — players are letter circles in a fixed
-  color palette; picking a piece (and freeing the palette) also unlocks a
-  **player cap > 8**.
-- **House-rule settings at game creation** — starting cash, GO payout, auction
-  on/off, Free Parking jackpot, and an online **turn timer** (the 30s
-  disconnect auto-skip exists, but a present-but-slow player can stall
-  forever).
+- **Player cap > 8** — emoji avatars exist (16 in `PLAYER_EMOJIS`), but seats
+  are still capped by the fixed 8-color token palette; decoupling color from
+  identity would unlock more players.
+- **More house-rule settings at game creation** — pay mode and the opening
+  roll-off exist; still open: starting cash, GO payout, auction on/off, Free
+  Parking jackpot, and an online **turn timer** (the 30s disconnect auto-skip
+  exists, but a present-but-slow player can stall forever — and in normal pay
+  mode a debtor who *can* pay may sit on the debt indefinitely).
 - **Bot players** — fill empty seats or play solo; the pure reducer makes a
   heuristic AI cheap to run on either side of the wire.
 - **Spectators / late join, mini-chat.**

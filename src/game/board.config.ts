@@ -263,6 +263,26 @@ export const GROUP_TILE_IDS: Record<ColorGroup, number[]> = (() => {
   return groups
 })()
 
+/** Emoji avatars offered to players; auto-assigned by join order, pickable. */
+export const PLAYER_EMOJIS: readonly string[] = [
+  "🦊",
+  "🐼",
+  "🐸",
+  "🦁",
+  "🐙",
+  "🦄",
+  "🐯",
+  "🐨",
+  "🐷",
+  "🐵",
+  "🦖",
+  "🐳",
+  "🦉",
+  "🐝",
+  "🦀",
+  "🐰",
+]
+
 /** Token colors offered to players in the order they join. */
 export const PLAYER_COLORS = [
   "#ef4444", // red

@@ -4,7 +4,12 @@ import PartySocket from "partysocket"
 import type { ClientMessage, RoomState, ServerMessage } from "@/game"
 import { PARTY_HOST, PARTY_NAME } from "@/net/config"
 
-export type RoomIdentity = { playerId: string; nickname: string }
+export type RoomIdentity = {
+  playerId: string
+  nickname: string
+  /** Preferred emoji avatar; empty = let the room assign one. */
+  emoji?: string
+}
 
 /** A received emoji reaction, tagged with a local id so overlays can dedupe. */
 export type ReactionEvent = { id: number; playerId: string; emoji: string }
@@ -38,6 +43,7 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
       type: "join",
       playerId: identity.playerId,
       nickname: identity.nickname,
+      emoji: identity.emoji || undefined,
     }
 
     let pingTimer: ReturnType<typeof setInterval> | null = null
@@ -93,7 +99,7 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
       if (pingTimer) clearInterval(pingTimer)
       socket.close()
     }
-  }, [roomId, identity.playerId, identity.nickname])
+  }, [roomId, identity.playerId, identity.nickname, identity.emoji])
 
   const send = useCallback((message: ClientMessage) => {
     socketRef.current?.send(JSON.stringify(message))

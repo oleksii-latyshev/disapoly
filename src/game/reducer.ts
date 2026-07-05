@@ -24,6 +24,7 @@ import {
   currentPlayer,
   historyPoint,
   isTradeValid,
+  maxRaisable,
   mortgageValue,
   playerById,
   rentFor,
@@ -46,6 +47,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
   switch (action.type) {
     case "ROLL_DICE":
+      if (state.phase === "order-roll") return rollForOrder(clone(state))
       return state.phase === "awaiting-roll" ? roll(clone(state)) : state
     case "BUY_PROPERTY":
       return state.phase === "awaiting-buy" ? buy(clone(state)) : state
@@ -55,6 +57,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state.phase === "awaiting-end" ? endTurn(clone(state)) : state
     case "FORCE_END_TURN":
       // Abandon the current player's turn from any phase (disconnect skip).
+      // During the opening roll-off there is no turn to end — the absent
+      // player's order roll is made for them instead.
+      if (state.phase === "order-roll") return rollForOrder(clone(state))
       return endTurn(clone(state))
     case "PLACE_BID":
       return state.phase === "auction"
@@ -83,7 +88,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "CANCEL_TRADE":
       return cancelTrade(clone(state), action.playerId)
     case "PAY_DEBT":
-      return state.phase === "awaiting-pay" ? payDebt(clone(state)) : state
+      // The debtor raises the cash themselves (sell/mortgage/trade) — the
+      // payment is only accepted once their balance actually covers it.
+      return state.phase === "awaiting-pay" &&
+        state.pendingDebt !== null &&
+        currentPlayer(state).balance >= state.pendingDebt.amount
+        ? payDebt(clone(state))
+        : state
     case "DECLARE_BANKRUPTCY":
       // Voluntary surrender — allowed from any phase, any (non-bankrupt) player.
       return goBankrupt(state, action.playerId, "log.resigned")
@@ -116,6 +127,56 @@ function canLeaveJail(state: GameState): boolean {
 }
 
 // --- action handlers (mutate the cloned draft, then return it) ---
+
+/**
+ * Opening roll-off (settings.orderRoll): each player rolls once in join order;
+ * the highest roll starts and play proceeds clockwise from them (classic
+ * rule). Ties re-roll among the tied — everyone else is marked eliminated
+ * with a sentinel -1 so they keep their "already rolled" status but can't win.
+ */
+function rollForOrder(d: GameState): GameState {
+  const player = d.players[d.currentPlayerIndex]
+  const result = rollDice(d.rngSeed)
+  d.rngSeed = result.seed
+  d.dice = result.dice
+  const [a, b] = result.dice
+  const sum = a + b
+  d.orderRolls = { ...(d.orderRolls ?? {}), [player.id]: sum }
+  log(d, "log.orderRolled", { name: player.nickname, a, b, sum })
+
+  // Someone still to roll? Hand them the dice.
+  const pending = d.players.filter(
+    (p) => !p.isBankrupt && d.orderRolls![p.id] === undefined
+  )
+  if (pending.length > 0) {
+    d.currentPlayerIndex = d.players.findIndex((p) => p.id === pending[0].id)
+    return d
+  }
+
+  // Everyone rolled: a unique highest roll starts the game...
+  const rolls = d.orderRolls!
+  const contenders = d.players.filter((p) => !p.isBankrupt)
+  const max = Math.max(...contenders.map((p) => rolls[p.id]))
+  const top = contenders.filter((p) => rolls[p.id] === max)
+  if (top.length === 1) {
+    d.currentPlayerIndex = d.players.findIndex((p) => p.id === top[0].id)
+    d.orderRolls = null
+    d.dice = null
+    d.phase = "awaiting-roll"
+    log(d, "log.orderFirst", { name: top[0].nickname })
+    return d
+  }
+
+  // ...otherwise the tied players roll again; the rest are out of the running.
+  const next: Record<string, number> = {}
+  for (const p of contenders) {
+    if (rolls[p.id] !== max) next[p.id] = -1
+  }
+  d.orderRolls = next
+  d.currentPlayerIndex = d.players.findIndex((p) => p.id === top[0].id)
+  log(d, "log.orderTie", { n: top.length, sum: max })
+  return d
+}
 
 function roll(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
@@ -723,8 +784,10 @@ function settleNoExtra(d: GameState): GameState {
 /**
  * Charge the debtor, honoring the match's pay mode: in "normal" mode a debt of
  * the current player pauses the turn in `awaiting-pay` until they confirm with
- * PAY_DEBT (so they can trade/mortgage first); in "turbo" mode — and for
- * charges hitting someone who isn't the acting player — it collects instantly.
+ * PAY_DEBT — and *they* choose what to sell or mortgage to cover it. A debt
+ * beyond their maximum raisable value skips the pause (there is no choice to
+ * make) and liquidates/bankrupts instantly, like "turbo" mode — which also
+ * handles charges hitting someone who isn't the acting player.
  * (`settings` is optional-chained so matches persisted before the setting
  * existed keep working after a deploy.)
  */
@@ -739,7 +802,8 @@ function charge(
   if (
     d.settings?.payMode === "normal" &&
     amount > 0 &&
-    debtor.id === d.players[d.currentPlayerIndex].id
+    debtor.id === d.players[d.currentPlayerIndex].id &&
+    amount <= maxRaisable(d, debtor.id)
   ) {
     d.pendingDebt = { amount, creditorId, reason, tileId }
     d.phase = "awaiting-pay"

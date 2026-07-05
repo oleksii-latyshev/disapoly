@@ -293,20 +293,49 @@ function PendingTrade({
       >
         <ArrowLeftRight className="size-3.5" /> {t("trade.pendingTitle")}
       </div>
-      <div className="space-y-1 text-sm">
-        <p>
-          <span className="font-semibold">
-            {t("trade.gives", { name: from?.nickname ?? "?" })}:
-          </span>{" "}
-          {summarize(offer.give, t)}
-        </p>
-        <p>
-          <span className="font-semibold">
-            {t("trade.gives", { name: to?.nickname ?? "?" })}:
-          </span>{" "}
-          {summarize(offer.receive, t)}
-        </p>
-      </div>
+      {(() => {
+        // From the viewer's perspective, color what they gain green and what
+        // they lose red; a spectator sees the neutral two-line summary.
+        const perspective = hotSeat ? offer.toId : localPlayerId
+        const isParty =
+          perspective === offer.toId || perspective === offer.fromId
+        if (!isParty) {
+          return (
+            <div className="space-y-1 text-sm">
+              <p>
+                <span className="font-semibold">
+                  {t("trade.gives", { name: from?.nickname ?? "?" })}:
+                </span>{" "}
+                {summarize(offer.give, t)}
+              </p>
+              <p>
+                <span className="font-semibold">
+                  {t("trade.gives", { name: to?.nickname ?? "?" })}:
+                </span>{" "}
+                {summarize(offer.receive, t)}
+              </p>
+            </div>
+          )
+        }
+        const gain = perspective === offer.toId ? offer.give : offer.receive
+        const loss = perspective === offer.toId ? offer.receive : offer.give
+        return (
+          <div className="space-y-1.5 text-sm">
+            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2 py-1.5">
+              <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                + {t("trade.youReceive")}:
+              </span>{" "}
+              {summarize(gain, t)}
+            </div>
+            <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-1.5">
+              <span className="font-semibold text-rose-700 dark:text-rose-400">
+                − {t("trade.youGive")}:
+              </span>{" "}
+              {summarize(loss, t)}
+            </div>
+          </div>
+        )
+      })()}
 
       {canRespond && (
         <div className="flex gap-2">

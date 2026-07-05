@@ -100,19 +100,42 @@ describe("normal pay mode", () => {
     expect(player(mortgaged, "p1").balance).toBe(1500 + 30)
   })
 
-  it("liquidates and bankrupts on PAY_DEBT if the debtor can't cover", () => {
+  it("a hopeless debt (beyond max raisable) liquidates instantly", () => {
     const s = newNormalGame()
     give(s, "p2", 39)
     s.tiles[39].houses = 5 // hotel on Boardwalk: $2000 rent
     s.players[0].balance = 100
-    // From 35, roll [1, 3] onto 39.
+    // From 35, roll [1, 3] onto 39. No amount of selling covers $2000, so
+    // there's no choice to offer — bankruptcy resolves on landing.
+    s.players[0].position = 35
+    const rolled = gameReducer(withNextRoll(s, 1, 3), { type: "ROLL_DICE" })
+    expect(rolled.pendingDebt).toBeNull()
+    expect(player(rolled, "p1").isBankrupt).toBe(true)
+    expect(rolled.status).toBe("finished")
+    expect(rolled.winnerId).toBe("p2")
+  })
+
+  it("rejects PAY_DEBT until the player has raised the cash themselves", () => {
+    const s = newNormalGame()
+    give(s, "p2", 39)
+    s.tiles[39].houses = 1 // Boardwalk with 1 house: $200 rent
+    give(s, "p1", 1) // Mediterranean, mortgage value $30
+    s.players[0].balance = 180 // short $20, but raisable via mortgage
     s.players[0].position = 35
     const rolled = gameReducer(withNextRoll(s, 1, 3), { type: "ROLL_DICE" })
     expect(rolled.phase).toBe("awaiting-pay")
-    const paid = gameReducer(rolled, { type: "PAY_DEBT" })
-    expect(player(paid, "p1").isBankrupt).toBe(true)
-    expect(paid.status).toBe("finished")
-    expect(paid.winnerId).toBe("p2")
+
+    // Short on cash: the payment is refused, nothing is auto-sold.
+    expect(gameReducer(rolled, { type: "PAY_DEBT" })).toBe(rolled)
+    expect(rolled.tiles[1].mortgaged).toBe(false)
+
+    // The player mortgages by hand, then the payment goes through.
+    const raised = gameReducer(rolled, { type: "MORTGAGE", tileId: 1 })
+    expect(player(raised, "p1").balance).toBe(210)
+    const paid = gameReducer(raised, { type: "PAY_DEBT" })
+    expect(paid.phase).toBe("awaiting-end")
+    expect(player(paid, "p1").balance).toBe(10)
+    expect(player(paid, "p2").balance).toBe(1700)
   })
 })
 

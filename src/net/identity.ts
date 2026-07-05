@@ -6,6 +6,7 @@
 
 const PLAYER_ID_KEY = "disapoly.playerId"
 const NICKNAME_KEY = "disapoly.nickname"
+const EMOJI_KEY = "disapoly.emoji"
 
 /** Stable per-browser player id, generated once and persisted. */
 export function getPlayerId(): string {
@@ -23,6 +24,15 @@ export function getStoredNickname(): string {
 
 export function setStoredNickname(nickname: string): void {
   localStorage.setItem(NICKNAME_KEY, nickname)
+}
+
+/** Preferred emoji avatar; empty string lets the room auto-assign one. */
+export function getStoredEmoji(): string {
+  return localStorage.getItem(EMOJI_KEY) ?? ""
+}
+
+export function setStoredEmoji(emoji: string): void {
+  localStorage.setItem(EMOJI_KEY, emoji)
 }
 
 /** Short, URL-friendly room code. */

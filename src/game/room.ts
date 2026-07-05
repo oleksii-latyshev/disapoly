@@ -8,7 +8,7 @@
  * same logic bundle on the server without pulling in any React/UI code.
  */
 
-import { PLAYER_COLORS } from "./board.config"
+import { PLAYER_COLORS, PLAYER_EMOJIS } from "./board.config"
 import { gameReducer } from "./reducer"
 import { createInitialState, DEFAULT_SETTINGS } from "./state"
 import type { GameAction, GameSettings, GameState } from "./types"
@@ -24,6 +24,8 @@ export type RoomMember = {
   id: string
   nickname: string
   color: string
+  /** Emoji avatar (from PLAYER_EMOJIS); unique within the room. */
+  emoji: string
   isHost: boolean
   connected: boolean
   /** Epoch ms of the last disconnect; null while connected. */
@@ -50,12 +52,13 @@ export const REACTIONS: readonly string[] = ["👍", "😂", "😮", "🔥", "�
 
 /** Client → server intents. */
 export type ClientMessage =
-  | { type: "join"; playerId: string; nickname: string }
-  | { type: "start"; settings?: GameSettings } // host only; settings = match rules
+  | { type: "join"; playerId: string; nickname: string; emoji?: string }
+  | { type: "start"; settings?: Partial<GameSettings> } // host only; settings = match rules
   | { type: "action"; action: GameAction }
   | { type: "reset" }
   | { type: "skip" } // skip a disconnected player's turn
   | { type: "rename"; nickname: string } // change the sender's nickname
+  | { type: "avatar"; emoji: string } // change the sender's emoji avatar
   | { type: "kick"; playerId: string } // host removes a member (lobby only)
   | { type: "reaction"; emoji: string } // ephemeral emoji burst (not state)
   | { type: "ping"; t: number } // latency probe; server echoes it back
@@ -88,7 +91,7 @@ export function applyClientMessage(
 ): RoomState {
   switch (message.type) {
     case "join":
-      return join(state, message.playerId, message.nickname)
+      return join(state, message.playerId, message.nickname, message.emoji)
     case "start":
       return start(state, senderId, message.settings)
     case "action":
@@ -99,6 +102,8 @@ export function applyClientMessage(
       return skip(state, senderId)
     case "rename":
       return rename(state, senderId, message.nickname)
+    case "avatar":
+      return avatar(state, senderId, message.emoji)
     case "kick":
       return kick(state, senderId, message.playerId)
     default:
@@ -106,25 +111,62 @@ export function applyClientMessage(
   }
 }
 
+/**
+ * The requested emoji if it's a known avatar not held by anyone else,
+ * otherwise the first avatar still free in the room.
+ */
+function resolveEmoji(
+  state: RoomState,
+  requested: string | undefined,
+  selfId: string
+): string {
+  const taken = new Set(
+    state.members.filter((m) => m.id !== selfId).map((m) => m.emoji)
+  )
+  if (
+    requested &&
+    (PLAYER_EMOJIS as readonly string[]).includes(requested) &&
+    !taken.has(requested)
+  ) {
+    return requested
+  }
+  return PLAYER_EMOJIS.find((e) => !taken.has(e)) ?? PLAYER_EMOJIS[0]
+}
+
 /** Add or reconnect a member. New members may only join during the lobby. */
-function join(state: RoomState, playerId: string, nickname: string): RoomState {
+function join(
+  state: RoomState,
+  playerId: string,
+  nickname: string,
+  emoji?: string
+): RoomState {
   // A kicked player stays out (optional-chained: predates some stored rooms).
   if (state.kickedIds?.includes(playerId)) return state
 
   const existing = state.members.find((m) => m.id === playerId)
   if (existing) {
     const clean = nickname.trim() || existing.nickname
+    // A reconnect keeps the member's avatar (changes go through `avatar`;
+    // honoring the stale join preference here would revert them). Members
+    // from before avatars existed get one assigned now.
+    const face = existing.emoji ?? resolveEmoji(state, emoji, playerId)
     const members = state.members.map((m) =>
       m.id === playerId
-        ? { ...m, connected: true, disconnectedAt: null, nickname: clean }
+        ? {
+            ...m,
+            connected: true,
+            disconnectedAt: null,
+            nickname: clean,
+            emoji: face,
+          }
         : m
     )
-    // Keep the in-game token's name in step with the member's.
+    // Keep the in-game token's name/avatar in step with the member's.
     const game = state.game
       ? {
           ...state.game,
           players: state.game.players.map((p) =>
-            p.id === playerId ? { ...p, nickname: clean } : p
+            p.id === playerId ? { ...p, nickname: clean, emoji: face } : p
           ),
         }
       : null
@@ -140,6 +182,7 @@ function join(state: RoomState, playerId: string, nickname: string): RoomState {
     id: playerId,
     nickname: nickname.trim() || `Player ${state.members.length + 1}`,
     color: PLAYER_COLORS[state.members.length % PLAYER_COLORS.length],
+    emoji: resolveEmoji(state, emoji, playerId),
     isHost: state.members.length === 0,
     connected: true,
     disconnectedAt: null,
@@ -147,10 +190,30 @@ function join(state: RoomState, playerId: string, nickname: string): RoomState {
   return { ...state, members: [...state.members, member] }
 }
 
+/** Change the sender's emoji avatar (must be a free one from the set). */
+function avatar(state: RoomState, senderId: string, emoji: string): RoomState {
+  const member = state.members.find((m) => m.id === senderId)
+  if (!member) return state
+  const face = resolveEmoji(state, emoji, senderId)
+  if (face !== emoji || face === member.emoji) return state // taken/unknown/no-op
+  const members = state.members.map((m) =>
+    m.id === senderId ? { ...m, emoji: face } : m
+  )
+  const game = state.game
+    ? {
+        ...state.game,
+        players: state.game.players.map((p) =>
+          p.id === senderId ? { ...p, emoji: face } : p
+        ),
+      }
+    : null
+  return { ...state, members, game }
+}
+
 function start(
   state: RoomState,
   senderId: string,
-  settings?: GameSettings
+  settings?: Partial<GameSettings>
 ): RoomState {
   const host = state.members.find((m) => m.id === senderId)
   if (
@@ -165,6 +228,7 @@ function start(
       id: m.id,
       nickname: m.nickname,
       color: m.color,
+      emoji: m.emoji,
     })),
     undefined,
     { ...DEFAULT_SETTINGS, ...settings }

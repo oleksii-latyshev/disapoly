@@ -149,6 +149,17 @@ export function TurnControls({
         </p>
       )}
 
+      {state.phase === "order-roll" && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground">{t("order.title")}</p>
+          {isMyTurn && (
+            <Button onClick={() => send({ type: "ROLL_DICE" })}>
+              <Dices /> {t("order.roll")}
+            </Button>
+          )}
+        </div>
+      )}
+
       {isMyTurn && state.phase === "awaiting-roll" && !player.inJail && (
         <Button disabled={!settled} onClick={() => send({ type: "ROLL_DICE" })}>
           <Dices /> {t("turn.roll")}
@@ -230,8 +241,17 @@ export function TurnControls({
                 })
               : t("pay.owedBank", { amount: debt.amount })}
           </p>
-          <p className="text-xs text-muted-foreground">{t("pay.hint")}</p>
-          <Button disabled={!settled} onClick={() => send({ type: "PAY_DEBT" })}>
+          {player.balance >= debt.amount ? (
+            <p className="text-xs text-muted-foreground">{t("pay.hint")}</p>
+          ) : (
+            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              {t("pay.short", { need: debt.amount - player.balance })}
+            </p>
+          )}
+          <Button
+            disabled={!settled || player.balance < debt.amount}
+            onClick={() => send({ type: "PAY_DEBT" })}
+          >
             <HandCoins /> {t("pay.pay", { amount: debt.amount })}
           </Button>
         </div>

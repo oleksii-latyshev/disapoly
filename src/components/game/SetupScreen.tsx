@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   PLAYER_COLORS,
+  PLAYER_EMOJIS,
   type GameSettings,
   type PayMode,
   type PlayerSetup,
@@ -31,22 +32,52 @@ export function SetupScreen({
 }) {
   const t = useT()
   const [names, setNames] = useState<string[]>(["", ""])
+  const [emojis, setEmojis] = useState<string[]>([
+    PLAYER_EMOJIS[0],
+    PLAYER_EMOJIS[1],
+  ])
   const [payMode, setPayMode] = useState<PayMode>("turbo")
+  const [orderRoll, setOrderRoll] = useState(false)
 
   const setName = (index: number, value: string) =>
     setNames((prev) => prev.map((n, i) => (i === index ? value : n)))
 
-  const addPlayer = () =>
-    names.length < MAX_PLAYERS && setNames((prev) => [...prev, ""])
-  const removePlayer = () =>
-    names.length > MIN_PLAYERS && setNames((prev) => prev.slice(0, -1))
+  /** Advance one player's avatar to the next emoji nobody else has taken. */
+  const cycleEmoji = (index: number) =>
+    setEmojis((prev) => {
+      const taken = new Set(prev.filter((_, i) => i !== index))
+      const start = Math.max(0, PLAYER_EMOJIS.indexOf(prev[index]))
+      for (let i = 1; i <= PLAYER_EMOJIS.length; i++) {
+        const candidate = PLAYER_EMOJIS[(start + i) % PLAYER_EMOJIS.length]
+        if (!taken.has(candidate)) {
+          return prev.map((e, j) => (j === index ? candidate : e))
+        }
+      }
+      return prev
+    })
+
+  const addPlayer = () => {
+    if (names.length >= MAX_PLAYERS) return
+    setNames((prev) => [...prev, ""])
+    setEmojis((prev) => {
+      const taken = new Set(prev)
+      const free = PLAYER_EMOJIS.find((e) => !taken.has(e)) ?? PLAYER_EMOJIS[0]
+      return [...prev, free]
+    })
+  }
+  const removePlayer = () => {
+    if (names.length <= MIN_PLAYERS) return
+    setNames((prev) => prev.slice(0, -1))
+    setEmojis((prev) => prev.slice(0, -1))
+  }
 
   const start = () =>
     onStart(
       names.map((nickname, i) => ({
         nickname: nickname.trim() || `Player ${i + 1}`,
+        emoji: emojis[i],
       })),
-      { payMode }
+      { payMode, orderRoll }
     )
 
   return (
@@ -66,6 +97,15 @@ export function SetupScreen({
                   className="size-3 shrink-0 rounded-full border border-white/70"
                   style={{ backgroundColor: PLAYER_COLORS[index] }}
                 />
+                <button
+                  type="button"
+                  className="shrink-0 cursor-pointer rounded text-lg leading-none transition-transform hover:scale-125"
+                  title={t("lobby.changeAvatar")}
+                  aria-label={t("lobby.changeAvatar")}
+                  onClick={() => cycleEmoji(index)}
+                >
+                  {emojis[index]}
+                </button>
                 <Label className="sr-only" htmlFor={`player-${index}`}>
                   {t("setup.playerN", { n: index + 1 })}
                 </Label>
@@ -125,6 +165,19 @@ export function SetupScreen({
             </div>
             <span className="text-xs text-muted-foreground">
               {t(`payMode.${payMode}.desc`)}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Button
+              variant={orderRoll ? "default" : "outline"}
+              size="sm"
+              onClick={() => setOrderRoll((v) => !v)}
+            >
+              {t("lobby.orderRoll")}: {orderRoll ? t("common.on") : t("common.off")}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {t("lobby.orderRoll.desc")}
             </span>
           </div>
 

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   getPlayerId,
+  getStoredEmoji,
   getStoredNickname,
   setStoredNickname,
 } from "@/net/identity"
@@ -36,7 +37,10 @@ function ConnectedRoom({
   onRename: (nickname: string) => void
 }) {
   const t = useT()
-  const identity = useMemo(() => ({ playerId, nickname }), [playerId, nickname])
+  const identity = useMemo(
+    () => ({ playerId, nickname, emoji: getStoredEmoji() }),
+    [playerId, nickname]
+  )
   const { state, connected, kicked, send, reactions, latencies } = useRoom(
     roomId,
     identity

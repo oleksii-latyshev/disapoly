@@ -74,6 +74,8 @@ export type Player = {
   nickname: string
   /** CSS color used to render the token and ownership marks. */
   color: string
+  /** Emoji avatar shown on the token and in the players list. */
+  emoji: string
   balance: number
   /** Current tile index (0–39). */
   position: number
@@ -90,6 +92,7 @@ export type Player = {
  * are legal. See architecture.md §3.3.
  */
 export type TurnPhase =
+  | "order-roll" // opening roll-off: players roll once to decide who starts
   | "awaiting-roll" // current player may roll the dice
   | "awaiting-buy" // current player landed on an unowned tile they can afford
   | "auction" // a declined/unaffordable tile is up for auction among all players
@@ -104,7 +107,11 @@ export type TurnPhase =
 export type PayMode = "turbo" | "normal"
 
 /** Match rules chosen by the host before the game starts. */
-export type GameSettings = { payMode: PayMode }
+export type GameSettings = {
+  payMode: PayMode
+  /** Open with a roll-off: highest roll goes first (play clockwise from them). */
+  orderRoll: boolean
+}
 
 /** What a pending debt was incurred for (drives the pay prompt copy). */
 export type DebtReason = "rent" | "tax" | "card"
@@ -190,6 +197,12 @@ export type GameState = {
   auction: AuctionState | null
   /** Debt awaiting PAY_DEBT confirmation (normal pay mode), or null. */
   pendingDebt: PendingDebt | null
+  /**
+   * Opening roll-off results (dice sum per playerId) while `phase` is
+   * "order-roll"; a value of -1 marks a player eliminated from a tie re-roll.
+   * Null once the order is decided (or when the setting is off).
+   */
+  orderRolls: Record<string, number> | null
   /** Remaining houses/hotels the bank can still hand out. */
   bank: BankSupply
   /** Seed for the deterministic PRNG; advances on every roll. */
