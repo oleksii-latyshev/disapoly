@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 
 import type { GameState } from "@/game"
-import { positionsOf, settleDelayMs } from "@/components/game/board-meta"
+import { positionsOf, travelPlan } from "@/components/game/board-meta"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import { useSound } from "@/sound/SoundProvider"
 
@@ -24,17 +24,19 @@ export function useGameSounds(state: GameState, localPlayerId?: string): void {
 
     // Cues tied to landing on a tile (card draw, jail) wait for the token's
     // travel animation, so the sound plays when the piece actually arrives.
-    const delay = reduce
-      ? 0
-      : settleDelayMs(positionsOf(prev.players), state.players)
-    const onLanding = (fn: () => void) => {
-      if (delay === 0) fn()
-      else setTimeout(fn, delay)
+    // The card cue fires at the deck-tile stop-over; the rest at journey's end.
+    const plan = reduce
+      ? { cardRevealMs: 0, totalMs: 0 }
+      : travelPlan(positionsOf(prev.players), state)
+    const after = (ms: number, fn: () => void) => {
+      if (ms === 0) fn()
+      else setTimeout(fn, ms)
     }
+    const onLanding = (fn: () => void) => after(plan.totalMs, fn)
 
     if (prev.dice !== state.dice && state.dice) play("dice")
     if (prev.lastCard !== state.lastCard && state.lastCard) {
-      onLanding(() => play("card"))
+      after(plan.cardRevealMs, () => play("card"))
     }
     if (!prev.pendingTrade && state.pendingTrade) {
       // A distinct chime when the offer is addressed to you.

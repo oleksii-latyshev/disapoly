@@ -1,7 +1,10 @@
 import {
   BOARD,
+  countOwnedOfType,
+  hasMonopoly,
   mortgageValue,
   RAILROAD_RENT,
+  rentFor,
   UTILITY_MULTIPLIER,
   type GameState,
 } from "@/game"
@@ -15,10 +18,26 @@ import { useT } from "@/i18n"
 
 import { GROUP_COLOR } from "./board-meta"
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  active = false,
+}: {
+  label: string
+  value: string
+  /** Highlight the row that applies right now (current rent level). */
+  active?: boolean
+}) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b py-1 text-sm last:border-0">
-      <span className="text-muted-foreground">{label}</span>
+    <div
+      className={
+        "flex items-center justify-between gap-4 border-b py-1 text-sm last:border-0" +
+        (active ? " -mx-2 rounded bg-primary/10 px-2 font-semibold" : "")
+      }
+    >
+      <span className={active ? "text-foreground" : "text-muted-foreground"}>
+        {label}
+      </span>
       <span className="font-semibold tabular-nums">{value}</span>
     </div>
   )
@@ -36,10 +55,31 @@ export function TileDetails({
 }) {
   const t = useT()
   const def = tileId === null ? null : BOARD[tileId]
+  const tile = tileId === null ? null : state.tiles[tileId]
   const owner =
     tileId !== null && state.tiles[tileId]?.ownerId
       ? state.players.find((p) => p.id === state.tiles[tileId].ownerId)
       : undefined
+
+  // What a visitor would actually owe right now (issue: the card used to show
+  // only the base table). Utilities depend on the dice, so they show ×N.
+  const houses = tile?.houses ?? 0
+  const monopoly =
+    def?.type === "street" && owner && hasMonopoly(state, owner.id, def.group)
+  const rentNow =
+    def && tileId !== null && owner && !tile?.mortgaged
+      ? rentFor(state, tileId, 0)
+      : null
+  const utilityMult =
+    def?.type === "utility" && owner
+      ? UTILITY_MULTIPLIER[
+          Math.min(countOwnedOfType(state, owner.id, "utility"), 2) - 1
+        ]
+      : null
+  const railroadsOwned =
+    def?.type === "railroad" && owner
+      ? countOwnedOfType(state, owner.id, "railroad")
+      : 0
 
   return (
     <Dialog open={tileId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -61,25 +101,57 @@ export function TileDetails({
                 <Row label={t("details.owner")} value={owner.nickname} />
               )}
 
+              {owner && tile?.mortgaged && (
+                <Row label={t("details.rentNow")} value={t("details.noRent")} />
+              )}
+              {def.type === "street" && rentNow !== null && (
+                <Row
+                  active
+                  label={t("details.rentNow")}
+                  value={`$${rentNow}`}
+                />
+              )}
+              {def.type === "railroad" && rentNow !== null && (
+                <Row
+                  active
+                  label={t("details.rentNow")}
+                  value={`$${rentNow}`}
+                />
+              )}
+              {def.type === "utility" && utilityMult && !tile?.mortgaged && (
+                <Row
+                  active
+                  label={t("details.rentNow")}
+                  value={t("details.timesDice", { x: utilityMult })}
+                />
+              )}
+
               {def.type === "street" && (
                 <>
                   <Row label={t("details.price")} value={`$${def.price}`} />
                   <Row
+                    active={!!owner && !monopoly && houses === 0}
                     label={t("details.baseRent")}
                     value={`$${def.rent[0]}`}
                   />
                   <Row
+                    active={!!monopoly && houses === 0}
                     label={t("details.withSet")}
                     value={`$${def.rent[0] * 2}`}
                   />
                   {[1, 2, 3, 4].map((n) => (
                     <Row
                       key={n}
+                      active={houses === n}
                       label={t("details.house", { n })}
                       value={`$${def.rent[n]}`}
                     />
                   ))}
-                  <Row label={t("details.hotel")} value={`$${def.rent[5]}`} />
+                  <Row
+                    active={houses === 5}
+                    label={t("details.hotel")}
+                    value={`$${def.rent[5]}`}
+                  />
                   <Row
                     label={t("details.houseCost")}
                     value={`$${def.houseCost}`}
@@ -93,6 +165,7 @@ export function TileDetails({
                   {RAILROAD_RENT.map((rent, i) => (
                     <Row
                       key={i}
+                      active={railroadsOwned === i + 1}
                       label={t("details.owned", { n: i + 1 })}
                       value={`$${rent}`}
                     />

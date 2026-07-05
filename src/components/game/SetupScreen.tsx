@@ -11,19 +11,27 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PLAYER_COLORS, type PlayerSetup } from "@/game"
+import {
+  PLAYER_COLORS,
+  type GameSettings,
+  type PayMode,
+  type PlayerSetup,
+} from "@/game"
 import { useT } from "@/i18n"
 
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = PLAYER_COLORS.length // 8
 
+const PAY_MODES: PayMode[] = ["turbo", "normal"]
+
 export function SetupScreen({
   onStart,
 }: {
-  onStart: (players: PlayerSetup[]) => void
+  onStart: (players: PlayerSetup[], settings: GameSettings) => void
 }) {
   const t = useT()
   const [names, setNames] = useState<string[]>(["", ""])
+  const [payMode, setPayMode] = useState<PayMode>("turbo")
 
   const setName = (index: number, value: string) =>
     setNames((prev) => prev.map((n, i) => (i === index ? value : n)))
@@ -37,7 +45,8 @@ export function SetupScreen({
     onStart(
       names.map((nickname, i) => ({
         nickname: nickname.trim() || `Player ${i + 1}`,
-      }))
+      })),
+      { payMode }
     )
 
   return (
@@ -95,6 +104,28 @@ export function SetupScreen({
                 <Plus />
               </Button>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              {t("lobby.payMode")}
+            </span>
+            <div className="flex gap-2">
+              {PAY_MODES.map((mode) => (
+                <Button
+                  key={mode}
+                  variant={payMode === mode ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setPayMode(mode)}
+                >
+                  {t(`payMode.${mode}`)}
+                </Button>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {t(`payMode.${payMode}.desc`)}
+            </span>
           </div>
 
           <Button onClick={start}>

@@ -93,7 +93,31 @@ export type TurnPhase =
   | "awaiting-roll" // current player may roll the dice
   | "awaiting-buy" // current player landed on an unowned tile they can afford
   | "auction" // a declined/unaffordable tile is up for auction among all players
+  | "awaiting-pay" // current player owes a debt and must settle it (normal pay mode)
   | "awaiting-end" // resolution done, current player must end the turn
+
+/**
+ * How debts are collected. "turbo" (classic behavior) deducts rent/taxes the
+ * moment they're incurred; "normal" pauses the turn in `awaiting-pay` so the
+ * debtor confirms with PAY_DEBT — giving them a chance to trade/mortgage first.
+ */
+export type PayMode = "turbo" | "normal"
+
+/** Match rules chosen by the host before the game starts. */
+export type GameSettings = { payMode: PayMode }
+
+/** What a pending debt was incurred for (drives the pay prompt copy). */
+export type DebtReason = "rent" | "tax" | "card"
+
+/** A charge awaiting confirmation while `phase === "awaiting-pay"`. */
+export type PendingDebt = {
+  amount: number
+  /** Receiving player, or null when the bank collects. */
+  creditorId: string | null
+  reason: DebtReason
+  /** Tile that caused the debt (rent/tax), for display. */
+  tileId: number | null
+}
 
 /**
  * A live auction for one tile, triggered when the player who landed on it
@@ -150,6 +174,8 @@ export type TradeOffer = {
 
 export type GameState = {
   status: "playing" | "finished"
+  /** Match rules fixed at creation (host-chosen online). */
+  settings: GameSettings
   players: Player[]
   /** Indexed by tile id (0–39), parallel to the board definition. */
   tiles: TileState[]
@@ -162,6 +188,8 @@ export type GameState = {
   pendingPurchase: number | null
   /** Live auction for a declined/unaffordable tile, or null. */
   auction: AuctionState | null
+  /** Debt awaiting PAY_DEBT confirmation (normal pay mode), or null. */
+  pendingDebt: PendingDebt | null
   /** Remaining houses/hotels the bank can still hand out. */
   bank: BankSupply
   /** Seed for the deterministic PRNG; advances on every roll. */
@@ -203,5 +231,11 @@ export type GameAction =
   | { type: "PROPOSE_TRADE"; offer: TradeOffer }
   | { type: "RESPOND_TRADE"; accept: boolean; playerId: string }
   | { type: "CANCEL_TRADE"; playerId: string }
+  // Settle the pending debt (normal pay mode, current player only).
+  | { type: "PAY_DEBT" }
+  // Voluntary surrender — allowed out of turn; the server stamps the actor's id.
+  | { type: "DECLARE_BANKRUPTCY"; playerId: string }
   // Server-only: skip a disconnected player's turn (never sent by clients).
   | { type: "FORCE_END_TURN" }
+  // Server-only: bankrupt a long-disconnected player (never sent by clients).
+  | { type: "FORCE_BANKRUPT"; playerId: string }

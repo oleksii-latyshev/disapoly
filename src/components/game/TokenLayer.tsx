@@ -6,10 +6,12 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
 import {
+  cardStopoverTile,
   positionsOf,
-  settleDelayMs,
+  STOPOVER_PAUSE_MS,
   tileCenter,
   tokenTargets,
+  travelPlan,
   travelSeconds,
   type TokenTarget as Target,
 } from "./board-meta"
@@ -35,10 +37,13 @@ function Token({
   player,
   target,
   glow,
+  stopoverFor,
 }: {
   player: Player
   target: Target
   glow: boolean
+  /** Card stop-over tile for this player's move, or null (see TokenLayer). */
+  stopoverFor: (playerId: string, from: number) => number | null
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -46,7 +51,22 @@ function Token({
   const prevPos = useRef(player.position)
   const mounted = useRef(false)
   const gen = useRef(0)
+  const pauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const reduce = usePrefersReducedMotion()
+  // Read through a ref so the travel effect doesn't re-run on identity
+  // changes. Updated in a layout effect *declared before* the travel effect,
+  // so the travel effect (same commit, runs later) sees the fresh value.
+  const stopoverRef = useRef(stopoverFor)
+  useLayoutEffect(() => {
+    stopoverRef.current = stopoverFor
+  })
+
+  useEffect(
+    () => () => {
+      if (pauseTimer.current) clearTimeout(pauseTimer.current)
+    },
+    []
+  )
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -101,37 +121,60 @@ function Token({
       return
     }
 
-    const forward = (to - from + BOARD_SIZE) % BOARD_SIZE
-    if (forward >= 1 && forward <= 12) {
-      // Hop through each intermediate tile, landing on the offset target.
-      const xs: number[] = []
-      const ys: number[] = []
-      for (let step = 1; step <= forward; step++) {
-        const c = tileCenter((from + step) % BOARD_SIZE)
-        xs.push(c.x)
-        ys.push(c.y)
+    // One leg of travel: per-tile hops for a rollable distance, otherwise a
+    // single big glide arc (teleports, long card moves).
+    const leg = (
+      legFrom: number,
+      legTo: number,
+      endX: number,
+      endY: number
+    ) => {
+      const forward = (legTo - legFrom + BOARD_SIZE) % BOARD_SIZE
+      const duration = travelSeconds(legFrom, legTo)
+      if (forward >= 1 && forward <= 12) {
+        // Hop through each intermediate tile, landing on the offset target.
+        const xs: number[] = []
+        const ys: number[] = []
+        for (let step = 1; step <= forward; step++) {
+          const c = tileCenter((legFrom + step) % BOARD_SIZE)
+          xs.push(c.x)
+          ys.push(c.y)
+        }
+        xs[xs.length - 1] = endX
+        ys[ys.length - 1] = endY
+        bounce(forward, "-55%", duration)
+        return animate(
+          el,
+          { left: xs.map((n) => `${n}%`), top: ys.map((n) => `${n}%`) },
+          { duration, ease: "easeInOut" }
+        )
       }
-      xs[xs.length - 1] = target.x
-      ys[ys.length - 1] = target.y
-      const duration = travelSeconds(from, to)
-      bounce(forward, "-55%", duration)
-      animate(
-        el,
-        { left: xs.map((n) => `${n}%`), top: ys.map((n) => `${n}%`) },
-        { duration, ease: "easeInOut" }
-      ).then(pop, () => {})
-    } else {
-      // Teleport (e.g. go to jail) or long card move: glide directly, a bit
-      // slower so the jump is legible rather than an instant snap. One big arc.
-      const duration = travelSeconds(from, to)
       bounce(1, "-130%", duration)
-      animate(
+      return animate(
         el,
-        { left: `${target.x}%`, top: `${target.y}%` },
+        { left: `${endX}%`, top: `${endY}%` },
         { duration, ease: "easeInOut" }
-      ).then(pop, () => {})
+      )
     }
-  }, [player.position, target.x, target.y, reduce])
+
+    // A movement card first carries the token to the deck tile it was drawn
+    // on; it pauses there while the card is revealed, then travels onward.
+    const via = stopoverRef.current(player.id, from)
+    if (via !== null && via !== to) {
+      const c = tileCenter(via)
+      leg(from, via, c.x, c.y).then(() => {
+        if (gen.current !== myGen) return
+        pop()
+        if (pauseTimer.current) clearTimeout(pauseTimer.current)
+        pauseTimer.current = setTimeout(() => {
+          if (gen.current !== myGen) return
+          leg(via, to, target.x, target.y).then(pop, () => {})
+        }, STOPOVER_PAUSE_MS)
+      }, () => {})
+    } else {
+      leg(from, to, target.x, target.y).then(pop, () => {})
+    }
+  }, [player.id, player.position, target.x, target.y, reduce])
 
   return (
     <div
@@ -211,6 +254,11 @@ export function TokenLayer({ state }: { state: GameState }) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
+  // Stop-over lookup for the acting player's move (others never stop over).
+  const current = state.players[state.currentPlayerIndex]
+  const stopoverFor = (playerId: string, from: number) =>
+    playerId === current?.id ? cardStopoverTile(state, from) : null
+
   useEffect(() => {
     const prev = prevBalances.current
     const prevPos = prevPositions.current
@@ -220,8 +268,9 @@ export function TokenLayer({ state }: { state: GameState }) {
     if (!prev || reduce) return
 
     // If this update also moved a token (rent, tax, GO…), hold the delta
-    // until the token lands so the money appears where the piece actually is.
-    const delay = settleDelayMs(prevPos, state.players)
+    // until the token lands (any card stop-over included) so the money
+    // appears where the piece actually is.
+    const delay = travelPlan(prevPos, state).totalMs
 
     // Recompute targets here (rather than reading a render value) so the effect
     // stays self-contained and lint-clean.
@@ -253,7 +302,7 @@ export function TokenLayer({ state }: { state: GameState }) {
       timers.current.push(hide)
     }, delay)
     timers.current.push(show)
-  }, [state.players, reduce])
+  }, [state, reduce])
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
@@ -263,6 +312,7 @@ export function TokenLayer({ state }: { state: GameState }) {
           player={player}
           target={targets.get(player.id)!}
           glow={theme.glow}
+          stopoverFor={stopoverFor}
         />
       ))}
       <AnimatePresence>

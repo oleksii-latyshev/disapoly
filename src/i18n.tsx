@@ -44,6 +44,16 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.waitHost": "Waiting for the host to start…",
     "lobby.leave": "Leave",
     "lobby.copyLink": "Copy link",
+    "lobby.rename": "Change nickname",
+    "lobby.kick": "Remove {name}",
+    "lobby.payMode": "Pay mode",
+    "payMode.turbo": "Turbo",
+    "payMode.normal": "Normal",
+    "payMode.turbo.desc": "Rent and taxes are deducted the moment you land.",
+    "payMode.normal.desc":
+      "Debts wait for a confirmation — you can trade or mortgage first.",
+    "common.save": "Save",
+    "common.cancel": "Cancel",
 
     "turn.turnOf": "{name}’s turn",
     "turn.waitingFor": "Waiting for {name} to play…",
@@ -81,10 +91,23 @@ const DICT: Record<Lang, Record<string, string>> = {
     "jail.useCard": "Use card",
     "jail.roll": "Roll for doubles",
 
+    "pay.owedTo": "You owe ${amount} to {name} for {tile}.",
+    "pay.owedBank": "You owe ${amount} to the bank.",
+    "pay.hint": "You can trade, sell buildings or mortgage before paying.",
+    "pay.pay": "Pay ${amount}",
+    "pay.waitingFor": "{name} owes ${amount} and is deciding how to pay…",
+
+    "bankrupt.declare": "Declare bankruptcy",
+    "bankrupt.confirm":
+      "Give up? Your properties return to the bank and can be bought again.",
+    "bankrupt.yes": "Give up",
+
     "card.chance": "Chance",
     "card.chest": "Community Chest",
 
     "details.owner": "Owner",
+    "details.rentNow": "Rent now",
+    "details.noRent": "none (mortgaged)",
     "details.price": "Price",
     "details.baseRent": "Base rent",
     "details.withSet": "With color set",
@@ -113,6 +136,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.skip": "Skip their turn",
     "net.autoSkipIn": "Auto-skip in {n}s",
     "net.slowConnection": "{name} has a slow connection ({ms}ms) — hang tight…",
+    "net.kicked": "The host removed you from this room.",
     "notify.yourTurn": "Your turn!",
     "notify.tradeOffer": "Trade offer!",
 
@@ -214,6 +238,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.mortgaged": "{name} mortgaged {tile} for ${value}.",
     "log.unmortgaged": "{name} lifted the mortgage on {tile} for ${cost}.",
     "log.bankrupt": "{name} went bankrupt!",
+    "log.resigned": "{name} declared bankruptcy and left the game.",
+    "log.removedBankrupt":
+      "{name} was away too long and is out — their properties return to the bank.",
     "log.wins": "{name} wins the game!",
     "log.gameOver": "Game over.",
 
@@ -274,6 +301,16 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.waitHost": "Ждём, пока хост начнёт…",
     "lobby.leave": "Выйти",
     "lobby.copyLink": "Копировать ссылку",
+    "lobby.rename": "Изменить ник",
+    "lobby.kick": "Выгнать {name}",
+    "lobby.payMode": "Режим оплаты",
+    "payMode.turbo": "Турбо",
+    "payMode.normal": "Обычный",
+    "payMode.turbo.desc": "Аренда и налоги списываются сразу при попадании.",
+    "payMode.normal.desc":
+      "Долг ждёт подтверждения — сначала можно меняться или закладывать.",
+    "common.save": "Сохранить",
+    "common.cancel": "Отмена",
 
     "turn.turnOf": "Ход {name}",
     "turn.waitingFor": "Ждём ход {name}…",
@@ -311,10 +348,23 @@ const DICT: Record<Lang, Record<string, string>> = {
     "jail.useCard": "Карта",
     "jail.roll": "Бросок на дубль",
 
+    "pay.owedTo": "Ты должен ${amount} игроку {name} за «{tile}».",
+    "pay.owedBank": "Ты должен банку ${amount}.",
+    "pay.hint": "Перед оплатой можно меняться, продавать постройки и закладывать.",
+    "pay.pay": "Заплатить ${amount}",
+    "pay.waitingFor": "{name} должен ${amount} и решает, как заплатить…",
+
+    "bankrupt.declare": "Объявить банкротство",
+    "bankrupt.confirm":
+      "Сдаться? Твоё имущество вернётся банку и снова будет доступно для покупки.",
+    "bankrupt.yes": "Сдаться",
+
     "card.chance": "Шанс",
     "card.chest": "Общественная казна",
 
     "details.owner": "Владелец",
+    "details.rentNow": "Аренда сейчас",
+    "details.noRent": "нет (заложено)",
     "details.price": "Цена",
     "details.baseRent": "Базовая аренда",
     "details.withSet": "С монополией",
@@ -344,6 +394,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "net.autoSkipIn": "Авто-пропуск через {n}с",
     "net.slowConnection":
       "У {name} медленное соединение ({ms}мс) — немного подождите…",
+    "net.kicked": "Хост удалил тебя из комнаты.",
     "notify.yourTurn": "Твой ход!",
     "notify.tradeOffer": "Предложение сделки!",
 
@@ -446,6 +497,9 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.mortgaged": "{name} закладывает «{tile}» за ${value}.",
     "log.unmortgaged": "{name} выкупает залог «{tile}» за ${cost}.",
     "log.bankrupt": "{name} банкротится!",
+    "log.resigned": "{name} объявляет банкротство и выходит из игры.",
+    "log.removedBankrupt":
+      "{name} слишком долго отсутствует и выбывает — имущество возвращается банку.",
     "log.wins": "{name} выигрывает!",
     "log.gameOver": "Игра окончена.",
 

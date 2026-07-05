@@ -32,6 +32,7 @@ import {
 } from "./state"
 import type {
   AuctionState,
+  DebtReason,
   GameAction,
   GameState,
   LogParam,
@@ -81,14 +82,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return respondTrade(clone(state), action.accept, action.playerId)
     case "CANCEL_TRADE":
       return cancelTrade(clone(state), action.playerId)
+    case "PAY_DEBT":
+      return state.phase === "awaiting-pay" ? payDebt(clone(state)) : state
+    case "DECLARE_BANKRUPTCY":
+      // Voluntary surrender — allowed from any phase, any (non-bankrupt) player.
+      return goBankrupt(state, action.playerId, "log.resigned")
+    case "FORCE_BANKRUPT":
+      // A long-disconnected player is removed (server alarm; never from clients).
+      return goBankrupt(state, action.playerId, "log.removedBankrupt")
     default:
       return state
   }
 }
 
-/** Property management is allowed on your own turn, outside the buy step. */
+/**
+ * Property management is allowed on your own turn, outside the buy step — and
+ * while a debt awaits payment, so the debtor can sell/mortgage to raise cash.
+ */
 function canManage(state: GameState): boolean {
-  return state.phase === "awaiting-roll" || state.phase === "awaiting-end"
+  return (
+    state.phase === "awaiting-roll" ||
+    state.phase === "awaiting-end" ||
+    state.phase === "awaiting-pay"
+  )
 }
 
 /** Pay/card jail exits are only legal before rolling, while in jail. */
@@ -275,7 +291,7 @@ function resolveLanding(d: GameState, diceSum: number): void {
         tile: def.name,
         amount: def.amount,
       })
-      pay(d, player, def.amount, null)
+      charge(d, player, def.amount, null, "tax", def.id)
       return
 
     case "goToJail":
@@ -308,7 +324,7 @@ function resolveLanding(d: GameState, diceSum: number): void {
           owner: owner.nickname,
           tile: def.name,
         })
-        pay(d, player, rent, owner.id)
+        charge(d, player, rent, owner.id, "rent", def.id)
       }
       return
     }
@@ -358,7 +374,7 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
   switch (effect.kind) {
     case "money":
       if (effect.amount >= 0) player.balance += effect.amount
-      else pay(d, player, -effect.amount, null)
+      else charge(d, player, -effect.amount, null, "card", null)
       return
     case "collectFromEach":
       for (const other of others) pay(d, other, effect.amount, player.id)
@@ -375,7 +391,14 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
           else houses += d.tiles[def.id].houses
         }
       }
-      pay(d, player, houses * effect.perHouse + hotels * effect.perHotel, null)
+      charge(
+        d,
+        player,
+        houses * effect.perHouse + hotels * effect.perHotel,
+        null,
+        "card",
+        null
+      )
       return
     }
     case "moveTo": {
@@ -537,6 +560,14 @@ function resolveAuctionIfDone(d: GameState): GameState {
 }
 
 function endTurn(d: GameState): GameState {
+  // A force-ended turn can still owe a confirmed debt — collect it instantly
+  // so skipping a disconnected player never dodges rent.
+  if (d.pendingDebt) {
+    const debt = d.pendingDebt
+    d.pendingDebt = null
+    pay(d, d.players[d.currentPlayerIndex], debt.amount, debt.creditorId)
+  }
+
   d.doublesCount = 0
   d.pendingPurchase = null
   d.lastCard = null
@@ -660,7 +691,12 @@ function unmortgage(d: GameState, tileId: number): GameState {
  */
 function settle(d: GameState): GameState {
   if (d.status !== "playing") return d
-  if (d.phase === "awaiting-buy" || d.phase === "auction") return d
+  if (
+    d.phase === "awaiting-buy" ||
+    d.phase === "auction" ||
+    d.phase === "awaiting-pay"
+  )
+    return d
 
   const player = d.players[d.currentPlayerIndex]
   const isDouble = !!d.dice && d.dice[0] === d.dice[1]
@@ -674,10 +710,136 @@ function settle(d: GameState): GameState {
 /** Like `settle`, but never grants an extra roll (a jail-exit roll doesn't). */
 function settleNoExtra(d: GameState): GameState {
   if (d.status !== "playing") return d
-  if (d.phase !== "awaiting-buy" && d.phase !== "auction") {
+  if (
+    d.phase !== "awaiting-buy" &&
+    d.phase !== "auction" &&
+    d.phase !== "awaiting-pay"
+  ) {
     d.phase = "awaiting-end"
   }
   return d
+}
+
+/**
+ * Charge the debtor, honoring the match's pay mode: in "normal" mode a debt of
+ * the current player pauses the turn in `awaiting-pay` until they confirm with
+ * PAY_DEBT (so they can trade/mortgage first); in "turbo" mode — and for
+ * charges hitting someone who isn't the acting player — it collects instantly.
+ * (`settings` is optional-chained so matches persisted before the setting
+ * existed keep working after a deploy.)
+ */
+function charge(
+  d: GameState,
+  debtor: Player,
+  amount: number,
+  creditorId: string | null,
+  reason: DebtReason,
+  tileId: number | null
+): void {
+  if (
+    d.settings?.payMode === "normal" &&
+    amount > 0 &&
+    debtor.id === d.players[d.currentPlayerIndex].id
+  ) {
+    d.pendingDebt = { amount, creditorId, reason, tileId }
+    d.phase = "awaiting-pay"
+    return
+  }
+  pay(d, debtor, amount, creditorId)
+}
+
+/** Settle the confirmed debt (may auto-liquidate/bankrupt, like any payment). */
+function payDebt(d: GameState): GameState {
+  const debt = d.pendingDebt
+  if (!debt) return d
+  d.pendingDebt = null
+  pay(d, currentPlayer(d), debt.amount, debt.creditorId)
+  d.phase = "awaiting-end" // clear the pay gate so settle() can recompute
+  return settle(d)
+}
+
+/**
+ * Remove a player from the match outside the normal insolvency path (voluntary
+ * surrender or a force-removed long-disconnected player). Any confirmed pending
+ * debt is collected first (so the creditor isn't stiffed — this alone may
+ * bankrupt them to that creditor, classic rules). Otherwise their properties
+ * return to the bank *unowned* and clear, up for grabs again.
+ */
+function goBankrupt(
+  state: GameState,
+  playerId: string,
+  logKey: string
+): GameState {
+  const target = playerById(state, playerId)
+  if (!target || target.isBankrupt || state.status !== "playing") return state
+
+  const d = clone(state)
+  const player = playerById(d, playerId)!
+
+  if (d.pendingDebt && d.players[d.currentPlayerIndex].id === playerId) {
+    const debt = d.pendingDebt
+    d.pendingDebt = null
+    pay(d, player, debt.amount, debt.creditorId)
+  }
+
+  if (!player.isBankrupt) {
+    player.isBankrupt = true
+    player.balance = 0
+    player.inJail = false
+    player.jailTurns = 0
+    player.getOutOfJailCards = 0
+    for (let id = 0; id < d.tiles.length; id++) {
+      const tile = d.tiles[id]
+      if (tile.ownerId === playerId) {
+        reclaimBuildings(d, id)
+        tile.ownerId = null
+        tile.mortgaged = false
+      }
+    }
+    log(d, logKey, { name: player.nickname })
+    checkGameOver(d)
+  }
+
+  // The departed player can't answer a trade or bid in an auction.
+  if (
+    d.pendingTrade &&
+    (d.pendingTrade.fromId === playerId || d.pendingTrade.toId === playerId)
+  ) {
+    d.pendingTrade = null
+  }
+  dropFromAuction(d, playerId)
+
+  // If it was their turn (and no auction is still running), pass it on.
+  if (
+    d.status === "playing" &&
+    d.phase !== "auction" &&
+    d.players[d.currentPlayerIndex].id === playerId
+  ) {
+    return endTurn(d)
+  }
+  return d
+}
+
+/**
+ * Drop a departing player from a live auction. Their high bid (if any) is void
+ * — bidding reopens from zero for whoever remains — and the auction resolves
+ * if their exit decides it.
+ */
+function dropFromAuction(d: GameState, playerId: string): void {
+  const a = d.auction
+  if (!a) return
+  if (!a.activeBidderIds.includes(playerId) && a.highBidderId !== playerId)
+    return
+  if (a.highBidderId === playerId) {
+    a.highBidderId = null
+    a.highBid = 0
+  }
+  if (a.currentBidderId === playerId) {
+    const next = nextActiveBidder(a, playerId)
+    if (next && next !== playerId) a.currentBidderId = next
+  }
+  a.activeBidderIds = a.activeBidderIds.filter((id) => id !== playerId)
+  resolveAuctionIfDone(d)
 }
 
 /**

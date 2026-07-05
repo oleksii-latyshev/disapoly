@@ -6,7 +6,7 @@ import { CHANCE, COMMUNITY_CHEST, type DrawnCard, type GameState } from "@/game"
 import { useT } from "@/i18n"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
-import { positionsOf, settleDelayMs } from "./board-meta"
+import { positionsOf, travelPlan } from "./board-meta"
 
 type Deck = DrawnCard["deck"]
 
@@ -60,10 +60,12 @@ export function CardReveal({ state }: { state: GameState }) {
 
   useEffect(() => {
     // The update that draws a card is the same one that moves the player onto
-    // the tile — hold the reveal until the token actually lands there.
+    // the tile — hold the reveal until the token actually lands there. For a
+    // movement card that carries the token onward, this is the stop-over on
+    // the deck tile, not the final destination.
     const delay = reduce
       ? 0
-      : settleDelayMs(prevPositions.current, state.players)
+      : travelPlan(prevPositions.current, state).cardRevealMs
     prevPositions.current = positionsOf(state.players)
 
     // Only react to a genuinely new draw (identity + id both change per draw).

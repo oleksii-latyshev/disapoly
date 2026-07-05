@@ -1,6 +1,12 @@
 /** Visual metadata for rendering the board: grid placement and group colors. */
 
-import { BOARD_SIZE, type ColorGroup, type Player } from "@/game"
+import {
+  BOARD,
+  BOARD_SIZE,
+  type ColorGroup,
+  type GameState,
+  type Player,
+} from "@/game"
 
 /**
  * Map a tile id (0–39) to its cell in an 11×11 CSS grid. The perimeter runs
@@ -76,33 +82,92 @@ export function positionsOf(players: Player[]): Map<string, number> {
   return new Map(players.map((p) => [p.id, p.position]))
 }
 
+/** Small beat added after a token lands before reactive UI fires. */
+const LANDING_BEAT_MS = 250
+
 /**
- * How long reactive UI (card reveal, callouts, sounds, money deltas) should
- * wait so it lands *after* the moving token does: the longest travel among
- * players who moved in this update, plus a small landing beat. 0 if nobody
- * moved (e.g. a buy or trade), so stationary events stay instant.
+ * How long a token pauses on the Chance/Chest tile while the drawn card is
+ * revealed, before travelling on to the card's destination. Long enough for
+ * the slot-machine spin (~2s) to settle and be read.
  */
-export function settleDelayMs(
-  prev: Map<string, number> | null,
-  players: Player[]
-): number {
-  if (!prev) return 0
-  let max = 0
-  for (const p of players) {
-    const before = prev.get(p.id)
-    if (before === undefined || before === p.position) continue
-    max = Math.max(max, travelSeconds(before, p.position))
-  }
-  return max === 0 ? 0 : Math.round(max * 1000) + 250
+export const STOPOVER_PAUSE_MS = 2400
+
+/**
+ * If the update that set `state.lastCard` also moved the drawer *past* the
+ * deck tile (a movement card resolved in the same state update), return the
+ * deck tile the card was drawn on — the token should stop there for the
+ * reveal. `from` is the drawer's position before the update.
+ */
+export function cardStopoverTile(
+  state: GameState,
+  from: number
+): number | null {
+  if (!state.lastCard || !state.dice) return null
+  const mover = state.players[state.currentPlayerIndex]
+  if (!mover) return null
+  const cardTile = (from + state.dice[0] + state.dice[1]) % BOARD_SIZE
+  const deckType =
+    state.lastCard.deck === "chance" ? "chance" : "communityChest"
+  if (BOARD[cardTile].type !== deckType) return null
+  return cardTile === mover.position ? null : cardTile
 }
 
+/**
+ * Timing plan for reactive UI after a state update, derived from how the
+ * tokens will animate:
+ *  - `cardRevealMs` — when a drawn card should flip (the drawer's token has
+ *    reached the tile it was drawn on);
+ *  - `totalMs` — when *all* movement (including a post-reveal onward leg) is
+ *    done: callouts, money deltas and landing sounds wait for this.
+ * Both are 0 when nobody moved, so stationary events stay instant.
+ */
+export type TravelPlan = { cardRevealMs: number; totalMs: number }
+
+export function travelPlan(
+  prev: Map<string, number> | null,
+  state: GameState
+): TravelPlan {
+  if (!prev) return { cardRevealMs: 0, totalMs: 0 }
+
+  let maxMs = 0
+  for (const p of state.players) {
+    const before = prev.get(p.id)
+    if (before === undefined || before === p.position) continue
+    maxMs = Math.max(maxMs, Math.round(travelSeconds(before, p.position) * 1000))
+  }
+  if (maxMs === 0) return { cardRevealMs: 0, totalMs: 0 }
+
+  // A movement card splits the drawer's travel in two around the reveal.
+  const mover = state.players[state.currentPlayerIndex]
+  const before = mover ? prev.get(mover.id) : undefined
+  if (mover && before !== undefined && before !== mover.position) {
+    const via = cardStopoverTile(state, before)
+    if (via !== null) {
+      const leg1 = Math.round(travelSeconds(before, via) * 1000)
+      const leg2 = Math.round(travelSeconds(via, mover.position) * 1000)
+      return {
+        cardRevealMs: leg1 + LANDING_BEAT_MS,
+        totalMs:
+          Math.max(maxMs, leg1 + STOPOVER_PAUSE_MS + leg2) + LANDING_BEAT_MS,
+      }
+    }
+  }
+
+  return {
+    cardRevealMs: maxMs + LANDING_BEAT_MS,
+    totalMs: maxMs + LANDING_BEAT_MS,
+  }
+}
+
+// Kept in step with the Classic palette in board-theme.tsx (VIVID): the
+// brown/orange/yellow lightness ladder aids low color vision.
 export const GROUP_COLOR: Record<ColorGroup, string> = {
-  brown: "#92400e",
+  brown: "#54341a",
   lightBlue: "#7dd3fc",
-  pink: "#ec4899",
+  pink: "#f472b6",
   orange: "#f97316",
-  red: "#ef4444",
-  yellow: "#eab308",
+  red: "#dc2626",
+  yellow: "#fde047",
   green: "#16a34a",
   darkBlue: "#1e3a8a",
 }

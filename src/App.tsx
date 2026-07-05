@@ -6,14 +6,14 @@ import { SettingsButton } from "@/components/game/SettingsButton"
 import { SetupScreen } from "@/components/game/SetupScreen"
 import { HomeScreen } from "@/components/online/HomeScreen"
 import { RoomScreen } from "@/components/online/RoomScreen"
-import type { PlayerSetup } from "@/game"
+import type { GameSettings, PlayerSetup } from "@/game"
 import { generateRoomId } from "@/net/identity"
 import { useRoute } from "@/hooks/useRoute"
 
 type HotSeat =
   | { kind: "off" }
   | { kind: "setup" }
-  | { kind: "playing"; setups: PlayerSetup[] }
+  | { kind: "playing"; setups: PlayerSetup[]; settings: GameSettings }
 
 export function App() {
   const { roomId, navigate } = useRoute()
@@ -26,7 +26,9 @@ export function App() {
   } else if (hotSeat.kind === "setup") {
     screen = (
       <SetupScreen
-        onStart={(setups) => setHotSeat({ kind: "playing", setups })}
+        onStart={(setups, settings) =>
+          setHotSeat({ kind: "playing", setups, settings })
+        }
       />
     )
   } else if (hotSeat.kind === "playing") {
@@ -34,6 +36,7 @@ export function App() {
       <GameScreen
         key={JSON.stringify(hotSeat.setups)}
         setups={hotSeat.setups}
+        settings={hotSeat.settings}
         onNewGame={() => setHotSeat({ kind: "off" })}
       />
     )

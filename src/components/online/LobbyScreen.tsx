@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Check, Copy, LogOut, Play } from "lucide-react"
+import { Check, Copy, LogOut, Pencil, Play, UserX, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,12 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import type { ClientMessage, RoomMember, RoomState } from "@/game"
+import type { ClientMessage, PayMode, RoomMember, RoomState } from "@/game"
 import { roomUrl } from "@/net/identity"
 import { cn } from "@/lib/utils"
 import { useT } from "@/i18n"
 
 const MIN_MEMBERS = 2
+
+const PAY_MODES: PayMode[] = ["turbo", "normal"]
 
 export function LobbyScreen({
   roomId,
@@ -24,6 +26,7 @@ export function LobbyScreen({
   send,
   connected,
   onLeave,
+  onRename,
 }: {
   roomId: string
   state: RoomState
@@ -31,9 +34,14 @@ export function LobbyScreen({
   send: (message: ClientMessage) => void
   connected: boolean
   onLeave: () => void
+  /** Persist the new nickname locally (the server is told via `rename`). */
+  onRename: (nickname: string) => void
 }) {
   const t = useT()
   const [copied, setCopied] = useState(false)
+  const [payMode, setPayMode] = useState<PayMode>("turbo")
+  const [editing, setEditing] = useState(false)
+  const [draftName, setDraftName] = useState("")
   const url = roomUrl(roomId)
 
   const copy = async () => {
@@ -44,6 +52,14 @@ export function LobbyScreen({
     } catch {
       // Clipboard may be blocked; the input is selectable as a fallback.
     }
+  }
+
+  const submitRename = () => {
+    const clean = draftName.trim()
+    setEditing(false)
+    if (!clean || clean === self?.nickname) return
+    send({ type: "rename", nickname: clean })
+    onRename(clean)
   }
 
   const canStart = self?.isHost && state.members.length >= MIN_MEMBERS
@@ -74,38 +90,135 @@ export function LobbyScreen({
             <span className="text-xs text-muted-foreground">
               {t("lobby.players", { n: state.members.length })}
             </span>
-            {state.members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-sm"
-              >
-                <span
-                  className="size-3 shrink-0 rounded-full border border-white/70"
-                  style={{ backgroundColor: member.color }}
-                />
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {member.nickname}
-                  {member.id === self?.id && ` ${t("lobby.you")}`}
-                </span>
-                {member.isHost && (
-                  <span className="text-xs text-muted-foreground">
-                    {t("lobby.host")}
-                  </span>
-                )}
-                <span
-                  className={cn(
-                    "size-2 rounded-full",
-                    member.connected ? "bg-green-500" : "bg-muted-foreground/40"
+            {state.members.map((member) => {
+              const isSelf = member.id === self?.id
+              return (
+                <div
+                  key={member.id}
+                  className="flex items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-sm"
+                >
+                  <span
+                    className="size-3 shrink-0 rounded-full border border-white/70"
+                    style={{ backgroundColor: member.color }}
+                  />
+                  {isSelf && editing ? (
+                    <form
+                      className="flex min-w-0 flex-1 items-center gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        submitRename()
+                      }}
+                    >
+                      <Input
+                        autoFocus
+                        value={draftName}
+                        maxLength={24}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        className="h-7 flex-1 px-2 py-0 text-sm"
+                        aria-label={t("lobby.rename")}
+                      />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t("common.save")}
+                      >
+                        <Check className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        aria-label={t("common.cancel")}
+                        onClick={() => setEditing(false)}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </form>
+                  ) : (
+                    <>
+                      <span className="min-w-0 flex-1 truncate font-medium">
+                        {member.nickname}
+                        {isSelf && ` ${t("lobby.you")}`}
+                      </span>
+                      {isSelf && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 text-muted-foreground"
+                          aria-label={t("lobby.rename")}
+                          onClick={() => {
+                            setDraftName(member.nickname)
+                            setEditing(true)
+                          }}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                      )}
+                      {member.isHost && (
+                        <span className="text-xs text-muted-foreground">
+                          {t("lobby.host")}
+                        </span>
+                      )}
+                      {self?.isHost && !isSelf && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 text-muted-foreground hover:text-destructive"
+                          aria-label={t("lobby.kick", {
+                            name: member.nickname,
+                          })}
+                          title={t("lobby.kick", { name: member.nickname })}
+                          onClick={() => send({ type: "kick", playerId: member.id })}
+                        >
+                          <UserX className="size-3.5" />
+                        </Button>
+                      )}
+                      <span
+                        className={cn(
+                          "size-2 rounded-full",
+                          member.connected
+                            ? "bg-green-500"
+                            : "bg-muted-foreground/40"
+                        )}
+                        title={member.connected ? "online" : "offline"}
+                      />
+                    </>
                   )}
-                  title={member.connected ? "online" : "offline"}
-                />
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </div>
+
+          {self?.isHost && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {t("lobby.payMode")}
+              </span>
+              <div className="flex gap-2">
+                {PAY_MODES.map((mode) => (
+                  <Button
+                    key={mode}
+                    variant={payMode === mode ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setPayMode(mode)}
+                  >
+                    {t(`payMode.${mode}`)}
+                  </Button>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {t(`payMode.${payMode}.desc`)}
+              </span>
+            </div>
+          )}
 
           {self?.isHost ? (
             <Button
-              onClick={() => send({ type: "start" })}
+              onClick={() => send({ type: "start", settings: { payMode } })}
               disabled={!canStart}
             >
               <Play /> {t("setup.start")}{" "}

@@ -20,6 +20,7 @@ const PING_INTERVAL_MS = 4000
 export function useRoom(roomId: string, identity: RoomIdentity) {
   const [state, setState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
+  const [kicked, setKicked] = useState(false)
   const [reactions, setReactions] = useState<ReactionEvent[]>([])
   const [latencies, setLatencies] = useState<Record<string, number>>({})
   const reactionId = useRef(0)
@@ -72,6 +73,12 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
         )
       } else if (message.type === "latency") {
         setLatencies((cur) => ({ ...cur, [message.playerId]: message.ms }))
+      } else if (message.type === "kicked") {
+        if (message.playerId === identity.playerId) {
+          // Removed by the host: stop reconnect-rejoining and surface it.
+          setKicked(true)
+          socket.close()
+        }
       }
     }
 
@@ -92,5 +99,5 @@ export function useRoom(roomId: string, identity: RoomIdentity) {
     socketRef.current?.send(JSON.stringify(message))
   }, [])
 
-  return { state, connected, send, reactions, latencies }
+  return { state, connected, kicked, send, reactions, latencies }
 }

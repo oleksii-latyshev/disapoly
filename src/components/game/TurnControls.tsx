@@ -1,4 +1,5 @@
-import { Dices, PartyPopper } from "lucide-react"
+import { useState } from "react"
+import { Dices, Flag, HandCoins, PartyPopper } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,6 +11,7 @@ import {
   type GameState,
 } from "@/game"
 import { useT } from "@/i18n"
+import { useTravelSettled } from "@/hooks/useTravelSettled"
 
 /** Compact decision-support shown in the buy step: rent + set/collection progress. */
 function BuyInfo({
@@ -88,6 +90,9 @@ export function TurnControls({
   canReset?: boolean
 }) {
   const t = useT()
+  // Hold actions until the token's travel animation lands on its tile.
+  const settled = useTravelSettled(state)
+  const [confirmingBankruptcy, setConfirmingBankruptcy] = useState(false)
 
   if (state.status === "finished") {
     const winner = state.players.find((p) => p.id === state.winnerId)
@@ -115,6 +120,17 @@ export function TurnControls({
     state.pendingPurchase !== null ? BOARD[state.pendingPurchase] : null
   const pendingPrice = pending && "price" in pending ? pending.price : 0
 
+  const debt = state.pendingDebt
+  const creditor = debt?.creditorId
+    ? state.players.find((p) => p.id === debt.creditorId)
+    : undefined
+
+  // Whose surrender the button would declare: yourself online, whoever is
+  // acting in hot-seat. Hidden once that player is already out.
+  const surrenderId = localPlayerId ?? player.id
+  const surrenderPlayer = state.players.find((p) => p.id === surrenderId)
+  const canSurrender = !!surrenderPlayer && !surrenderPlayer.isBankrupt
+
   return (
     <div className="flex flex-col gap-2 rounded-md border bg-card p-3">
       <p className="text-sm">
@@ -134,7 +150,7 @@ export function TurnControls({
       )}
 
       {isMyTurn && state.phase === "awaiting-roll" && !player.inJail && (
-        <Button onClick={() => send({ type: "ROLL_DICE" })}>
+        <Button disabled={!settled} onClick={() => send({ type: "ROLL_DICE" })}>
           <Dices /> {t("turn.roll")}
         </Button>
       )}
@@ -186,6 +202,7 @@ export function TurnControls({
           <div className="flex gap-2">
             <Button
               className="flex-1"
+              disabled={!settled}
               onClick={() => send({ type: "BUY_PROPERTY" })}
             >
               {t("turn.buy", { price: pendingPrice })}
@@ -193,6 +210,7 @@ export function TurnControls({
             <Button
               variant="outline"
               className="flex-1"
+              disabled={!settled}
               onClick={() => send({ type: "DECLINE_PROPERTY" })}
             >
               {t("turn.decline")}
@@ -201,11 +219,76 @@ export function TurnControls({
         </div>
       )}
 
+      {isMyTurn && state.phase === "awaiting-pay" && debt && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground">
+            {creditor
+              ? t("pay.owedTo", {
+                  amount: debt.amount,
+                  name: creditor.nickname,
+                  tile: debt.tileId !== null ? BOARD[debt.tileId].name : "",
+                })
+              : t("pay.owedBank", { amount: debt.amount })}
+          </p>
+          <p className="text-xs text-muted-foreground">{t("pay.hint")}</p>
+          <Button disabled={!settled} onClick={() => send({ type: "PAY_DEBT" })}>
+            <HandCoins /> {t("pay.pay", { amount: debt.amount })}
+          </Button>
+        </div>
+      )}
+
+      {!isMyTurn && state.phase === "awaiting-pay" && debt && (
+        <p className="text-xs text-muted-foreground">
+          {t("pay.waitingFor", { name: player.nickname, amount: debt.amount })}
+        </p>
+      )}
+
       {isMyTurn && state.phase === "awaiting-end" && (
-        <Button variant="secondary" onClick={() => send({ type: "END_TURN" })}>
+        <Button
+          variant="secondary"
+          disabled={!settled}
+          onClick={() => send({ type: "END_TURN" })}
+        >
           {t("turn.end")}
         </Button>
       )}
+
+      {canSurrender &&
+        (confirmingBankruptcy ? (
+          <div className="flex flex-col gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2">
+            <p className="text-xs font-medium">{t("bankrupt.confirm")}</p>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setConfirmingBankruptcy(false)
+                  send({ type: "DECLARE_BANKRUPTCY", playerId: surrenderId })
+                }}
+              >
+                <Flag /> {t("bankrupt.yes")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setConfirmingBankruptcy(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start text-xs text-muted-foreground hover:text-destructive"
+            onClick={() => setConfirmingBankruptcy(true)}
+          >
+            <Flag className="size-3.5" /> {t("bankrupt.declare")}
+          </Button>
+        ))}
     </div>
   )
 }

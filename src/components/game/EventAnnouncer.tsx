@@ -18,7 +18,7 @@ import type { GameState, LogEntry } from "@/game"
 import { useT } from "@/i18n"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
-import { positionsOf, settleDelayMs } from "./board-meta"
+import { positionsOf, travelPlan } from "./board-meta"
 import { renderLog } from "./log-format"
 
 type Tone = "good" | "bad" | "neutral"
@@ -32,6 +32,8 @@ const CALLOUTS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   "log.threeDoubles": { icon: Siren, tone: "bad" },
   "log.passGo": { icon: CircleDollarSign, tone: "good" },
   "log.bankrupt": { icon: Skull, tone: "bad" },
+  "log.resigned": { icon: Skull, tone: "bad" },
+  "log.removedBankrupt": { icon: Skull, tone: "bad" },
   "log.auctionStart": { icon: Gavel, tone: "neutral" },
   "log.auctionWon": { icon: Gavel, tone: "good" },
   "log.builtHouse": { icon: Hammer, tone: "good" },
@@ -40,16 +42,19 @@ const CALLOUTS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   "log.tradeAccepted": { icon: ArrowRightLeft, tone: "neutral" },
 }
 
+// Opaque, self-contained colors: the callouts float over the board, whose
+// theme is independent of the app's light/dark mode — translucent theme-tied
+// text used to vanish (white on a white board).
 const TONE_CLASS: Record<Tone, string> = {
-  good: "border-emerald-500/40 bg-emerald-500/15 text-emerald-950 dark:text-emerald-100",
-  bad: "border-rose-500/40 bg-rose-500/15 text-rose-950 dark:text-rose-100",
-  neutral: "border-sky-500/40 bg-sky-500/15 text-sky-950 dark:text-sky-100",
+  good: "border-emerald-700/60 bg-emerald-600 text-white",
+  bad: "border-rose-700/60 bg-rose-600 text-white",
+  neutral: "border-sky-700/60 bg-sky-600 text-white",
 }
 
 const ICON_CLASS: Record<Tone, string> = {
-  good: "text-emerald-600 dark:text-emerald-400",
-  bad: "text-rose-600 dark:text-rose-400",
-  neutral: "text-sky-600 dark:text-sky-400",
+  good: "text-emerald-100",
+  bad: "text-rose-100",
+  neutral: "text-sky-100",
 }
 
 type Callout = { id: number; text: string; tone: Tone; icon: LucideIcon }
@@ -74,10 +79,9 @@ export function EventAnnouncer({ state }: { state: GameState }) {
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
   useEffect(() => {
-    // Hold callouts until the moving token lands on its tile (rent, jail…).
-    const delay = reduce
-      ? 0
-      : settleDelayMs(prevPositions.current, state.players)
+    // Hold callouts until the moving token lands on its tile (rent, jail…),
+    // including any card stop-over leg.
+    const delay = reduce ? 0 : travelPlan(prevPositions.current, state).totalMs
     prevPositions.current = positionsOf(state.players)
 
     const seenUpTo = lastId.current

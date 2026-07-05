@@ -14,6 +14,7 @@ import { CHANCE, COMMUNITY_CHEST } from "./cards"
 import { createSeed, shuffle } from "./rng"
 import type {
   DeckState,
+  GameSettings,
   GameState,
   HistoryPoint,
   Player,
@@ -29,10 +30,14 @@ export type PlayerSetup = {
   color?: string
 }
 
+/** Default match rules: classic instant ("turbo") debt collection. */
+export const DEFAULT_SETTINGS: GameSettings = { payMode: "turbo" }
+
 /** Build a fresh match state for the given players (2–8). */
 export function createInitialState(
   setups: PlayerSetup[],
-  seed: number = createSeed()
+  seed: number = createSeed(),
+  settings: GameSettings = DEFAULT_SETTINGS
 ): GameState {
   const players: Player[] = setups.map((setup, index) => ({
     id: setup.id ?? `p${index + 1}`,
@@ -55,6 +60,7 @@ export function createInitialState(
 
   const state: GameState = {
     status: "playing",
+    settings: { ...settings },
     players,
     tiles: BOARD.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
     currentPlayerIndex: 0,
@@ -63,6 +69,7 @@ export function createInitialState(
     doublesCount: 0,
     pendingPurchase: null,
     auction: null,
+    pendingDebt: null,
     bank: { houses: HOUSES_SUPPLY, hotels: HOTELS_SUPPLY },
     rngSeed: cc.seed,
     chance,

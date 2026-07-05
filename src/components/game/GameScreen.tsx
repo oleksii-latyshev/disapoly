@@ -1,4 +1,4 @@
-import type { PlayerSetup } from "@/game"
+import type { GameSettings, PlayerSetup } from "@/game"
 import { useGame } from "@/hooks/useGame"
 import { useGameSounds } from "@/hooks/useGameSounds"
 
@@ -16,12 +16,14 @@ import { TurnControls } from "./TurnControls"
 
 export function GameScreen({
   setups,
+  settings,
   onNewGame,
 }: {
   setups: PlayerSetup[]
+  settings?: GameSettings
   onNewGame: () => void
 }) {
-  const { state, send } = useGame(setups)
+  const { state, send } = useGame(setups, undefined, settings)
   useGameSounds(state)
 
   return (

@@ -76,15 +76,17 @@ the Cloudflare Worker.
 ```ts
 type GameState = {
   status: "playing" | "finished"
+  settings: GameSettings         // { payMode: "turbo" | "normal" } — host-chosen
   players: Player[]              // Player: id, nickname, color, balance,
                                  //   position, inJail, jailTurns,
                                  //   getOutOfJailCards, isBankrupt
   tiles: TileState[]             // owner, houses (0–5), mortgaged — per tile id
   currentPlayerIndex: number
-  phase: "awaiting-roll" | "awaiting-buy" | "awaiting-end"
+  phase: "awaiting-roll" | "awaiting-buy" | "awaiting-pay" | "awaiting-end"
   dice: [number, number] | null
   doublesCount: number
   pendingPurchase: number | null
+  pendingDebt: PendingDebt | null // charge awaiting PAY_DEBT (normal pay mode)
   rngSeed: number
   chance: DeckState; chest: DeckState   // { order, pos }
   lastCard: DrawnCard | null
@@ -98,8 +100,23 @@ type GameState = {
 ```
 
 A **turn is a small state machine** (`phase`): `awaiting-roll → (resolve tile:
-buy/rent/card/tax/jail) → awaiting-buy? → awaiting-end`. Doubles grant another
-roll (except from jail / when sent to jail); three doubles → jail.
+buy/rent/card/tax/jail) → awaiting-buy? → awaiting-pay? → awaiting-end`.
+Doubles grant another roll (except from jail / when sent to jail); three
+doubles → jail.
+
+**Pay modes** (host setting at game creation): in `turbo` (default, classic
+behavior) rent/taxes/card charges are deducted the moment they're incurred; in
+`normal` a charge against the acting player pauses the turn in `awaiting-pay`
+until they confirm with `PAY_DEBT` — property management and out-of-turn trades
+stay legal meanwhile, so they can raise cash first. A force-ended turn collects
+the pending debt automatically, so skipping a disconnected player never dodges
+rent.
+
+**Leaving the game:** `DECLARE_BANKRUPTCY` (any player, self-stamped by the
+server) and the server-only `FORCE_BANKRUPT` retire a player outside the normal
+insolvency path: any pending debt is settled first (classically, to the
+creditor), then their remaining properties return to the bank *unowned and
+unmortgaged* — up for grabs again.
 
 ### 3.2. UI (`src/components/`, `src/hooks/`)
 
@@ -125,18 +142,22 @@ relay, no database).
   One instance per room id. It holds `RoomState` in memory, feeds validated
   client messages into `applyClientMessage`, and broadcasts the whole state.
 - Clients (`src/hooks/useRoom.ts` over `partysocket`) send **intents**, never
-  state: `join` / `start` / `action` / `reset` / `skip`.
+  state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `kick`.
 
 **Authority rules enforced server-side:**
 
 - Turn-gated actions (roll/buy/build/…) are accepted only from the player whose
   turn it is.
-- Trades are allowed **out of turn**; the server **stamps the sender's id** into
-  the trade action so it can't be spoofed.
+- Trades, bids and `DECLARE_BANKRUPTCY` are allowed **out of turn**; the server
+  **stamps the sender's id** into the action so it can't be spoofed.
 - A **disconnected current player's turn can be skipped** by any connected member
-  (`skip` → internal `FORCE_END_TURN`). `FORCE_END_TURN` is never accepted from a
-  client directly.
-- Host-only: `start`, `reset`.
+  (`skip` → internal `FORCE_END_TURN`). `FORCE_END_TURN` / `FORCE_BANKRUPT` are
+  never accepted from a client directly.
+- Host-only: `start` (with the match settings), `reset`, and `kick` (lobby
+  only; kicked ids are barred from rejoining via `kickedIds`, their sockets are
+  closed and the client shows a "removed by host" notice).
+- `rename` updates the sender's member nickname and, mid-match, their in-game
+  player; a reconnect `join` re-syncs both the same way.
 
 **Identity & reconnect:** `playerId` (localStorage) + nickname. A refreshed or
 dropped tab rejoins the same member by id and resumes.
@@ -193,6 +214,11 @@ See [README.md](README.md) for exact commands.
 - ✅ Chance / Community Chest — seeded decks, declarative effects.
 - ✅ Player-to-player trading (properties + cash + jail cards), two-phase with
   re-validation at apply time, allowed out of turn.
+- ✅ Pay modes: turbo (instant deduction) or normal (debts confirmed with a
+  "Pay" step — trade/mortgage first); host-chosen per match, also available in
+  hot-seat setup.
+- ✅ Voluntary bankruptcy — a "declare bankruptcy" button (with confirmation)
+  lets a player leave; their properties return to the bank unclaimed.
 - ✅ Win / final standings.
 
 **Online:**
@@ -203,11 +229,19 @@ See [README.md](README.md) for exact commands.
   room state drives a live countdown; `onAlarm` force-ends the absent turn).
   Auto-skip is gated on *someone still being present* (`shouldAutoSkip`): it
   never "plays itself" in an empty room.
+- ✅ **5-minute absence limit** — a player disconnected for `AUTO_BANKRUPT_MS`
+  while the match runs (and someone is still present) is force-bankrupted by
+  the alarm: their properties return to the bank unowned, so the survivors keep
+  a playable board. Each member's `disconnectedAt` drives the deadline;
+  reconnecting clears it.
 - ✅ Empty-room cleanup: if **everyone** disconnects mid-match the game pauses,
-  and is **abandoned back to the lobby** after a 60s grace period (a second use
-  of the same DO alarm — `isAbandonable`/`abandonMatch`). Reconnecting within the
-  minute resumes the match; the two alarm uses (skip vs. abandon) are mutually
-  exclusive, so one alarm slot serves both.
+  and is **abandoned back to the lobby** after a 60s grace period. The single
+  DO alarm serves all three duties (skip / auto-bankrupt / abandon) by arming
+  for the earliest applicable deadline; `onAlarm` runs every duty whose
+  deadline has passed.
+- ✅ Lobby management — host kicks members (with rejoin bar), anyone can edit
+  their nickname in the lobby (persisted to localStorage and synced into a
+  running game), host picks the pay mode (turbo/normal) before starting.
 - ✅ Emoji reactions — an ephemeral `reaction` message relayed by the server
   (never stored in state) that floats over the reacting player's token.
 - ✅ Per-player connection quality — each client measures its round-trip
@@ -225,8 +259,16 @@ See [README.md](README.md) for exact commands.
 
 **Polish / QoL:**
 
-- ✅ Board themes (Classic / Minimal / Neon), tile icons, house badges, monopoly
-  highlight, click-a-tile-for-rent-details.
+- ✅ Board themes (Classic / Minimal / Neon), house badges, monopoly highlight,
+  click-a-tile-for-rent-details (with a highlighted **"rent now"** row showing
+  what a visitor would actually owe).
+- ✅ **Icon-dominant tiles** — every location has its own vector emblem
+  (`tile-visuals.tsx`, lucide icons drawn in code, no image assets), a value
+  strip along the bottom edge (price while unowned → the *current rent* on the
+  owner's color once bought), and the whole tile washes in the owner's color —
+  ownership and cost read straight off the board. Street names hide on small
+  boards (the emblem + details dialog identify the tile). Group palettes put
+  brown/orange/yellow on a dark→light lightness ladder for low color vision.
 - ✅ **Premium motion pass** (every effect below is gated by
   `prefers-reduced-motion`):
   - 3D board tilt — the board tilts a few degrees toward the mouse in
@@ -251,9 +293,15 @@ See [README.md](README.md) for exact commands.
   tokens, and win confetti. Shared by both play modes.
 - ✅ **Landing-synced feedback** — effects caused by landing on a tile (card
   reveal, event callouts, card/jail sounds, money deltas) wait for the token's
-  travel animation via a shared `settleDelayMs` helper (`board-meta.ts`), so
-  the outcome isn't revealed before the piece arrives. Stationary events (buy,
-  trade, auction) stay instant, and reduced motion drops the delay entirely.
+  travel animation via a shared `travelPlan` helper (`board-meta.ts`), so the
+  outcome isn't revealed before the piece arrives. A **movement card** (e.g.
+  "Advance to GO") animates in two legs: the token hops to the Chance/Chest
+  tile, pauses there while the card reveals, then travels on to the
+  destination (`cardStopoverTile` + `STOPOVER_PAUSE_MS`). Turn buttons
+  (roll/buy/end/pay) are disabled until the travel settles
+  (`useTravelSettled`), so a turn can't be ended while a piece is still
+  flying. Stationary events (buy, trade, auction) stay instant, and reduced
+  motion drops the delays entirely.
 - ✅ Procedural sound effects (Web Audio) — every voice feeds a shared bus with
   a synthesized room reverb (generated impulse response) and a gentle
   compressor; per-event sound design: randomized dice rattle, cash
@@ -289,16 +337,15 @@ See [README.md](README.md) for exact commands.
 
 Not yet done — rough priority order:
 
-- **Tests for the multiplayer authority.** The game core is covered by Vitest
-  (rolls, rent, auctions, building, cards, trades, bankruptcy — see
-  `src/game/__tests__/`), but `room.ts` (`applyClientMessage`: turn gating,
-  trade stamping, host-only actions, skip/abandon) isn't yet.
+- **More tests for the multiplayer authority.** `room.ts` now has coverage for
+  settings, rename, kick, action stamping and the disconnect auto-bankrupt
+  (`room.test.ts`), but turn gating, trade stamping and skip/abandon are still
+  untested.
 - **Missing classic card nuances.** The Chance deck has no "advance to the
   nearest Railroad (pay double rent)" / "nearest Utility (pay 10× dice)" cards
-  — only fixed-destination moves. Related: a movement card resolves in a single
-  state update, so the token glides straight to the final destination instead
-  of stopping on Chance first; sequencing it would need the reducer to split
-  the move into two phases.
+  — only fixed-destination moves. (A movement card still resolves in a single
+  state update; the client now *animates* it as two legs with a stop-over on
+  the deck tile, but the reducer-level split is still open.)
 - **Choosable token pieces / avatars** — players are letter circles in a fixed
   color palette; picking a piece (and freeing the palette) also unlocks a
   **player cap > 8**.

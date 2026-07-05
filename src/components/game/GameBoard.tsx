@@ -6,6 +6,9 @@ import {
   BOARD,
   currentPlayer,
   hasMonopoly,
+  rentFor,
+  UTILITY_MULTIPLIER,
+  countOwnedOfType,
   type GameState,
   type TileDefinition,
 } from "@/game"
@@ -23,7 +26,7 @@ import { EventAnnouncer } from "./EventAnnouncer"
 import { ReactionLayer } from "./ReactionLayer"
 import { TileDetails } from "./TileDetails"
 import { TokenLayer } from "./TokenLayer"
-import { isCornerTile, tileVisual } from "./tile-visuals"
+import { contrastText, isCornerTile, tileVisual } from "./tile-visuals"
 
 /** Short label for a tile abbreviation shown when space is tight. */
 function shortName(name: string): string {
@@ -32,10 +35,22 @@ function shortName(name: string): string {
     .trim()
 }
 
-function priceLabel(def: TileDefinition): string | undefined {
-  if ("price" in def) return `$${def.price}`
+/**
+ * The value strip along the tile's bottom edge: the price while the bank owns
+ * it, the rent a visitor would pay once someone does (in the owner's color) —
+ * so "what will this cost me?" is readable straight off the board.
+ */
+function stripLabel(state: GameState, def: TileDefinition): string | undefined {
   if (def.type === "tax") return `$${def.amount}`
-  return undefined
+  if (!("price" in def)) return undefined
+  const tile = state.tiles[def.id]
+  if (!tile.ownerId) return `$${def.price}`
+  if (tile.mortgaged) return "MTG"
+  if (def.type === "utility") {
+    const owned = countOwnedOfType(state, tile.ownerId, "utility")
+    return `×${UTILITY_MULTIPLIER[Math.min(owned, 2) - 1] ?? 0}`
+  }
+  return `$${rentFor(state, def.id, 0)}`
 }
 
 function Tile({
@@ -72,18 +87,30 @@ function Tile({
   const groupColor =
     def.type === "street" ? theme.groupColors[def.group] : undefined
   const isMono = theme.id === "mono"
-  const iconColor = isMono ? "var(--tile-fg)" : visual?.color
-  const label = priceLabel(def)
+  const label = stripLabel(state, def)
   const inMonopoly =
     def.type === "street" && !!owner && hasMonopoly(state, owner.id, def.group)
 
-  // Background: street tint, corner accent tint, or plain tile color.
+  // Background: the owner's color washes the whole tile once it's bought
+  // (who-owns-what reads straight off the board); otherwise a street's group
+  // tint or a corner accent.
   let bg = "var(--tile-bg)"
-  if (def.type === "street" && theme.tintTiles && groupColor) {
+  if (owner) {
+    bg = `color-mix(in srgb, ${owner.color} ${isMono ? 24 : 18}%, var(--tile-bg))`
+  } else if (def.type === "street" && theme.tintTiles && groupColor) {
     bg = `color-mix(in srgb, ${groupColor} 14%, var(--tile-bg))`
   } else if (corner && visual && !isMono) {
     bg = `color-mix(in srgb, ${visual.color} 12%, var(--tile-bg))`
   }
+
+  // Emblem badge: a filled disc in the location's signature color with the
+  // icon knocked out — logo-like, so every location is unique at a glance.
+  const emblemBg = isMono ? "transparent" : visual?.color
+  const emblemFg = isMono
+    ? "var(--tile-fg)"
+    : visual
+      ? contrastText(visual.color)
+      : "var(--tile-fg)"
 
   return (
     <div
@@ -107,7 +134,7 @@ function Tile({
     >
       {def.type === "street" && groupColor && (
         <div
-          className="h-[max(7px,1.1cqw)] w-full shrink-0"
+          className="h-[max(5px,0.9cqw)] w-full shrink-0"
           style={{
             backgroundColor: groupColor,
             boxShadow: theme.glow ? `0 0 6px ${groupColor}` : undefined,
@@ -157,39 +184,74 @@ function Tile({
         </div>
       )}
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-0.5 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-[max(2px,0.25cqw)] px-0.5 text-center">
         {visual && (
-          <visual.Icon
-            className={
-              corner ? "size-[max(18px,2.4cqw)]" : "size-[max(13px,1.7cqw)]"
-            }
-            style={{ color: iconColor }}
-            strokeWidth={2}
-          />
-        )}
-        <span
-          className={cn(
-            "line-clamp-2 leading-tight",
-            corner
-              ? "text-[length:max(7px,1cqw)] font-bold tracking-wide"
-              : "font-semibold"
-          )}
-        >
-          {corner && visual?.label ? visual.label : shortName(def.name)}
-        </span>
-        {label && (
-          <span className="text-[length:max(9px,1.35cqw)] font-bold opacity-85">
-            {label}
+          <span
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-full",
+              corner
+                ? "size-[max(20px,2.9cqw)]"
+                : "size-[max(16px,2.4cqw)] shadow-sm",
+              isMono && "shadow-none"
+            )}
+            style={{
+              backgroundColor: emblemBg,
+              boxShadow:
+                theme.glow && !isMono && visual
+                  ? `0 0 8px ${visual.color}`
+                  : undefined,
+            }}
+          >
+            <visual.Icon
+              className={
+                corner
+                  ? "size-[max(13px,1.8cqw)]"
+                  : "size-[max(10px,1.5cqw)]"
+              }
+              style={{ color: emblemFg }}
+              strokeWidth={2.25}
+            />
           </span>
         )}
+        {/* Names hide on small boards — the emblem identifies the tile and
+            tapping it opens the full details. */}
+        <span className={corner ? undefined : "hidden @[560px]:block"}>
+          <span
+            className={cn(
+              "line-clamp-2 leading-[1.05]",
+              corner
+                ? "text-[length:max(7px,1cqw)] font-bold tracking-wide"
+                : "text-[length:max(7px,1cqw)] font-semibold"
+            )}
+          >
+            {corner && visual?.label ? visual.label : shortName(def.name)}
+          </span>
+        </span>
       </div>
 
-      {owner && (
+      {label && (
         <div
-          className="owner-strip h-[max(5px,0.8cqw)] w-full shrink-0"
-          style={{ backgroundColor: owner.color }}
-          title={`Owned by ${owner.nickname}`}
-        />
+          key={tile.ownerId ?? "bank"}
+          className={cn(
+            "flex h-[max(10px,1.5cqw)] w-full shrink-0 items-center justify-center text-[length:max(7px,1.15cqw)] font-bold tabular-nums",
+            owner && "owner-strip"
+          )}
+          style={
+            owner
+              ? {
+                  backgroundColor: owner.color,
+                  color: contrastText(owner.color),
+                }
+              : {
+                  backgroundColor:
+                    "color-mix(in srgb, var(--tile-fg) 8%, transparent)",
+                  color: "var(--tile-fg)",
+                }
+          }
+          title={owner ? `Owned by ${owner.nickname}` : undefined}
+        >
+          {label}
+        </div>
       )}
       {tile.mortgaged && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-grayscale">

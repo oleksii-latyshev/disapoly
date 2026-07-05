@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import {
   getPlayerId,
   getStoredNickname,
@@ -26,18 +27,33 @@ function ConnectedRoom({
   playerId,
   nickname,
   onLeave,
+  onRename,
 }: {
   roomId: string
   playerId: string
   nickname: string
   onLeave: () => void
+  onRename: (nickname: string) => void
 }) {
   const t = useT()
   const identity = useMemo(() => ({ playerId, nickname }), [playerId, nickname])
-  const { state, connected, send, reactions, latencies } = useRoom(
+  const { state, connected, kicked, send, reactions, latencies } = useRoom(
     roomId,
     identity
   )
+
+  if (kicked) {
+    return (
+      <Centered>
+        <div className="flex flex-col items-center gap-3">
+          <p>{t("net.kicked")}</p>
+          <Button variant="outline" size="sm" onClick={onLeave}>
+            {t("common.back")}
+          </Button>
+        </div>
+      </Centered>
+    )
+  }
 
   if (!state) return <Centered>{t("net.connectingRoom")}</Centered>
 
@@ -64,6 +80,7 @@ function ConnectedRoom({
       send={send}
       connected={connected}
       onLeave={onLeave}
+      onRename={onRename}
     />
   )
 }
@@ -98,6 +115,11 @@ export function RoomScreen({
       playerId={playerId}
       nickname={nickname}
       onLeave={onLeave}
+      onRename={(name) => {
+        // Persist and adopt the new name so a reconnect re-joins with it.
+        setStoredNickname(name)
+        setNickname(name)
+      }}
     />
   )
 }

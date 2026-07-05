@@ -26,15 +26,17 @@ export type BoardTheme = {
   groupColors: Record<ColorGroup, string>
 }
 
+// Brown / orange / yellow sit on a deliberate lightness ladder (very dark →
+// mid → very light) so the groups stay tellable-apart with low color vision.
 const VIVID: Record<ColorGroup, string> = {
-  brown: "#92400e",
-  lightBlue: "#38bdf8",
-  pink: "#ec4899",
+  brown: "#54341a",
+  lightBlue: "#7dd3fc",
+  pink: "#f472b6",
   orange: "#f97316",
-  red: "#ef4444",
-  yellow: "#eab308",
+  red: "#dc2626",
+  yellow: "#fde047",
   green: "#16a34a",
-  darkBlue: "#1d4ed8",
+  darkBlue: "#1e3a8a",
 }
 
 const GRAY: Record<ColorGroup, string> = {
@@ -49,12 +51,12 @@ const GRAY: Record<ColorGroup, string> = {
 }
 
 const NEON: Record<ColorGroup, string> = {
-  brown: "#d39a52",
+  brown: "#8a5a2a",
   lightBlue: "#3df0ff",
   pink: "#ff4fd8",
   orange: "#ff8a3d",
   red: "#ff3d5e",
-  yellow: "#f5e642",
+  yellow: "#fdf07a",
   green: "#3dff8a",
   darkBlue: "#6b7bff",
 }

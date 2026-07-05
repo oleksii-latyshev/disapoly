@@ -4,6 +4,7 @@ import {
   createInitialState,
   gameReducer,
   type GameAction,
+  type GameSettings,
   type GameState,
   type PlayerSetup,
 } from "@/game"
@@ -13,9 +14,13 @@ import {
  * `useReducer`; later stages swap this dispatch for one that round-trips
  * intents through the sync layer, leaving components untouched.
  */
-export function useGame(setups: PlayerSetup[], seed?: number) {
+export function useGame(
+  setups: PlayerSetup[],
+  seed?: number,
+  settings?: GameSettings
+) {
   const [state, dispatch] = useReducer(gameReducer, undefined, (): GameState =>
-    createInitialState(setups, seed)
+    createInitialState(setups, seed, settings)
   )
 
   const send = useCallback((action: GameAction) => dispatch(action), [])
