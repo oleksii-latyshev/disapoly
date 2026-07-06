@@ -1,13 +1,13 @@
 import { useState } from "react"
 
-import { GameScreen } from "@/components/game/GameScreen"
-import { HowToPlayButton } from "@/components/game/HowToPlayButton"
-import { SettingsButton } from "@/components/game/SettingsButton"
-import { SetupScreen } from "@/components/game/SetupScreen"
-import { HomeScreen } from "@/components/online/HomeScreen"
-import { RoomScreen } from "@/components/online/RoomScreen"
-import type { GameSettings, PlayerSetup } from "@/game"
-import { generateRoomId } from "@/net/identity"
+import { GameScreen } from "@/features/game"
+import { HowToPlayButton } from "@/features/game"
+import { SettingsButton } from "@/features/game"
+import { SetupScreen } from "@/features/game"
+import { HomeScreen } from "@/features/online"
+import { RoomScreen } from "@/features/online"
+import type { GameSettings, PlayerSetup } from "@/modules/game-core"
+import { generateRoomId } from "@/modules/network"
 import { useRoute } from "@/hooks/useRoute"
 
 type HotSeat =

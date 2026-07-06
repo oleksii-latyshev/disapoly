@@ -1,16 +1,7 @@
-/**
- * Authoritative room server, running as a Cloudflare Durable Object via
- * `partyserver` and deployed to your own Cloudflare account with `wrangler`.
- *
- * One DO instance per room id. It owns the room state, applies validated client
- * intents through the pure `applyClientMessage` reducer, and broadcasts the full
- * state. The state is mirrored into the DO's own (SQLite-backed) storage on each
- * change and reloaded on cold start, so a match survives a worker restart,
- * deploy, or eviction — no external database needed.
- *
- * Run locally: `bun run dev:party`  (wrangler dev, no account needed).
- * Deploy:      `bun run deploy:party` (needs `wrangler login`).
- */
+// Authoritative room server: one Durable Object instance per room id
+// (via partyserver). It feeds validated client intents through the pure
+// `applyClientMessage` reducer, broadcasts the full state, and mirrors it
+// into the DO's SQLite storage so a match survives restarts and deploys.
 
 import {
   routePartykitRequest,
@@ -19,7 +10,7 @@ import {
   type WSMessage,
 } from "partyserver"
 
-import { migrateGameState } from "../src/game/state"
+import { migrateGameState } from "../src/modules/game-core/state"
 import {
   abandonMatch,
   applyClientMessage,
@@ -34,7 +25,7 @@ import {
   type ClientMessage,
   type RoomState,
   type ServerMessage,
-} from "../src/game/room"
+} from "../src/modules/game-core/room"
 
 /** Grace period before a disconnected player's turn is auto-skipped. */
 const AUTO_SKIP_MS = 30_000

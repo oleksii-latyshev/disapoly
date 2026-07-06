@@ -123,4 +123,4 @@ Manual deploy: `bun run deploy:all` (after `wrangler login`).
 
 > [!WARNING]
 > Durable Objects. UI-only changes need just `bun run build && bun run
-deploy:pages`; redeploy the worker only when `src/game/**` changes.
+deploy:pages`; redeploy the worker only when `src/modules/game-core/**` changes.

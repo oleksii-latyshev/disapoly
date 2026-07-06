@@ -34,7 +34,7 @@ history see the git log; for how to run/deploy see [README.md](README.md).
 | Icons | **lucide-react** |
 | Realtime server | **Cloudflare Durable Object** via **`partyserver`**, client via **`partysocket`** |
 | Sound | **Web Audio API** (synthesized, no assets) |
-| Tests | **Vitest** — unit tests for the pure game core (`src/game/__tests__/`) |
+| Tests | **Vitest** — unit tests for the pure game core (`src/modules/game-core/__tests__/`) |
 | Deploy | Cloudflare **Workers** (server) + **Pages** (client), GitHub Actions |
 
 ---
@@ -51,30 +51,33 @@ Sync ─────── online: WebSocket to the Durable Object; hot-seat: lo
 Game core ── pure (state, action) => state reducer; no React, no I/O
 ```
 
-### 3.1. Game core (`src/game/`) — pure and portable
+### 3.1. Game core (`src/modules/game-core/`) — pure and portable
 
 The rules are a pure, JSON-serializable model plus a reducer. **No React, no
 network, no `@/` alias** — so the exact same code runs in the browser and inside
-the Cloudflare Worker.
+the Cloudflare Worker. (Folder conventions: [CODE_RULES.md](CODE_RULES.md).)
 
 - `types.ts` — `GameState`, `Player`, `GameAction`, log/card/trade types.
-- `board.config.ts` — the declarative boards and constants (`GO_PAYOUT`,
+- `constants/board.ts` — the declarative boards and constants (`GO_PAYOUT`,
   `JAIL_FINE`, …). Two boards exist (`BOARDS`): the **classic 40-tile** board
   and a host-selectable **large 48-tile** board (13×13, two extra street
   groups — teal & violet — plus a third dark-blue street: 10 monopolizable
   groups for 6–8 players, with a proportionally larger building supply).
   `settings.board` picks one per match; everything (layout, movement, cards,
   selectors) derives from `boardOf(state)` — no magic numbers in the rules.
-- `cards.ts` — Chance / Community Chest decks as `{ id, effect }` (text is
-  localized on the client via `card.<id>`). Movement cards name their
+- `constants/cards.ts` — Chance / Community Chest decks as `{ id, effect }`
+  (text is localized on the client via `card.<id>`). Movement cards name their
   destination (`target: "boardwalk"`, …) so the same deck resolves correctly
   on any board size.
-- `rng.ts` — seedable PRNG (`mulberry32`) + `shuffle`. All randomness flows
-  through `rngSeed` so results are deterministic and desync-free.
-- `state.ts` — `createInitialState` + pure selectors (`netWorth`, `rentFor`,
-  `hasMonopoly`, `canBuildHouse`, `isTradeValid`, `tradableTiles`, …).
-- `reducer.ts` — `gameReducer(state, action)`. Validates each action against the
-  current phase/rules and applies it atomically.
+- `helpers/rng.ts` — seedable PRNG (`mulberry32`) + `shuffle`. All randomness
+  flows through `rngSeed` so results are deterministic and desync-free.
+- `state.ts` — `createInitialState`; pure queries live in
+  `helpers/selectors.ts` (`netWorth`, `rentFor`, `hasMonopoly`, …) and
+  `helpers/validators.ts` (`canBuildHouse`, `isTradeValid`, `tradableTiles`, …).
+- `reducer/` — `gameReducer(state, action)`: a dispatcher (`index.ts`) that
+  validates each action against the current phase, plus one file per domain
+  (`turn.ts`, `movement.ts`, `payments.ts`, `auction.ts`, `trades.ts`,
+  `property.ts`, `bankruptcy.ts`).
 - `room.ts` — the multiplayer wrapper (see §3.3).
 
 **`GameState`** (abridged):
@@ -139,30 +142,32 @@ insolvency path: any pending debt is settled first (classically, to the
 creditor), then their remaining properties return to the bank *unowned and
 unmortgaged* — up for grabs again.
 
-### 3.2. UI (`src/components/`, `src/hooks/`)
+### 3.2. UI (`src/features/`, `src/modules/`)
 
-- In-game components (`components/game/`) take `state` + a `send(action)` and are
-  shared by both modes: `GameBoard`, `TurnControls`, `ManagePanel`, `TradePanel`,
-  `CardBanner`, `PlayersList`, `GameLog`, `GameResults`, `StatsButton`, …
-- Online screens (`components/online/`): `HomeScreen`, `NicknamePrompt`,
+- Feature slices (see [CODE_RULES.md](CODE_RULES.md)) take `state` + a
+  `send(action)` and are shared by both modes: `features/board` (tiles,
+  tokens, dice), `features/game` (turn controls, panels, log, results),
+  `features/trade`, `features/auction`, `features/events`.
+- Online screens (`features/online`): `HomeScreen`, `NicknamePrompt`,
   `LobbyScreen`, `RoomScreen`, `NetworkGame`.
 - Hot-seat (`GameScreen`) drives the reducer with a local `useReducer`
   (`useGame`); online (`NetworkGame`) sends intents over the socket.
-- Cross-cutting: `i18n.tsx` (en/ru), `board-theme.tsx` (Classic/Minimal/Neon),
-  `SoundProvider`, settings dialog (`SettingsButton`, bottom-left).
+- Cross-cutting modules: `modules/i18n` (en/ru), `modules/sound`,
+  `modules/theme`, `modules/board` (tile geometry/travel plans), and the
+  board theme (`features/board`, Classic/Minimal/Neon).
 
 ### 3.3. Networking — authoritative Durable Object
 
 The server is the **single source of truth** ("Option B": a thin authoritative
 relay, no database).
 
-- **`src/game/room.ts`** — `RoomState { roomId, phase: "lobby" | "in-game",
+- **`src/modules/game-core/room.ts`** — `RoomState { roomId, phase: "lobby" | "in-game",
   members: RoomMember[], game: GameState | null }` and the pure
   `applyClientMessage(state, msg, senderId)` authority reducer.
 - **`party/server.ts`** — a `partyserver` `Server` (a Cloudflare Durable Object).
   One instance per room id. It holds `RoomState` in memory, feeds validated
   client messages into `applyClientMessage`, and broadcasts the whole state.
-- Clients (`src/hooks/useRoom.ts` over `partysocket`) send **intents**, never
+- Clients (`src/modules/network/hooks/useRoom.ts` over `partysocket`) send **intents**, never
   state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `avatar`
   / `kick`.
 
@@ -368,12 +373,12 @@ See [README.md](README.md) for exact commands.
   tokens, and win confetti. Shared by both play modes.
 - ✅ **Landing-synced feedback** — effects caused by landing on a tile (card
   reveal, event callouts, card/jail sounds, money deltas) wait for the token's
-  travel animation via a shared `travelPlan` helper (`board-meta.ts`), so the
+  travel animation via a shared `travelPlan` helper (`src/modules/board`), so the
   outcome isn't revealed before the piece arrives. A **movement card** (e.g.
   "Advance to GO") and a roll onto **Go To Jail** animate in two legs: the
   token first visibly lands on the tile the roll hit, pauses (card reveal /
   a dramatic beat), then travels on to the destination (`travelStopover` in
-  `board-meta.ts`). Turn buttons
+  `src/modules/board`). Turn buttons
   (roll/buy/end/pay) are disabled until the travel settles
   (`useTravelSettled`), so a turn can't be ended while a piece is still
   flying. Stationary events (buy, trade, auction) stay instant, and reduced
