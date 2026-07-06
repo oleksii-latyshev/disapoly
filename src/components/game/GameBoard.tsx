@@ -3,7 +3,8 @@ import { motion } from "motion/react"
 import { Hotel, House } from "lucide-react"
 
 import {
-  BOARD,
+  boardOf,
+  boardSizeOf,
   currentPlayer,
   hasMonopoly,
   rentFor,
@@ -19,7 +20,7 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import type { ReactionEvent } from "@/hooks/useRoom"
 
 import { useBoardTheme } from "./board-theme"
-import { tileCell } from "./board-meta"
+import { gridSide, tileCell } from "./board-meta"
 import { BoardTilt } from "./BoardTilt"
 import { Dice } from "./Dice"
 import { EventAnnouncer } from "./EventAnnouncer"
@@ -41,11 +42,12 @@ function shortName(name: string): string {
  */
 type Side = "bottom" | "left" | "top" | "right" | "corner"
 
-function tileSide(id: number): Side {
-  if (isCornerTile(id)) return "corner"
-  if (id < 10) return "bottom"
-  if (id < 20) return "left"
-  if (id < 30) return "top"
+function tileSide(id: number, size: number): Side {
+  const quarter = size / 4
+  if (isCornerTile(id, size)) return "corner"
+  if (id < quarter) return "bottom"
+  if (id < 2 * quarter) return "left"
+  if (id < 3 * quarter) return "top"
   return "right"
 }
 
@@ -67,21 +69,57 @@ function stripLabel(state: GameState, def: TileDefinition): string | undefined {
   return `$${rentFor(state, def.id, 0)}`
 }
 
+/** Grid template for an n×n board (Tailwind only ships fixed presets). */
+function gridTemplate(n: number) {
+  return {
+    gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${n}, minmax(0, 1fr))`,
+  }
+}
+
+/**
+ * How a tile on the table of a pending trade reads to the viewer: something
+ * they'd gain, something they'd give away, or (for spectators) just "in play".
+ */
+function tradeHighlight(
+  state: GameState,
+  id: number,
+  localPlayerId?: string
+): "gain" | "lose" | "watch" | null {
+  let role: "gain" | "lose" | "watch" | null = null
+  for (const offer of state.pendingTrades) {
+    const inGive = offer.give.tiles.includes(id)
+    const inReceive = offer.receive.tiles.includes(id)
+    if (!inGive && !inReceive) continue
+    // Hot-seat has no fixed viewer — read it from the responder's side.
+    const viewer = localPlayerId ?? offer.toId
+    if (viewer === offer.fromId || viewer === offer.toId) {
+      const gains = inGive ? viewer === offer.toId : viewer === offer.fromId
+      return gains ? "gain" : "lose"
+    }
+    role = "watch"
+  }
+  return role
+}
+
 function Tile({
   id,
   state,
   isCurrent,
   onSelect,
+  localPlayerId,
 }: {
   id: number
   state: GameState
   isCurrent: boolean
   onSelect: (id: number) => void
+  localPlayerId?: string
 }) {
   const { theme } = useBoardTheme()
   const reduce = usePrefersReducedMotion()
-  const def = BOARD[id]
-  const cell = tileCell(id)
+  const size = boardSizeOf(state)
+  const def = boardOf(state)[id]
+  const cell = tileCell(id, size)
   const tile = state.tiles[id]
 
   // Detect a build (houses went up) — drives the construction dust puff; the
@@ -112,7 +150,7 @@ function Tile({
     : undefined
 
   const visual = tileVisual(def)
-  const corner = isCornerTile(id)
+  const corner = isCornerTile(id, size)
   const groupColor =
     def.type === "street" ? theme.groupColors[def.group] : undefined
   const isMono = theme.id === "mono"
@@ -142,9 +180,12 @@ function Tile({
       : "var(--tile-fg)"
 
   // Group color faces outward, the owner/value strip faces the board center.
-  const side = tileSide(id)
+  const side = tileSide(id, size)
   const isVertical = side === "left" || side === "right"
   const bandFirst = side === "top" || side === "left"
+
+  // While a trade offer is on the table, its tiles pulse on the board itself.
+  const trade = tradeHighlight(state, id, localPlayerId)
 
   return (
     <div
@@ -165,14 +206,17 @@ function Tile({
         isVertical ? "flex-row" : "flex-col",
         "transition-[translate,box-shadow] duration-150 hover:z-10 hover:-translate-y-px hover:shadow-md",
         isCurrent && "tile-current z-10 ring-2 ring-ring",
-        traded && !reduce && "tile-traded z-10"
+        traded && !reduce && "tile-traded z-10",
+        !traded && trade && `tile-trade-${trade} z-10`
       )}
     >
       {def.type === "street" && groupColor && (
         <div
           className={cn(
             "shrink-0",
-            isVertical ? "h-full w-[max(5px,0.9cqw)]" : "h-[max(5px,0.9cqw)] w-full",
+            isVertical
+              ? "h-full w-[max(5px,0.9cqw)]"
+              : "h-[max(5px,0.9cqw)] w-full",
             bandFirst ? "order-1" : "order-3"
           )}
           style={{
@@ -194,7 +238,7 @@ function Tile({
             side === "left" &&
               "inset-y-0 left-[max(5px,0.7cqw)] flex-col justify-center",
             side === "right" &&
-              "inset-y-0 right-[max(5px,0.7cqw)] flex-col justify-center items-end"
+              "inset-y-0 right-[max(5px,0.7cqw)] flex-col items-end justify-center"
           )}
         >
           {built && !reduce && (
@@ -235,7 +279,9 @@ function Tile({
         </div>
       )}
 
-      <div className="order-2 flex flex-1 flex-col items-center justify-center gap-[max(2px,0.25cqw)] px-0.5 text-center">
+      {/* min-w-0: long names must shrink, or they push the group band past
+          the tile edge (the "neon leaking off the board" bug). */}
+      <div className="order-2 flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-[max(2px,0.25cqw)] px-0.5 text-center">
         {visual && (
           <span
             className={cn(
@@ -255,9 +301,7 @@ function Tile({
           >
             <visual.Icon
               className={
-                corner
-                  ? "size-[max(13px,1.8cqw)]"
-                  : "size-[max(10px,1.5cqw)]"
+                corner ? "size-[max(13px,1.8cqw)]" : "size-[max(10px,1.5cqw)]"
               }
               style={{ color: emblemFg }}
               strokeWidth={2.25}
@@ -278,40 +322,33 @@ function Tile({
             {corner && visual?.label ? visual.label : shortName(def.name)}
           </span>
         </span>
-      </div>
-
-      {label && (
-        <div
-          key={tile.ownerId ?? "bank"}
-          className={cn(
-            "flex shrink-0 items-center justify-center text-[length:max(7px,1.15cqw)] font-bold tabular-nums",
-            isVertical
-              ? "h-full w-[max(10px,1.5cqw)]"
-              : "h-[max(10px,1.5cqw)] w-full",
-            bandFirst ? "order-3" : "order-1",
-            owner && "owner-strip"
-          )}
-          style={
-            owner
-              ? {
-                  backgroundColor: owner.color,
-                  color: contrastText(owner.color),
-                }
-              : {
-                  backgroundColor:
-                    "color-mix(in srgb, var(--tile-fg) 8%, transparent)",
-                  color: "var(--tile-fg)",
-                }
-          }
-          title={owner ? `Owned by ${owner.nickname}` : undefined}
-        >
+        {/* Price / current rent as a tag right under the name — always in the
+            same spot regardless of which board edge the tile sits on. */}
+        {label && (
           <span
-            style={isVertical ? { writingMode: "vertical-rl" } : undefined}
+            key={tile.ownerId ?? "bank"}
+            className={cn(
+              "max-w-full shrink-0 truncate rounded-full px-[max(4px,0.5cqw)] py-px text-[length:max(7px,1cqw)] font-bold tabular-nums",
+              owner && "owner-strip"
+            )}
+            style={
+              owner
+                ? {
+                    backgroundColor: owner.color,
+                    color: contrastText(owner.color),
+                  }
+                : {
+                    backgroundColor:
+                      "color-mix(in srgb, var(--tile-fg) 10%, transparent)",
+                    color: "var(--tile-fg)",
+                  }
+            }
+            title={owner ? `Owned by ${owner.nickname}` : undefined}
           >
             {label}
           </span>
-        </div>
-      )}
+        )}
+      </div>
       {tile.mortgaged && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-grayscale">
           <span className="rounded bg-background/70 px-1 text-[length:max(7px,0.9cqw)] font-bold tracking-wide text-muted-foreground">
@@ -326,13 +363,18 @@ function Tile({
 export function GameBoard({
   state,
   reactions,
+  localPlayerId,
 }: {
   state: GameState
   /** Live emoji reactions to float over tokens (online play only). */
   reactions?: ReactionEvent[]
+  /** Online only: whose screen this is (personalizes trade highlights). */
+  localPlayerId?: string
 }) {
   const { theme } = useBoardTheme()
   const t = useT()
+  const board = boardOf(state)
+  const n = gridSide(board.length)
   const active = state.status === "playing" ? currentPlayer(state) : undefined
   const currentId = state.players[state.currentPlayerIndex]?.position
   const [selected, setSelected] = useState<number | null>(null)
@@ -364,19 +406,26 @@ export function GameBoard({
               "radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--board-inner) 94%, white), var(--board-inner))",
           }}
         >
-          <div className="@container relative grid aspect-square w-full grid-cols-11 grid-rows-11 gap-[3px]">
-            {BOARD.map((def) => (
+          <div
+            className="@container relative grid aspect-square w-full gap-[3px]"
+            style={gridTemplate(n)}
+          >
+            {board.map((def) => (
               <Tile
                 key={def.id}
                 id={def.id}
                 state={state}
                 isCurrent={def.id === currentId}
                 onSelect={setSelected}
+                localPlayerId={localPlayerId}
               />
             ))}
 
             {/* Center area */}
-            <div className="col-start-2 col-end-11 row-start-2 row-end-11 flex flex-col items-center justify-center gap-4">
+            <div
+              className="flex flex-col items-center justify-center gap-4"
+              style={{ gridColumn: `2 / ${n}`, gridRow: `2 / ${n}` }}
+            >
               <div className="flex flex-col items-center gap-2 select-none">
                 <span
                   className="board-logo text-[length:max(18px,3.6cqw)] font-black tracking-[0.32em]"

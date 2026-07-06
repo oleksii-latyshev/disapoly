@@ -180,8 +180,9 @@ describe("canSellHouse", () => {
 
 describe("mortgage rules", () => {
   it("computes value at half price and lift cost at +10%", () => {
-    expect(mortgageValue(BALTIC)).toBe(30)
-    expect(unmortgageCost(BALTIC)).toBe(33)
+    const s = newGame()
+    expect(mortgageValue(s, BALTIC)).toBe(30)
+    expect(unmortgageCost(s, BALTIC)).toBe(33)
   })
 
   it("blocks mortgaging while the group has buildings", () => {

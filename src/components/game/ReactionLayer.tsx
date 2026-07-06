@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 
-import type { GameState } from "@/game"
+import { boardSizeOf, type GameState } from "@/game"
 import type { ReactionEvent } from "@/hooks/useRoom"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
@@ -31,7 +31,10 @@ export function ReactionLayer({
     const maxId = reactions[reactions.length - 1].id
     if (maxId <= seen.current) return
 
-    const targets = tokenTargets(state.players.filter((p) => !p.isBankrupt))
+    const targets = tokenTargets(
+      state.players.filter((p) => !p.isBankrupt),
+      boardSizeOf(state)
+    )
     const spawned: FloatItem[] = []
     for (const r of reactions) {
       if (r.id <= seen.current) continue
@@ -50,7 +53,7 @@ export function ReactionLayer({
       1800
     )
     timers.current.push(tm)
-  }, [reactions, state.players])
+  }, [reactions, state])
 
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 

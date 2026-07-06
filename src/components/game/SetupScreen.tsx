@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import {
   PLAYER_COLORS,
   PLAYER_EMOJIS,
+  type BoardId,
   type GameSettings,
   type PayMode,
   type PlayerSetup,
@@ -24,6 +25,8 @@ const MIN_PLAYERS = 2
 const MAX_PLAYERS = PLAYER_COLORS.length // 8
 
 const PAY_MODES: PayMode[] = ["turbo", "normal"]
+
+const BOARD_IDS: BoardId[] = ["classic", "large"]
 
 export function SetupScreen({
   onStart,
@@ -37,6 +40,7 @@ export function SetupScreen({
     PLAYER_EMOJIS[1],
   ])
   const [payMode, setPayMode] = useState<PayMode>("turbo")
+  const [board, setBoard] = useState<BoardId>("classic")
   const [orderRoll, setOrderRoll] = useState(false)
 
   const setName = (index: number, value: string) =>
@@ -77,7 +81,7 @@ export function SetupScreen({
         nickname: nickname.trim() || `Player ${i + 1}`,
         emoji: emojis[i],
       })),
-      { payMode, orderRoll }
+      { payMode, orderRoll, board }
     )
 
   return (
@@ -148,6 +152,28 @@ export function SetupScreen({
 
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">
+              {t("lobby.board")}
+            </span>
+            <div className="flex gap-2">
+              {BOARD_IDS.map((id) => (
+                <Button
+                  key={id}
+                  variant={board === id ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setBoard(id)}
+                >
+                  {t(`board.${id}`)}
+                </Button>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {t(`board.${board}.desc`)}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">
               {t("lobby.payMode")}
             </span>
             <div className="flex gap-2">
@@ -174,7 +200,8 @@ export function SetupScreen({
               size="sm"
               onClick={() => setOrderRoll((v) => !v)}
             >
-              {t("lobby.orderRoll")}: {orderRoll ? t("common.on") : t("common.off")}
+              {t("lobby.orderRoll")}:{" "}
+              {orderRoll ? t("common.on") : t("common.off")}
             </Button>
             <span className="text-xs text-muted-foreground">
               {t("lobby.orderRoll.desc")}

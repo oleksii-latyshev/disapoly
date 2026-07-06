@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { motion } from "motion/react"
-import { ArrowLeftRight, Check, X } from "lucide-react"
+import { ArrowLeftRight, Check, Reply, X } from "lucide-react"
 
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import { Button } from "@/components/ui/button"
@@ -9,11 +9,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
-  BOARD,
+  boardOf,
   currentPlayer,
   isTradeValid,
   tradableTiles,
@@ -22,6 +21,7 @@ import {
   type Player,
   type TradeBundle,
   type TradeOffer,
+  type TradeProposal,
 } from "@/game"
 import { useT, type TFunction } from "@/i18n"
 import { cn } from "@/lib/utils"
@@ -36,8 +36,12 @@ function shortName(name: string): string {
     .trim()
 }
 
-function summarize(bundle: TradeBundle, t: TFunction): string {
-  const parts = bundle.tiles.map((id) => shortName(BOARD[id].name))
+function summarize(
+  state: GameState,
+  bundle: TradeBundle,
+  t: TFunction
+): string {
+  const parts = bundle.tiles.map((id) => shortName(boardOf(state)[id].name))
   if (bundle.money > 0) parts.push(`$${bundle.money}`)
   if (bundle.jailCards > 0) parts.push(`🎟×${bundle.jailCards}`)
   return parts.length ? parts.join(", ") : t("trade.nothing")
@@ -82,7 +86,7 @@ function BundleEditor({
           <span className="px-1 text-xs text-muted-foreground">—</span>
         )}
         {tiles.map((id) => {
-          const def = BOARD[id]
+          const def = boardOf(state)[id]
           const color =
             def.type === "street" ? GROUP_COLOR[def.group] : undefined
           const sel = bundle.tiles.includes(id)
@@ -149,17 +153,29 @@ function BundleEditor({
   )
 }
 
+/**
+ * The proposal dialog. Opened from the "propose" button, or prefilled as a
+ * counter-offer (`counterOf`): the incoming offer's bundles mirrored to the
+ * responder's perspective, editable — sending it declines the original.
+ */
 function TradeBuilder({
   state,
   send,
   localPlayerId,
+  counterOf,
+  onClose,
 }: {
   state: GameState
   send: Send
   localPlayerId?: string
+  counterOf: TradeOffer | null
+  onClose: () => void
 }) {
   const t = useT()
-  const fromId = localPlayerId ?? currentPlayer(state).id
+  // Countering acts as the original offer's recipient (matters in hot-seat,
+  // where there is no fixed local player).
+  const fromId =
+    localPlayerId ?? (counterOf ? counterOf.toId : currentPlayer(state).id)
   const me = state.players.find((p) => p.id === fromId)
   const others = state.players.filter((p) => !p.isBankrupt && p.id !== fromId)
 
@@ -168,30 +184,53 @@ function TradeBuilder({
   const [give, setGive] = useState<TradeBundle>(EMPTY)
   const [receive, setReceive] = useState<TradeBundle>(EMPTY)
 
+  // A counter-offer force-opens the dialog prefilled with the mirrored offer.
+  const [prefilled, setPrefilled] = useState<TradeOffer | null>(null)
+  if (counterOf && prefilled !== counterOf) {
+    setPrefilled(counterOf)
+    setPartnerId(counterOf.fromId)
+    setGive(counterOf.receive)
+    setReceive(counterOf.give)
+  }
+  const isOpen = open || counterOf !== null
+
   if (!me || me.isBankrupt || others.length === 0) return null
 
   const partner = state.players.find((p) => p.id === partnerId) ?? null
-  const offer: TradeOffer = { fromId, toId: partnerId ?? "", give, receive }
-  const valid = partnerId !== null && isTradeValid(state, offer)
+  const offer: TradeProposal = { fromId, toId: partnerId ?? "", give, receive }
+  // One open offer per direction: ask to withdraw/answer the old one first.
+  const duplicate =
+    partnerId !== null &&
+    state.pendingTrades.some(
+      (tr) => tr.fromId === fromId && tr.toId === partnerId
+    )
+  const valid = partnerId !== null && !duplicate && isTradeValid(state, offer)
+
+  const close = () => {
+    setOpen(false)
+    setPrefilled(null)
+    onClose()
+  }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o)
-        if (o) {
+    <Dialog open={isOpen} onOpenChange={(o) => !o && close()}>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          setOpen(true)
           setPartnerId(others[0]?.id ?? null)
           setGive(EMPTY)
           setReceive(EMPTY)
-        }
-      }}
-    >
-      <DialogTrigger render={<Button variant="outline" className="w-full" />}>
+        }}
+      >
         <ArrowLeftRight /> {t("trade.open")}
-      </DialogTrigger>
+      </Button>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("trade.title")}</DialogTitle>
+          <DialogTitle>
+            {counterOf ? t("trade.counterTitle") : t("trade.title")}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-1.5">
@@ -238,14 +277,29 @@ function TradeBuilder({
           )}
         </div>
 
+        {duplicate && (
+          <p className="text-xs text-muted-foreground">
+            {t("trade.alreadyPending", { name: partner?.nickname ?? "?" })}
+          </p>
+        )}
+
         <Button
           disabled={!valid}
           onClick={() => {
+            if (counterOf) {
+              // Countering answers the original offer: decline, then propose.
+              send({
+                type: "RESPOND_TRADE",
+                tradeId: counterOf.id,
+                accept: false,
+                playerId: counterOf.toId,
+              })
+            }
             send({ type: "PROPOSE_TRADE", offer })
-            setOpen(false)
+            close()
           }}
         >
-          {t("trade.send")}
+          {counterOf ? t("trade.sendCounter") : t("trade.send")}
         </Button>
       </DialogContent>
     </Dialog>
@@ -257,11 +311,13 @@ function PendingTrade({
   send,
   offer,
   localPlayerId,
+  onCounter,
 }: {
   state: GameState
   send: Send
   offer: TradeOffer
   localPlayerId?: string
+  onCounter: (offer: TradeOffer) => void
 }) {
   const t = useT()
   const reduce = usePrefersReducedMotion()
@@ -276,7 +332,7 @@ function PendingTrade({
 
   return (
     <motion.div
-      key={`${offer.fromId}-${offer.toId}`}
+      key={offer.id}
       initial={reduce || !awaitingMe ? false : { scale: 0.96, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
@@ -292,6 +348,9 @@ function PendingTrade({
         )}
       >
         <ArrowLeftRight className="size-3.5" /> {t("trade.pendingTitle")}
+        <span className="ml-auto truncate font-normal text-muted-foreground">
+          {from?.nickname ?? "?"} → {to?.nickname ?? "?"}
+        </span>
       </div>
       {(() => {
         // From the viewer's perspective, color what they gain green and what
@@ -306,13 +365,13 @@ function PendingTrade({
                 <span className="font-semibold">
                   {t("trade.gives", { name: from?.nickname ?? "?" })}:
                 </span>{" "}
-                {summarize(offer.give, t)}
+                {summarize(state, offer.give, t)}
               </p>
               <p>
                 <span className="font-semibold">
                   {t("trade.gives", { name: to?.nickname ?? "?" })}:
                 </span>{" "}
-                {summarize(offer.receive, t)}
+                {summarize(state, offer.receive, t)}
               </p>
             </div>
           )
@@ -325,46 +384,53 @@ function PendingTrade({
               <span className="font-semibold text-emerald-700 dark:text-emerald-400">
                 + {t("trade.youReceive")}:
               </span>{" "}
-              {summarize(gain, t)}
+              {summarize(state, gain, t)}
             </div>
             <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-1.5">
               <span className="font-semibold text-rose-700 dark:text-rose-400">
                 − {t("trade.youGive")}:
               </span>{" "}
-              {summarize(loss, t)}
+              {summarize(state, loss, t)}
             </div>
           </div>
         )
       })()}
 
       {canRespond && (
-        <div className="flex gap-2">
-          <Button
-            className="flex-1"
-            onClick={() =>
-              send({
-                type: "RESPOND_TRADE",
-                accept: true,
-                playerId: offer.toId,
-              })
-            }
-          >
-            <Check /> {t("trade.accept")}
+        <>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              onClick={() =>
+                send({
+                  type: "RESPOND_TRADE",
+                  tradeId: offer.id,
+                  accept: true,
+                  playerId: offer.toId,
+                })
+              }
+            >
+              <Check /> {t("trade.accept")}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() =>
+                send({
+                  type: "RESPOND_TRADE",
+                  tradeId: offer.id,
+                  accept: false,
+                  playerId: offer.toId,
+                })
+              }
+            >
+              <X /> {t("trade.decline")}
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => onCounter(offer)}>
+            <Reply /> {t("trade.counter")}
           </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() =>
-              send({
-                type: "RESPOND_TRADE",
-                accept: false,
-                playerId: offer.toId,
-              })
-            }
-          >
-            <X /> {t("trade.decline")}
-          </Button>
-        </div>
+        </>
       )}
 
       {!canRespond && canCancel && (
@@ -377,7 +443,13 @@ function PendingTrade({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => send({ type: "CANCEL_TRADE", playerId: offer.fromId })}
+          onClick={() =>
+            send({
+              type: "CANCEL_TRADE",
+              tradeId: offer.id,
+              playerId: offer.fromId,
+            })
+          }
         >
           {t("trade.cancel")}
         </Button>
@@ -386,7 +458,10 @@ function PendingTrade({
   )
 }
 
-/** Trade entry point: a proposal builder, or the pending offer's controls. */
+/**
+ * Trade entry point: every pending offer's controls plus the proposal builder
+ * — new offers can be made while others are still on the table.
+ */
 export function TradePanel({
   state,
   send,
@@ -396,18 +471,34 @@ export function TradePanel({
   send: Send
   localPlayerId?: string
 }) {
+  const [counterOf, setCounterOf] = useState<TradeOffer | null>(null)
   if (state.status !== "playing") return null
-  if (state.pendingTrade) {
-    return (
-      <PendingTrade
+
+  // The countered offer may have been answered/withdrawn in the meantime.
+  const activeCounter =
+    counterOf && state.pendingTrades.some((tr) => tr.id === counterOf.id)
+      ? counterOf
+      : null
+
+  return (
+    <div className="flex flex-col gap-2">
+      {state.pendingTrades.map((offer) => (
+        <PendingTrade
+          key={offer.id}
+          state={state}
+          send={send}
+          offer={offer}
+          localPlayerId={localPlayerId}
+          onCounter={setCounterOf}
+        />
+      ))}
+      <TradeBuilder
         state={state}
         send={send}
-        offer={state.pendingTrade}
         localPlayerId={localPlayerId}
+        counterOf={activeCounter}
+        onClose={() => setCounterOf(null)}
       />
-    )
-  }
-  return (
-    <TradeBuilder state={state} send={send} localPlayerId={localPlayerId} />
+    </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { animate, AnimatePresence, motion } from "motion/react"
 
-import { BOARD_SIZE, type GameState, type Player } from "@/game"
+import { boardSizeOf, type GameState, type Player } from "@/game"
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
@@ -38,12 +38,14 @@ function Token({
   target,
   glow,
   stopoverFor,
+  boardSize,
 }: {
   player: Player
   target: Target
   glow: boolean
   /** Stop-over for this player's move (card / Go To Jail), or null. */
   stopoverFor: (playerId: string, from: number) => Stopover | null
+  boardSize: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -129,14 +131,14 @@ function Token({
       endX: number,
       endY: number
     ) => {
-      const forward = (legTo - legFrom + BOARD_SIZE) % BOARD_SIZE
-      const duration = travelSeconds(legFrom, legTo)
+      const forward = (legTo - legFrom + boardSize) % boardSize
+      const duration = travelSeconds(legFrom, legTo, boardSize)
       if (forward >= 1 && forward <= 12) {
         // Hop through each intermediate tile, landing on the offset target.
         const xs: number[] = []
         const ys: number[] = []
         for (let step = 1; step <= forward; step++) {
-          const c = tileCenter((legFrom + step) % BOARD_SIZE)
+          const c = tileCenter((legFrom + step) % boardSize, boardSize)
           xs.push(c.x)
           ys.push(c.y)
         }
@@ -162,20 +164,23 @@ function Token({
     // beat), then travels onward to where the rules actually put it.
     const stop = stopoverRef.current(player.id, from)
     if (stop !== null && stop.tile !== to) {
-      const c = tileCenter(stop.tile)
-      leg(from, stop.tile, c.x, c.y).then(() => {
-        if (gen.current !== myGen) return
-        pop()
-        if (pauseTimer.current) clearTimeout(pauseTimer.current)
-        pauseTimer.current = setTimeout(() => {
+      const c = tileCenter(stop.tile, boardSize)
+      leg(from, stop.tile, c.x, c.y).then(
+        () => {
           if (gen.current !== myGen) return
-          leg(stop.tile, to, target.x, target.y).then(pop, () => {})
-        }, stop.pauseMs)
-      }, () => {})
+          pop()
+          if (pauseTimer.current) clearTimeout(pauseTimer.current)
+          pauseTimer.current = setTimeout(() => {
+            if (gen.current !== myGen) return
+            leg(stop.tile, to, target.x, target.y).then(pop, () => {})
+          }, stop.pauseMs)
+        },
+        () => {}
+      )
     } else {
       leg(from, to, target.x, target.y).then(pop, () => {})
     }
-  }, [player.id, player.position, target.x, target.y, reduce])
+  }, [player.id, player.position, target.x, target.y, reduce, boardSize])
 
   return (
     <div
@@ -190,22 +195,45 @@ function Token({
         className="absolute top-[68%] left-1/2 h-[38%] w-[82%] rounded-full bg-black/35 blur-[2px]"
         style={{ translate: "-50% 0" }}
       />
-      {/* The piece: sphere-shaded so it reads as a 3D pawn, not a flat disc. */}
-      <div
-        ref={bodyRef}
-        className="relative flex size-full items-center justify-center rounded-full border border-white/80 text-[10px] font-bold text-white"
-        style={{
-          background: `radial-gradient(circle at 32% 28%, color-mix(in srgb, ${player.color} 55%, white), ${player.color} 58%, color-mix(in srgb, ${player.color} 68%, black))`,
-          boxShadow: glow
-            ? `0 0 10px ${player.color}, inset 0 -3px 5px rgba(0, 0, 0, 0.28)`
-            : "inset 0 -3px 5px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.3)",
-        }}
-      >
-        <span className="pointer-events-none absolute top-[10%] left-[16%] h-[28%] w-[40%] rounded-full bg-white/45 blur-[1px]" />
-        <span className="relative drop-shadow-sm">
-          {player.emoji || player.nickname.charAt(0).toUpperCase()}
-        </span>
-      </div>
+      {/* The piece. With an avatar the emoji IS the figure — it stands on a
+          small color-coded pedestal (identity stays readable). Without one,
+          fall back to the classic sphere-shaded pawn with the initial. */}
+      {player.emoji ? (
+        <div
+          ref={bodyRef}
+          className="relative flex size-full items-end justify-center"
+        >
+          <span
+            className="absolute bottom-0 left-1/2 h-[44%] w-[88%] rounded-full border border-white/70"
+            style={{
+              translate: "-50% 0",
+              background: `radial-gradient(circle at 35% 28%, color-mix(in srgb, ${player.color} 55%, white), ${player.color} 58%, color-mix(in srgb, ${player.color} 68%, black))`,
+              boxShadow: glow
+                ? `0 0 10px ${player.color}, inset 0 -2px 4px rgba(0, 0, 0, 0.28)`
+                : "inset 0 -2px 4px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.3)",
+            }}
+          />
+          <span className="relative bottom-[16%] text-[length:max(17px,2.9cqw)] leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]">
+            {player.emoji}
+          </span>
+        </div>
+      ) : (
+        <div
+          ref={bodyRef}
+          className="relative flex size-full items-center justify-center rounded-full border border-white/80 text-[10px] font-bold text-white"
+          style={{
+            background: `radial-gradient(circle at 32% 28%, color-mix(in srgb, ${player.color} 55%, white), ${player.color} 58%, color-mix(in srgb, ${player.color} 68%, black))`,
+            boxShadow: glow
+              ? `0 0 10px ${player.color}, inset 0 -3px 5px rgba(0, 0, 0, 0.28)`
+              : "inset 0 -3px 5px rgba(0, 0, 0, 0.28), 0 1px 2px rgba(0, 0, 0, 0.3)",
+          }}
+        >
+          <span className="pointer-events-none absolute top-[10%] left-[16%] h-[28%] w-[40%] rounded-full bg-white/45 blur-[1px]" />
+          <span className="relative drop-shadow-sm">
+            {player.nickname.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -240,10 +268,11 @@ function MoneyDelta({ delta }: { delta: Delta }) {
 export function TokenLayer({ state }: { state: GameState }) {
   const { theme } = useBoardTheme()
   const reduce = usePrefersReducedMotion()
+  const size = boardSizeOf(state)
   const active = state.players.filter((p) => !p.isBankrupt)
 
   // Per-player target including the fan-out offset for co-located tokens.
-  const targets = tokenTargets(active)
+  const targets = tokenTargets(active, size)
 
   // Floating money deltas, derived from each player's balance change.
   const [deltas, setDeltas] = useState<Delta[]>([])
@@ -275,7 +304,10 @@ export function TokenLayer({ state }: { state: GameState }) {
 
     // Recompute targets here (rather than reading a render value) so the effect
     // stays self-contained and lint-clean.
-    const at = tokenTargets(state.players.filter((p) => !p.isBankrupt))
+    const at = tokenTargets(
+      state.players.filter((p) => !p.isBankrupt),
+      boardSizeOf(state)
+    )
     const spawned: Delta[] = []
     for (const player of state.players) {
       const pos = at.get(player.id)
@@ -314,6 +346,7 @@ export function TokenLayer({ state }: { state: GameState }) {
           target={targets.get(player.id)!}
           glow={theme.glow}
           stopoverFor={stopoverFor}
+          boardSize={size}
         />
       ))}
       <AnimatePresence>

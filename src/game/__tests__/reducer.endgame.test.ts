@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { BOARD } from "../board.config"
 import { gameReducer } from "../reducer"
-import type { GameState, StreetTile, TradeOffer } from "../types"
+import type { GameState, StreetTile, TradeProposal } from "../types"
 import { give, newGame, player, withNextRoll } from "./helpers"
 
 const MEDITERRANEAN = 1
@@ -45,7 +45,7 @@ describe("END_TURN", () => {
 })
 
 describe("trading", () => {
-  function offer(): TradeOffer {
+  function offer(): TradeProposal {
     return {
       fromId: "p1",
       toId: "p2",
@@ -67,13 +67,14 @@ describe("trading", () => {
       type: "PROPOSE_TRADE",
       offer: offer(),
     })
-    expect(proposed.pendingTrade).toEqual(offer())
+    expect(proposed.pendingTrades).toEqual([{ ...offer(), id: 1 }])
     const done = gameReducer(proposed, {
       type: "RESPOND_TRADE",
+      tradeId: 1,
       accept: true,
       playerId: "p2",
     })
-    expect(done.pendingTrade).toBeNull()
+    expect(done.pendingTrades).toEqual([])
     expect(done.tiles[MEDITERRANEAN].ownerId).toBe("p2")
     expect(done.tiles[BALTIC].ownerId).toBe("p1")
     expect(player(done, "p1").balance).toBe(1400)
@@ -89,16 +90,18 @@ describe("trading", () => {
     })
     const wrong = gameReducer(proposed, {
       type: "RESPOND_TRADE",
+      tradeId: 1,
       accept: true,
       playerId: "p1",
     })
-    expect(wrong.pendingTrade).toEqual(offer())
+    expect(wrong.pendingTrades).toEqual([{ ...offer(), id: 1 }])
     const declined = gameReducer(proposed, {
       type: "RESPOND_TRADE",
+      tradeId: 1,
       accept: false,
       playerId: "p2",
     })
-    expect(declined.pendingTrade).toBeNull()
+    expect(declined.pendingTrades).toEqual([])
     expect(declined.tiles[MEDITERRANEAN].ownerId).toBe("p1")
   })
 
@@ -108,13 +111,19 @@ describe("trading", () => {
       offer: offer(),
     })
     expect(
-      gameReducer(proposed, { type: "CANCEL_TRADE", playerId: "p2" })
-        .pendingTrade
-    ).toEqual(offer())
+      gameReducer(proposed, {
+        type: "CANCEL_TRADE",
+        tradeId: 1,
+        playerId: "p2",
+      }).pendingTrades
+    ).toEqual([{ ...offer(), id: 1 }])
     expect(
-      gameReducer(proposed, { type: "CANCEL_TRADE", playerId: "p1" })
-        .pendingTrade
-    ).toBeNull()
+      gameReducer(proposed, {
+        type: "CANCEL_TRADE",
+        tradeId: 1,
+        playerId: "p1",
+      }).pendingTrades
+    ).toEqual([])
   })
 
   it("re-validates at accept time and voids a stale offer", () => {
@@ -127,12 +136,96 @@ describe("trading", () => {
     proposed.tiles[MEDITERRANEAN].houses = 1
     const done = gameReducer(proposed, {
       type: "RESPOND_TRADE",
+      tradeId: 1,
       accept: true,
       playerId: "p2",
     })
-    expect(done.pendingTrade).toBeNull()
+    expect(done.pendingTrades).toEqual([])
     expect(done.tiles[MEDITERRANEAN].ownerId).toBe("p1")
     expect(player(done, "p1").balance).toBe(1500)
+  })
+
+  it("queues several trades at once, but only one per from→to pair", () => {
+    const first = gameReducer(staged(), {
+      type: "PROPOSE_TRADE",
+      offer: offer(),
+    })
+    // A second p1→p2 offer is rejected while the first is open...
+    const dup = gameReducer(first, {
+      type: "PROPOSE_TRADE",
+      offer: {
+        ...offer(),
+        give: { tiles: [], money: 50, jailCards: 0 },
+        receive: { tiles: [], money: 0, jailCards: 1 },
+      },
+    })
+    expect(dup.pendingTrades).toHaveLength(1)
+    // ...but the reverse direction (p2→p1) queues alongside it.
+    const both = gameReducer(first, {
+      type: "PROPOSE_TRADE",
+      offer: {
+        fromId: "p2",
+        toId: "p1",
+        give: { tiles: [], money: 0, jailCards: 1 },
+        receive: { tiles: [], money: 25, jailCards: 0 },
+      },
+    })
+    expect(both.pendingTrades).toHaveLength(2)
+    expect(both.pendingTrades.map((t) => t.id)).toEqual([1, 2])
+
+    // Each resolves independently by id.
+    const answered = gameReducer(both, {
+      type: "RESPOND_TRADE",
+      tradeId: 2,
+      accept: true,
+      playerId: "p1",
+    })
+    expect(answered.pendingTrades.map((t) => t.id)).toEqual([1])
+    expect(player(answered, "p1").getOutOfJailCards).toBe(1)
+    expect(player(answered, "p1").balance).toBe(1475)
+  })
+
+  it("an accepted trade can invalidate a queued one (voided on accept)", () => {
+    // Both offers give away the same tile; accepting the first must void the
+    // second when it is later accepted.
+    const s = newGame(3)
+    give(s, "p1", MEDITERRANEAN)
+    const q1 = gameReducer(s, {
+      type: "PROPOSE_TRADE",
+      offer: {
+        fromId: "p1",
+        toId: "p2",
+        give: { tiles: [MEDITERRANEAN], money: 0, jailCards: 0 },
+        receive: { tiles: [], money: 100, jailCards: 0 },
+      },
+    })
+    const q2 = gameReducer(q1, {
+      type: "PROPOSE_TRADE",
+      offer: {
+        fromId: "p1",
+        toId: "p3",
+        give: { tiles: [MEDITERRANEAN], money: 0, jailCards: 0 },
+        receive: { tiles: [], money: 150, jailCards: 0 },
+      },
+    })
+    expect(q2.pendingTrades).toHaveLength(2)
+    const sold = gameReducer(q2, {
+      type: "RESPOND_TRADE",
+      tradeId: 1,
+      accept: true,
+      playerId: "p2",
+    })
+    expect(sold.tiles[MEDITERRANEAN].ownerId).toBe("p2")
+    const voided = gameReducer(sold, {
+      type: "RESPOND_TRADE",
+      tradeId: 2,
+      accept: true,
+      playerId: "p3",
+    })
+    // The stale offer is removed without applying.
+    expect(voided.pendingTrades).toEqual([])
+    expect(voided.tiles[MEDITERRANEAN].ownerId).toBe("p2")
+    expect(player(voided, "p1").balance).toBe(1600) // only the first trade paid
   })
 })
 
@@ -206,18 +299,30 @@ describe("bankruptcy & victory", () => {
     expect(next.winnerId).toBeNull()
   })
 
-  it("drops a pending trade involving the bankrupted player", () => {
+  it("drops pending trades involving the bankrupted player", () => {
     const s = withNextRoll(newGame(3), 1, 3) // Income Tax
     give(s, "p1", BALTIC)
     player(s, "p1").balance = 10
-    s.pendingTrade = {
-      fromId: "p1",
-      toId: "p2",
-      give: { tiles: [BALTIC], money: 0, jailCards: 0 },
-      receive: { tiles: [], money: 50, jailCards: 0 },
-    }
+    s.pendingTrades = [
+      {
+        id: 1,
+        fromId: "p1",
+        toId: "p2",
+        give: { tiles: [BALTIC], money: 0, jailCards: 0 },
+        receive: { tiles: [], money: 50, jailCards: 0 },
+      },
+      {
+        id: 2,
+        fromId: "p3",
+        toId: "p2",
+        give: { tiles: [], money: 20, jailCards: 0 },
+        receive: { tiles: [], money: 10, jailCards: 0 },
+      },
+    ]
+    s.nextTradeId = 3
     const next = gameReducer(s, { type: "ROLL_DICE" })
     expect(player(next, "p1").isBankrupt).toBe(true)
-    expect(next.pendingTrade).toBeNull()
+    // Only the bankrupt player's trades disappear; unrelated ones survive.
+    expect(next.pendingTrades.map((t) => t.id)).toEqual([2])
   })
 })

@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import {
   PLAYER_EMOJIS,
+  type BoardId,
   type ClientMessage,
   type PayMode,
   type RoomMember,
@@ -24,6 +25,8 @@ import { useT } from "@/i18n"
 const MIN_MEMBERS = 2
 
 const PAY_MODES: PayMode[] = ["turbo", "normal"]
+
+const BOARD_IDS: BoardId[] = ["classic", "large"]
 
 /** The next avatar after `current` that no other member holds. */
 function nextFreeEmoji(members: RoomMember[], selfId: string): string | null {
@@ -60,6 +63,7 @@ export function LobbyScreen({
   const t = useT()
   const [copied, setCopied] = useState(false)
   const [payMode, setPayMode] = useState<PayMode>("turbo")
+  const [board, setBoard] = useState<BoardId>("classic")
   const [orderRoll, setOrderRoll] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState("")
@@ -212,7 +216,9 @@ export function LobbyScreen({
                             name: member.nickname,
                           })}
                           title={t("lobby.kick", { name: member.nickname })}
-                          onClick={() => send({ type: "kick", playerId: member.id })}
+                          onClick={() =>
+                            send({ type: "kick", playerId: member.id })
+                          }
                         >
                           <UserX className="size-3.5" />
                         </Button>
@@ -232,6 +238,30 @@ export function LobbyScreen({
               )
             })}
           </div>
+
+          {self?.isHost && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {t("lobby.board")}
+              </span>
+              <div className="flex gap-2">
+                {BOARD_IDS.map((id) => (
+                  <Button
+                    key={id}
+                    variant={board === id ? "default" : "outline"}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setBoard(id)}
+                  >
+                    {t(`board.${id}`)}
+                  </Button>
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {t(`board.${board}.desc`)}
+              </span>
+            </div>
+          )}
 
           {self?.isHost && (
             <div className="flex flex-col gap-1.5">
@@ -264,7 +294,8 @@ export function LobbyScreen({
                 size="sm"
                 onClick={() => setOrderRoll((v) => !v)}
               >
-                {t("lobby.orderRoll")}: {orderRoll ? t("common.on") : t("common.off")}
+                {t("lobby.orderRoll")}:{" "}
+                {orderRoll ? t("common.on") : t("common.off")}
               </Button>
               <span className="text-xs text-muted-foreground">
                 {t("lobby.orderRoll.desc")}
@@ -275,7 +306,7 @@ export function LobbyScreen({
           {self?.isHost ? (
             <Button
               onClick={() =>
-                send({ type: "start", settings: { payMode, orderRoll } })
+                send({ type: "start", settings: { payMode, orderRoll, board } })
               }
               disabled={!canStart}
             >

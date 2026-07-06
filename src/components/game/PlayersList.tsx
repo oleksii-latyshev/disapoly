@@ -79,23 +79,29 @@ export function PlayersList({
               player.isBankrupt && "opacity-50"
             )}
           >
-            <span
-              className="size-3 shrink-0 rounded-full border border-white/70"
-              style={{ backgroundColor: player.color }}
-            />
-            {player.emoji && (
-              <span className="shrink-0 text-base leading-none">
+            {/* The avatar leads; the token color rides along as a small badge
+                tucked under its corner (or stands alone without an emoji). */}
+            {player.emoji ? (
+              <span className="relative shrink-0 text-xl leading-none">
                 {player.emoji}
+                <span
+                  className="absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border border-white/70"
+                  style={{ backgroundColor: player.color }}
+                />
               </span>
+            ) : (
+              <span
+                className="size-3 shrink-0 rounded-full border border-white/70"
+                style={{ backgroundColor: player.color }}
+              />
             )}
             <span className="min-w-0 flex-1 truncate font-medium">
               {player.nickname}
-              {state.orderRolls &&
-                (state.orderRolls[player.id] ?? -1) >= 0 && (
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    🎲 {state.orderRolls[player.id]}
-                  </span>
-                )}
+              {state.orderRolls && (state.orderRolls[player.id] ?? -1) >= 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  🎲 {state.orderRolls[player.id]}
+                </span>
+              )}
               {player.inJail && (
                 <span className="ml-1 text-xs text-muted-foreground">
                   (jail)

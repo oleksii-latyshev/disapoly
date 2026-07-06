@@ -6,16 +6,21 @@
  * only add a sync layer on top.
  */
 
-/** Color groups for purchasable street properties. */
+/** Color groups for purchasable street properties (teal/violet: large board). */
 export type ColorGroup =
   | "brown"
+  | "teal"
   | "lightBlue"
   | "pink"
   | "orange"
   | "red"
   | "yellow"
+  | "violet"
   | "green"
   | "darkBlue"
+
+/** Which board the match is played on (large: 48 tiles, 10 street groups). */
+export type BoardId = "classic" | "large"
 
 /** Static, immutable definition of a single tile on the board. */
 export type TileDefinition =
@@ -111,6 +116,11 @@ export type GameSettings = {
   payMode: PayMode
   /** Open with a roll-off: highest roll goes first (play clockwise from them). */
   orderRoll: boolean
+  /**
+   * Board to play on. Optional so matches persisted before the setting existed
+   * keep working (they read as the classic board).
+   */
+  board?: BoardId
 }
 
 /** What a pending debt was incurred for (drives the pay prompt copy). */
@@ -173,11 +183,16 @@ export type TradeBundle = { tiles: number[]; money: number; jailCards: number }
 
 /** A pending trade proposal awaiting the partner's response. */
 export type TradeOffer = {
+  /** Unique within the match (assigned by the reducer on propose). */
+  id: number
   fromId: string
   toId: string
   give: TradeBundle // what `fromId` gives `toId`
   receive: TradeBundle // what `fromId` gets from `toId`
 }
+
+/** A proposal as sent by a client — the reducer assigns the id. */
+export type TradeProposal = Omit<TradeOffer, "id">
 
 export type GameState = {
   status: "playing" | "finished"
@@ -212,8 +227,14 @@ export type GameState = {
   chest: DeckState
   /** Card drawn this turn, or null. */
   lastCard: DrawnCard | null
-  /** Outstanding trade proposal awaiting a response, or null. */
-  pendingTrade: TradeOffer | null
+  /**
+   * Outstanding trade proposals awaiting a response. Several may be pending at
+   * once (at most one per from→to pair); each is accepted/declined by id and
+   * re-validated at apply time.
+   */
+  pendingTrades: TradeOffer[]
+  /** Id for the next trade proposal (monotonic within a match). */
+  nextTradeId: number
   /** Completed turns so far (x-axis for the net-worth chart). */
   turnCount: number
   /** Net-worth snapshot per completed turn. */
@@ -241,9 +262,14 @@ export type GameAction =
   | { type: "PAY_JAIL_FINE" }
   | { type: "USE_JAIL_CARD" }
   // Trades — allowed out of turn; the server stamps the actor's id.
-  | { type: "PROPOSE_TRADE"; offer: TradeOffer }
-  | { type: "RESPOND_TRADE"; accept: boolean; playerId: string }
-  | { type: "CANCEL_TRADE"; playerId: string }
+  | { type: "PROPOSE_TRADE"; offer: TradeProposal }
+  | {
+      type: "RESPOND_TRADE"
+      tradeId: number
+      accept: boolean
+      playerId: string
+    }
+  | { type: "CANCEL_TRADE"; tradeId: number; playerId: string }
   // Settle the pending debt (normal pay mode, current player only).
   | { type: "PAY_DEBT" }
   // Voluntary surrender — allowed out of turn; the server stamps the actor's id.

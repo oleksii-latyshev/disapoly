@@ -1,10 +1,9 @@
 /** Initial-state construction and pure selectors over GameState. */
 
 import {
-  BOARD,
-  GROUP_TILE_IDS,
-  HOTELS_SUPPLY,
-  HOUSES_SUPPLY,
+  BANK_SUPPLY,
+  boardFor,
+  groupTileIdsOf,
   PLAYER_COLORS,
   PLAYER_EMOJIS,
   RAILROAD_RENT,
@@ -14,6 +13,7 @@ import {
 import { CHANCE, COMMUNITY_CHEST } from "./cards"
 import { createSeed, shuffle } from "./rng"
 import type {
+  ColorGroup,
   DeckState,
   GameSettings,
   GameState,
@@ -21,6 +21,7 @@ import type {
   Player,
   TileDefinition,
   TradeOffer,
+  TradeProposal,
 } from "./types"
 
 export type PlayerSetup = {
@@ -33,10 +34,11 @@ export type PlayerSetup = {
   emoji?: string
 }
 
-/** Default match rules: classic instant ("turbo") collection, join order. */
+/** Default match rules: classic board, instant ("turbo") collection, join order. */
 export const DEFAULT_SETTINGS: GameSettings = {
   payMode: "turbo",
   orderRoll: false,
+  board: "classic",
 }
 
 /** Build a fresh match state for the given players (2–8). */
@@ -66,11 +68,12 @@ export function createInitialState(
   const chance: DeckState = { order: ch.result, pos: 0 }
   const chest: DeckState = { order: cc.result, pos: 0 }
 
+  const board = boardFor(rules.board)
   const state: GameState = {
     status: "playing",
     settings: rules,
     players,
-    tiles: BOARD.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
+    tiles: board.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
     currentPlayerIndex: 0,
     // With the roll-off rule the match opens by rolling for turn order.
     phase: rules.orderRoll ? "order-roll" : "awaiting-roll",
@@ -80,12 +83,13 @@ export function createInitialState(
     auction: null,
     pendingDebt: null,
     orderRolls: rules.orderRoll ? {} : null,
-    bank: { houses: HOUSES_SUPPLY, hotels: HOTELS_SUPPLY },
+    bank: { ...BANK_SUPPLY[rules.board ?? "classic"] },
     rngSeed: cc.seed,
     chance,
     chest,
     lastCard: null,
-    pendingTrade: null,
+    pendingTrades: [],
+    nextTradeId: 1,
     turnCount: 0,
     history: [],
     log: [{ id: 0, key: "log.started", params: { n: players.length } }],
@@ -103,9 +107,29 @@ export function historyPoint(state: GameState, turn: number): HistoryPoint {
   return point
 }
 
+/** The tiles of the board this match is played on. */
+export function boardOf(state: GameState): readonly TileDefinition[] {
+  return boardFor(state.settings?.board)
+}
+
+/** Number of tiles on this match's board. */
+export function boardSizeOf(state: GameState): number {
+  return boardOf(state).length
+}
+
+/** Where the jail corner sits on this match's board. */
+export function jailTileId(state: GameState): number {
+  return boardOf(state).find((t) => t.type === "jail")!.id
+}
+
 /** The tile definition at a board index. */
-export function tileDef(id: number): TileDefinition {
-  return BOARD[id]
+export function tileDef(state: GameState, id: number): TileDefinition {
+  return boardOf(state)[id]
+}
+
+/** Tile ids of a color group on this match's board. */
+export function groupIds(state: GameState, group: ColorGroup): number[] {
+  return groupTileIdsOf(boardOf(state))[group] ?? []
 }
 
 export function currentPlayer(state: GameState): Player {
@@ -120,12 +144,16 @@ export function playerById(state: GameState, id: string): Player | undefined {
 export function hasMonopoly(
   state: GameState,
   playerId: string,
-  group: keyof typeof GROUP_TILE_IDS
+  group: ColorGroup
 ): boolean {
-  return GROUP_TILE_IDS[group].every((id) => {
-    const tile = state.tiles[id]
-    return tile.ownerId === playerId && !tile.mortgaged
-  })
+  const ids = groupIds(state, group)
+  return (
+    ids.length > 0 &&
+    ids.every((id) => {
+      const tile = state.tiles[id]
+      return tile.ownerId === playerId && !tile.mortgaged
+    })
+  )
 }
 
 /** Count purchasable tiles of a given type owned by a player. */
@@ -134,7 +162,7 @@ export function countOwnedOfType(
   playerId: string,
   type: "railroad" | "utility"
 ): number {
-  return BOARD.reduce(
+  return boardOf(state).reduce(
     (n, tile) =>
       tile.type === type && state.tiles[tile.id].ownerId === playerId
         ? n + 1
@@ -153,7 +181,7 @@ export function rentFor(
   tileId: number,
   diceSum: number
 ): number {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   const tile = state.tiles[tileId]
   if (!tile.ownerId || tile.mortgaged) return 0
 
@@ -197,9 +225,9 @@ export function purchasePreview(
   tileId: number,
   playerId: string
 ): PurchasePreview | null {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   if (def.type === "street") {
-    const ids = GROUP_TILE_IDS[def.group]
+    const ids = groupIds(state, def.group)
     const ownedNow = ids.filter(
       (id) => state.tiles[id].ownerId === playerId
     ).length
@@ -237,26 +265,26 @@ export function purchasePreview(
 // --- property management (Stage 2) ---
 
 /** Price of a purchasable tile, or 0 for non-ownable tiles. */
-export function priceOf(tileId: number): number {
-  const def = tileDef(tileId)
+export function priceOf(state: GameState, tileId: number): number {
+  const def = tileDef(state, tileId)
   return "price" in def ? def.price : 0
 }
 
-export function mortgageValue(tileId: number): number {
-  return Math.floor(priceOf(tileId) / 2)
+export function mortgageValue(state: GameState, tileId: number): number {
+  return Math.floor(priceOf(state, tileId) / 2)
 }
 
 /** Cost to lift a mortgage: the mortgage value plus 10% interest. */
-export function unmortgageCost(tileId: number): number {
-  return Math.round(mortgageValue(tileId) * 1.1)
+export function unmortgageCost(state: GameState, tileId: number): number {
+  return Math.round(mortgageValue(state, tileId) * 1.1)
 }
 
 /** Min and max houses currently built across a color group's tiles. */
 export function groupHouseRange(
   state: GameState,
-  group: keyof typeof GROUP_TILE_IDS
+  group: ColorGroup
 ): { min: number; max: number } {
-  const counts = GROUP_TILE_IDS[group].map((id) => state.tiles[id].houses)
+  const counts = groupIds(state, group).map((id) => state.tiles[id].houses)
   return { min: Math.min(...counts), max: Math.max(...counts) }
 }
 
@@ -269,7 +297,7 @@ export function canBuildHouse(
   playerId: string,
   tileId: number
 ): boolean {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   if (def.type !== "street") return false
   const tile = state.tiles[tileId]
   if (tile.ownerId !== playerId || tile.mortgaged) return false
@@ -290,7 +318,7 @@ export function canSellHouse(
   playerId: string,
   tileId: number
 ): boolean {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   if (def.type !== "street") return false
   const tile = state.tiles[tileId]
   if (tile.ownerId !== playerId || tile.houses === 0) return false
@@ -303,7 +331,7 @@ export function canMortgage(
   playerId: string,
   tileId: number
 ): boolean {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   if (
     def.type !== "street" &&
     def.type !== "railroad" &&
@@ -323,7 +351,7 @@ export function canUnmortgage(
   playerId: string,
   tileId: number
 ): boolean {
-  const def = tileDef(tileId)
+  const def = tileDef(state, tileId)
   if (
     def.type !== "street" &&
     def.type !== "railroad" &&
@@ -333,14 +361,14 @@ export function canUnmortgage(
   const tile = state.tiles[tileId]
   if (tile.ownerId !== playerId || !tile.mortgaged) return false
   const player = playerById(state, playerId)
-  return !!player && player.balance >= unmortgageCost(tileId)
+  return !!player && player.balance >= unmortgageCost(state, tileId)
 }
 
 /** Purchasable tiles owned by a player, in board order. */
 export function ownedTiles(state: GameState, playerId: string): number[] {
-  return BOARD.filter(
-    (def) => "price" in def && state.tiles[def.id].ownerId === playerId
-  ).map((def) => def.id)
+  return boardOf(state)
+    .filter((def) => "price" in def && state.tiles[def.id].ownerId === playerId)
+    .map((def) => def.id)
 }
 
 // --- trading (Stage 3) ---
@@ -348,7 +376,7 @@ export function ownedTiles(state: GameState, playerId: string): number[] {
 /** Tiles a player may put up for trade: owned, and the group has no buildings. */
 export function tradableTiles(state: GameState, playerId: string): number[] {
   return ownedTiles(state, playerId).filter((id) => {
-    const def = tileDef(id)
+    const def = tileDef(state, id)
     if (def.type === "street")
       return groupHouseRange(state, def.group).max === 0
     return true
@@ -356,7 +384,7 @@ export function tradableTiles(state: GameState, playerId: string): number[] {
 }
 
 /** Validate a trade offer against the current state (propose and apply time). */
-export function isTradeValid(state: GameState, offer: TradeOffer): boolean {
+export function isTradeValid(state: GameState, offer: TradeProposal): boolean {
   const from = playerById(state, offer.fromId)
   const to = playerById(state, offer.toId)
   if (!from || !to || from.id === to.id || from.isBankrupt || to.isBankrupt)
@@ -393,7 +421,7 @@ export function maxRaisable(state: GameState, playerId: string): number {
   const player = playerById(state, playerId)
   if (!player) return 0
   let total = player.balance
-  for (const def of BOARD) {
+  for (const def of boardOf(state)) {
     if (!("price" in def)) continue
     const tile = state.tiles[def.id]
     if (tile.ownerId !== playerId) continue
@@ -411,7 +439,7 @@ export function netWorth(state: GameState, playerId: string): number {
   const player = playerById(state, playerId)
   if (!player) return 0
   let worth = player.balance
-  for (const def of BOARD) {
+  for (const def of boardOf(state)) {
     if ("price" in def && state.tiles[def.id].ownerId === playerId) {
       worth += def.price
     }
@@ -422,4 +450,17 @@ export function netWorth(state: GameState, playerId: string): number {
 /** Players still in the game. */
 export function activePlayers(state: GameState): Player[] {
   return state.players.filter((p) => !p.isBankrupt)
+}
+
+/**
+ * Upgrade a game persisted before the trade queue existed (a single
+ * `pendingTrade` field) so a deploy doesn't strand an in-flight match.
+ */
+export function migrateGameState(game: GameState): GameState {
+  if (Array.isArray(game.pendingTrades)) return game
+  const legacy = game as GameState & { pendingTrade?: TradeOffer | null }
+  const pendingTrades = legacy.pendingTrade
+    ? [{ ...legacy.pendingTrade, id: 1 }]
+    : []
+  return { ...game, pendingTrades, nextTradeId: pendingTrades.length + 1 }
 }

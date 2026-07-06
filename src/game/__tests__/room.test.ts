@@ -76,10 +76,12 @@ describe("emoji avatars", () => {
   it("rejects a taken or unknown emoji", () => {
     const room = lobbyWith("a", "b")
     const aEmoji = room.members[0].emoji
-    expect(applyClientMessage(room, { type: "avatar", emoji: aEmoji }, "b"))
-      .toBe(room)
-    expect(applyClientMessage(room, { type: "avatar", emoji: "💩" }, "b"))
-      .toBe(room)
+    expect(
+      applyClientMessage(room, { type: "avatar", emoji: aEmoji }, "b")
+    ).toBe(room)
+    expect(applyClientMessage(room, { type: "avatar", emoji: "💩" }, "b")).toBe(
+      room
+    )
   })
 
   it("a reconnect join keeps the changed avatar", () => {
@@ -106,10 +108,12 @@ describe("rename", () => {
 
   it("ignores blank names and unknown senders", () => {
     const room = lobbyWith("a", "b")
-    expect(applyClientMessage(room, { type: "rename", nickname: "  " }, "a"))
-      .toBe(room)
-    expect(applyClientMessage(room, { type: "rename", nickname: "X" }, "zz"))
-      .toBe(room)
+    expect(
+      applyClientMessage(room, { type: "rename", nickname: "  " }, "a")
+    ).toBe(room)
+    expect(
+      applyClientMessage(room, { type: "rename", nickname: "X" }, "zz")
+    ).toBe(room)
   })
 })
 
@@ -130,13 +134,16 @@ describe("kick", () => {
 
   it("only the host can kick, never themselves, and only in the lobby", () => {
     const lobby = lobbyWith("a", "b")
-    expect(applyClientMessage(lobby, { type: "kick", playerId: "a" }, "b"))
-      .toBe(lobby)
-    expect(applyClientMessage(lobby, { type: "kick", playerId: "a" }, "a"))
-      .toBe(lobby)
+    expect(
+      applyClientMessage(lobby, { type: "kick", playerId: "a" }, "b")
+    ).toBe(lobby)
+    expect(
+      applyClientMessage(lobby, { type: "kick", playerId: "a" }, "a")
+    ).toBe(lobby)
     const inGame = started(lobby)
-    expect(applyClientMessage(inGame, { type: "kick", playerId: "b" }, "a"))
-      .toBe(inGame)
+    expect(
+      applyClientMessage(inGame, { type: "kick", playerId: "b" }, "a")
+    ).toBe(inGame)
   })
 })
 

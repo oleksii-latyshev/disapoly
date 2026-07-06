@@ -15,11 +15,13 @@ import {
   CircleHelp,
   CircleParking,
   Crown,
+  Diamond,
   Droplets,
   Factory,
   FerrisWheel,
   Fish,
   Flag,
+  Flower,
   Flower2,
   Gem,
   Gift,
@@ -27,9 +29,13 @@ import {
   Lamp,
   Lock,
   Mountain,
+  RadioTower,
   Sailboat,
   Shell,
+  Ship,
+  ShoppingBag,
   Siren,
+  Sprout,
   Sun,
   TrainFront,
   TrainFrontTunnel,
@@ -38,6 +44,7 @@ import {
   TreePalm,
   TreePine,
   Trophy,
+  Umbrella,
   Waves,
   Wheat,
   Zap,
@@ -55,42 +62,51 @@ export type TileVisual = {
   label?: string
 }
 
-const CORNER_IDS = new Set([0, 10, 20, 30])
-
-export function isCornerTile(id: number): boolean {
-  return CORNER_IDS.has(id)
+/** Corner tiles sit at the quarter points of any board size. */
+export function isCornerTile(id: number, size: number): boolean {
+  return id % (size / 4) === 0
 }
 
-/** One hand-picked emblem per property, keyed by tile id (see board.config). */
-const PROPERTY_ICONS: Record<number, LucideIcon> = {
-  1: Waves, // Mediterranean Avenue
-  3: Anchor, // Baltic Avenue
-  5: TrainFront, // Reading Railroad
-  6: Lamp, // Oriental Avenue
-  8: Mountain, // Vermont Avenue
-  9: Sailboat, // Connecticut Avenue
-  11: Church, // St. Charles Place
-  12: Zap, // Electric Company
-  13: Flag, // States Avenue
-  14: Flower2, // Virginia Avenue
-  15: TramFront, // Pennsylvania Railroad
-  16: Castle, // St. James Place
-  18: Guitar, // Tennessee Avenue
-  19: Building2, // New York Avenue
-  21: Trophy, // Kentucky Avenue (the Derby)
-  23: CarFront, // Indiana Avenue (the 500)
-  24: Wheat, // Illinois Avenue
-  25: TrainFrontTunnel, // B&O Railroad
-  26: Shell, // Atlantic Avenue
-  27: Sun, // Ventnor Avenue
-  28: Droplets, // Water Works
-  29: TreePalm, // Marvin Gardens
-  31: Fish, // Pacific Avenue
-  32: TreePine, // North Carolina Avenue
-  34: Factory, // Pennsylvania Avenue
-  35: TrainTrack, // Short Line Railroad
-  37: Crown, // Park Place
-  39: FerrisWheel, // Boardwalk
+/**
+ * One hand-picked emblem per property, keyed by tile *name* — names are
+ * stable across board sizes while ids shift.
+ */
+const PROPERTY_ICONS: Record<string, LucideIcon> = {
+  "Mediterranean Avenue": Waves,
+  "Baltic Avenue": Anchor,
+  "Shoreline Drive": Umbrella,
+  "Harbor Lane": Ship,
+  "Beacon Street": RadioTower,
+  "Reading Railroad": TrainFront,
+  "Oriental Avenue": Lamp,
+  "Vermont Avenue": Mountain,
+  "Connecticut Avenue": Sailboat,
+  "St. Charles Place": Church,
+  "Electric Company": Zap,
+  "States Avenue": Flag,
+  "Virginia Avenue": Flower2,
+  "Pennsylvania Railroad": TramFront,
+  "St. James Place": Castle,
+  "Tennessee Avenue": Guitar,
+  "New York Avenue": Building2,
+  "Kentucky Avenue": Trophy, // the Derby
+  "Indiana Avenue": CarFront, // the 500
+  "Illinois Avenue": Wheat,
+  "B&O Railroad": TrainFrontTunnel,
+  "Atlantic Avenue": Shell,
+  "Ventnor Avenue": Sun,
+  "Water Works": Droplets,
+  "Marvin Gardens": TreePalm,
+  "Orchid Terrace": Flower,
+  "Lavender Row": Sprout,
+  "Amethyst Avenue": Diamond,
+  "Pacific Avenue": Fish,
+  "North Carolina Avenue": TreePine,
+  "Pennsylvania Avenue": Factory,
+  "Short Line Railroad": TrainTrack,
+  "Park Place": Crown,
+  "Fifth Avenue": ShoppingBag,
+  Boardwalk: FerrisWheel,
 }
 
 /** Visual treatment for a tile: a unique emblem for every location. */
@@ -113,9 +129,12 @@ export function tileVisual(def: TileDefinition): TileVisual | null {
     case "communityChest":
       return { Icon: Gift, color: "#2563eb" }
     case "street":
-      return { Icon: PROPERTY_ICONS[def.id] ?? Waves, color: GROUP_COLOR[def.group] }
+      return {
+        Icon: PROPERTY_ICONS[def.name] ?? Waves,
+        color: GROUP_COLOR[def.group],
+      }
     case "railroad":
-      return { Icon: PROPERTY_ICONS[def.id] ?? TrainFront, color: "#475569" }
+      return { Icon: PROPERTY_ICONS[def.name] ?? TrainFront, color: "#475569" }
     case "utility":
       return def.name.toLowerCase().includes("water")
         ? { Icon: Droplets, color: "#0ea5e9" }

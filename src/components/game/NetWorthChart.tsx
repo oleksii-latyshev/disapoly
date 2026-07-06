@@ -22,7 +22,14 @@ export default function NetWorthChart({
   height?: number
 }) {
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    // overflow-hidden: the tooltip must never grow the dialog's scroll area —
+    // a scrollbar appearing mid-hover shifts the chart under the cursor and
+    // the tooltip chases it in a loop.
+    <ResponsiveContainer
+      width="100%"
+      height={height}
+      className="overflow-hidden"
+    >
       <LineChart
         data={state.history}
         margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
@@ -40,6 +47,9 @@ export default function NetWorthChart({
           tickFormatter={(v) => `$${v}`}
         />
         <Tooltip
+          // No slide transition: near the last data point the wrapper
+          // otherwise glides across the chart and flickers ("jumps around").
+          isAnimationActive={false}
           contentStyle={{
             background: "var(--popover)",
             border: "1px solid var(--border)",

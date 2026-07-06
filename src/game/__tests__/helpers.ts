@@ -2,18 +2,22 @@
 
 import { rollDice } from "../rng"
 import { createInitialState, type PlayerSetup } from "../state"
-import type { GameState } from "../types"
+import type { GameSettings, GameState } from "../types"
 
 /**
  * Fresh match with `n` players (ids `p1`…`pn`) and a fixed seed so every test
  * is reproducible. Tests freely mutate the returned state to stage scenarios —
  * the reducer clones before applying, so staged objects are never aliased.
  */
-export function newGame(n = 2, seed = 42): GameState {
+export function newGame(
+  n = 2,
+  seed = 42,
+  settings: Partial<GameSettings> = {}
+): GameState {
   const setups: PlayerSetup[] = Array.from({ length: n }, (_, i) => ({
     nickname: `P${i + 1}`,
   }))
-  return createInitialState(setups, seed)
+  return createInitialState(setups, seed, settings)
 }
 
 /** Find an `rngSeed` whose next roll is exactly `[a, b]` (dice are seeded). */

@@ -19,6 +19,7 @@ import {
   type WSMessage,
 } from "partyserver"
 
+import { migrateGameState } from "../src/game/state"
 import {
   abandonMatch,
   applyClientMessage,
@@ -67,6 +68,8 @@ export class DisapolyServer extends Server<Env> {
       const now = Date.now()
       this.state = {
         ...saved,
+        // A match persisted by an older build may predate newer state fields.
+        game: saved.game ? migrateGameState(saved.game) : null,
         autoSkipAt: null,
         members: saved.members.map((m) => ({
           ...m,
@@ -148,7 +151,10 @@ export class DisapolyServer extends Server<Env> {
       if (this.state.members.length !== before) {
         // Tell the kicked client first (so it stops auto-rejoining), then drop
         // their sockets — they're no longer part of this room.
-        const note: ServerMessage = { type: "kicked", playerId: message.playerId }
+        const note: ServerMessage = {
+          type: "kicked",
+          playerId: message.playerId,
+        }
         this.broadcast(JSON.stringify(note))
         for (const conn of this.getConnections<ConnState>()) {
           if (conn.state?.playerId === message.playerId) {

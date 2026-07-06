@@ -38,13 +38,11 @@ export function useGameSounds(state: GameState, localPlayerId?: string): void {
     if (prev.lastCard !== state.lastCard && state.lastCard) {
       after(plan.cardRevealMs, () => play("card"))
     }
-    if (!prev.pendingTrade && state.pendingTrade) {
+    const knownTrades = new Set(prev.pendingTrades.map((t) => t.id))
+    const newTrade = state.pendingTrades.find((t) => !knownTrades.has(t.id))
+    if (newTrade) {
       // A distinct chime when the offer is addressed to you.
-      play(
-        localPlayerId && state.pendingTrade.toId === localPlayerId
-          ? "offer"
-          : "trade"
-      )
+      play(localPlayerId && newTrade.toId === localPlayerId ? "offer" : "trade")
     }
     if (prev.status !== "finished" && state.status === "finished") play("win")
 

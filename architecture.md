@@ -58,11 +58,17 @@ network, no `@/` alias** — so the exact same code runs in the browser and insi
 the Cloudflare Worker.
 
 - `types.ts` — `GameState`, `Player`, `GameAction`, log/card/trade types.
-- `board.config.ts` — the declarative 40-tile board (prices, rent tables, groups)
-  and constants (`GO_PAYOUT`, `JAIL_FINE`, …). Single source of truth; the rules
-  contain no magic numbers.
+- `board.config.ts` — the declarative boards and constants (`GO_PAYOUT`,
+  `JAIL_FINE`, …). Two boards exist (`BOARDS`): the **classic 40-tile** board
+  and a host-selectable **large 48-tile** board (13×13, two extra street
+  groups — teal & violet — plus a third dark-blue street: 10 monopolizable
+  groups for 6–8 players, with a proportionally larger building supply).
+  `settings.board` picks one per match; everything (layout, movement, cards,
+  selectors) derives from `boardOf(state)` — no magic numbers in the rules.
 - `cards.ts` — Chance / Community Chest decks as `{ id, effect }` (text is
-  localized on the client via `card.<id>`).
+  localized on the client via `card.<id>`). Movement cards name their
+  destination (`target: "boardwalk"`, …) so the same deck resolves correctly
+  on any board size.
 - `rng.ts` — seedable PRNG (`mulberry32`) + `shuffle`. All randomness flows
   through `rngSeed` so results are deterministic and desync-free.
 - `state.ts` — `createInitialState` + pure selectors (`netWorth`, `rentFor`,
@@ -76,7 +82,7 @@ the Cloudflare Worker.
 ```ts
 type GameState = {
   status: "playing" | "finished"
-  settings: GameSettings         // { payMode: "turbo" | "normal" } — host-chosen
+  settings: GameSettings         // { payMode, orderRoll, board } — host-chosen
   players: Player[]              // Player: id, nickname, color, balance,
                                  //   position, inJail, jailTurns,
                                  //   getOutOfJailCards, isBankrupt
@@ -90,7 +96,8 @@ type GameState = {
   rngSeed: number
   chance: DeckState; chest: DeckState   // { order, pos }
   lastCard: DrawnCard | null
-  pendingTrade: TradeOffer | null
+  pendingTrades: TradeOffer[]    // open offers (queue; ≤1 per from→to pair)
+  nextTradeId: number
   turnCount: number
   history: HistoryPoint[]        // net-worth snapshot per turn (chart)
   log: LogEntry[]                // structured events { key, params }
@@ -227,7 +234,15 @@ See [README.md](README.md) for exact commands.
   fine on the 3rd failed attempt.
 - ✅ Chance / Community Chest — seeded decks, declarative effects.
 - ✅ Player-to-player trading (properties + cash + jail cards), two-phase with
-  re-validation at apply time, allowed out of turn.
+  re-validation at apply time, allowed out of turn. **Several offers can be
+  pending at once** (a queue; at most one open offer per from→to pair, each
+  answered by id), and an incoming offer has a **counter-offer** button that
+  opens the builder prefilled with the mirrored bundles — sending it declines
+  the original.
+- ✅ Board choice per match (`settings.board`): classic 40 tiles, or a
+  **large 48-tile board** with the teal + violet groups (10 street groups) so
+  6–8 players can all reach a monopoly; host-chosen online, also in hot-seat
+  setup.
 - ✅ Pay modes: turbo (instant deduction) or normal (debts confirmed with a
   "Pay" step — trade/mortgage first); host-chosen per match, also available in
   hot-seat setup.
@@ -279,18 +294,20 @@ See [README.md](README.md) for exact commands.
   what a visitor would actually owe).
 - ✅ **Icon-dominant tiles** — every location has its own vector emblem
   (`tile-visuals.tsx`, lucide icons drawn in code, no image assets), a value
-  strip (price while unowned → the *current rent* on the owner's color once
-  bought), and the whole tile washes in the owner's color — ownership and cost
-  read straight off the board. Street names hide on small boards (the emblem +
-  details dialog identify the tile). Group palettes put brown/orange/yellow on
-  a dark→light lightness ladder for low color vision.
+  tag pinned right under the name (price while unowned → the *current rent*
+  in the owner's color once bought), and the whole tile washes in the owner's
+  color — ownership and cost read straight off the board. Street names hide on
+  small boards (the emblem + details dialog identify the tile). Group palettes
+  put brown/orange/yellow on a dark→light lightness ladder for low color
+  vision.
 - ✅ **Per-side tile orientation** — the group color band always faces the
-  board's *outer* edge and the owner/value strip faces the center, on all four
-  sides (vertical strips use `writing-mode: vertical-rl`); house badges hug
-  the outer edge too.
+  board's *outer* edge on all four sides; house badges hug the outer edge too.
 - ✅ **Trade legibility** — an incoming offer shows green "you receive" / red
   "you give" boxes from the viewer's perspective, and tiles that change hands
-  (trade or bankruptcy transfer) pulse gold on the board for ~2s.
+  (trade or bankruptcy transfer) pulse gold on the board for ~2s. While an
+  offer is *pending*, its tiles pulse on the board itself — green for what the
+  viewer would gain, red for what they'd give, gold for spectators (a static
+  ring under reduced motion).
 - ✅ **Social/meta polish** — a Neon-theme favicon + apple-touch icon (midnight
   navy, glowing cyan ring/gem, neon corner tiles) and full OpenGraph/Twitter
   previews with a generated 1200×630 card in the same neon style
@@ -300,9 +317,11 @@ See [README.md](README.md) for exact commands.
   - 3D board tilt — the board tilts a few degrees toward the mouse in
     perspective, with a depth shadow that shifts against the tilt (`BoardTilt`;
     mouse-only, touch never tilts).
-  - Sphere-shaded 3D tokens with a ground shadow that detaches as the piece
-    arcs. Travel is paced to stay legible (per-tile hop arcs + a landing pop),
-    so jumps to jail / card destinations read clearly.
+  - Emoji-first 3D tokens — the avatar is the piece, standing on a small
+    color-coded pedestal (a sphere-shaded pawn with the initial when no emoji
+    is set), with a ground shadow that detaches as the piece arcs. Travel is
+    paced to stay legible (per-tile hop arcs + a landing pop), so jumps to
+    jail / card destinations read clearly.
   - Dice: 3D cube tumble plus a throw arc — a landing bounce with a floor
     shadow that contracts mid-air.
   - Card reveal flips in with 3D perspective and gets a shine sweep when the

@@ -202,20 +202,24 @@ describe("bankruptcy actions", () => {
     expect(out.status).toBe("playing")
   })
 
-  it("drops a pending trade involving the bankrupt player", () => {
+  it("drops pending trades involving the bankrupt player", () => {
     const s = newGame(3)
     give(s, "p3", 1)
-    s.pendingTrade = {
-      fromId: "p3",
-      toId: "p1",
-      give: { tiles: [1], money: 0, jailCards: 0 },
-      receive: { tiles: [], money: 50, jailCards: 0 },
-    }
+    s.pendingTrades = [
+      {
+        id: 1,
+        fromId: "p3",
+        toId: "p1",
+        give: { tiles: [1], money: 0, jailCards: 0 },
+        receive: { tiles: [], money: 50, jailCards: 0 },
+      },
+    ]
+    s.nextTradeId = 2
     const out = gameReducer(s, {
       type: "DECLARE_BANKRUPTCY",
       playerId: "p3",
     })
-    expect(out.pendingTrade).toBeNull()
+    expect(out.pendingTrades).toEqual([])
   })
 
   it("is idempotent for an already-bankrupt player", () => {

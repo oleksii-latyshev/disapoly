@@ -68,7 +68,9 @@ export function NetworkGame({
     !turnPlayerOffline &&
     connectionQuality(true, latencies[turnPlayer?.id]) === "poor"
   const incomingOffer =
-    game.status === "playing" && !!self && game.pendingTrade?.toId === self.id
+    game.status === "playing" &&
+    !!self &&
+    game.pendingTrades.some((offer) => offer.toId === self.id)
   useTabAlert(isMyTurn, t("notify.yourTurn"))
   useTabAlert(incomingOffer, t("notify.tradeOffer"))
 
@@ -79,7 +81,11 @@ export function NetworkGame({
   return (
     <div className="mx-auto flex min-h-svh max-w-[1600px] flex-col gap-6 p-4 lg:flex-row lg:items-start lg:justify-center">
       <div className="flex justify-center lg:flex-1">
-        <GameBoard state={game} reactions={reactions} />
+        <GameBoard
+          state={game}
+          reactions={reactions}
+          localPlayerId={self?.id}
+        />
       </div>
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">

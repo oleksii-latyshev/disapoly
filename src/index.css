@@ -256,13 +256,77 @@
   animation: tile-traded-pulse 0.72s ease-in-out 3;
 }
 
+/* Tiles on the table of a *pending* trade pulse on the board itself:
+   green = the viewer would receive it, red = they would give it away,
+   gold = a spectator watching someone else's offer. */
+@keyframes tile-trade-gain-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(16, 185, 129, 0.9),
+      0 0 14px rgba(16, 185, 129, 0.55);
+  }
+}
+
+@keyframes tile-trade-lose-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(244, 63, 94, 0.9),
+      0 0 14px rgba(244, 63, 94, 0.55);
+  }
+}
+
+@keyframes tile-trade-watch-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(245, 166, 35, 0.8),
+      0 0 14px rgba(245, 166, 35, 0.5);
+  }
+}
+
+.tile-trade-gain {
+  animation: tile-trade-gain-pulse 1.6s ease-in-out infinite;
+}
+
+.tile-trade-lose {
+  animation: tile-trade-lose-pulse 1.6s ease-in-out infinite;
+}
+
+.tile-trade-watch {
+  animation: tile-trade-watch-pulse 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tile-current,
   .app-ambient::before,
   .app-ambient::after,
   .board-logo,
   .owner-strip,
-  .tile-traded {
+  .tile-traded,
+  .tile-trade-gain,
+  .tile-trade-lose,
+  .tile-trade-watch {
     animation: none;
+  }
+
+  /* The trade highlight is information, not decoration — keep a static ring. */
+  .tile-trade-gain {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.8);
+  }
+
+  .tile-trade-lose {
+    box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.8);
+  }
+
+  .tile-trade-watch {
+    box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.7);
   }
 }

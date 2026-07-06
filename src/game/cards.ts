@@ -4,11 +4,15 @@
  * localized on the client via the i18n key `card.<id>`.
  */
 
+import type { MoveTarget } from "./board.config"
+
 export type CardEffect =
   | { kind: "money"; amount: number } // + collect from / − pay to the bank
   | { kind: "collectFromEach"; amount: number }
   | { kind: "payEach"; amount: number }
-  | { kind: "moveTo"; tile: number } // advance (collect GO if passed)
+  // Advance (collect GO if passed). The destination is named, not a tile id,
+  // so the same card works on every board size.
+  | { kind: "moveTo"; target: MoveTarget }
   | { kind: "moveBack"; steps: number }
   | { kind: "goToJail" }
   | { kind: "getOutOfJail" }
@@ -17,11 +21,11 @@ export type CardEffect =
 export type Card = { id: string; effect: CardEffect }
 
 export const CHANCE: readonly Card[] = [
-  { id: "ch_go", effect: { kind: "moveTo", tile: 0 } },
-  { id: "ch_illinois", effect: { kind: "moveTo", tile: 24 } },
-  { id: "ch_charles", effect: { kind: "moveTo", tile: 11 } },
-  { id: "ch_reading", effect: { kind: "moveTo", tile: 5 } },
-  { id: "ch_boardwalk", effect: { kind: "moveTo", tile: 39 } },
+  { id: "ch_go", effect: { kind: "moveTo", target: "go" } },
+  { id: "ch_illinois", effect: { kind: "moveTo", target: "illinois" } },
+  { id: "ch_charles", effect: { kind: "moveTo", target: "stCharles" } },
+  { id: "ch_reading", effect: { kind: "moveTo", target: "reading" } },
+  { id: "ch_boardwalk", effect: { kind: "moveTo", target: "boardwalk" } },
   { id: "ch_dividend", effect: { kind: "money", amount: 50 } },
   { id: "ch_jailfree", effect: { kind: "getOutOfJail" } },
   { id: "ch_back3", effect: { kind: "moveBack", steps: 3 } },
@@ -35,7 +39,7 @@ export const CHANCE: readonly Card[] = [
 ] as const
 
 export const COMMUNITY_CHEST: readonly Card[] = [
-  { id: "cc_go", effect: { kind: "moveTo", tile: 0 } },
+  { id: "cc_go", effect: { kind: "moveTo", target: "go" } },
   { id: "cc_bankerror", effect: { kind: "money", amount: 200 } },
   { id: "cc_doctor", effect: { kind: "money", amount: -50 } },
   { id: "cc_jailfree", effect: { kind: "getOutOfJail" } },

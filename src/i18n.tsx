@@ -50,6 +50,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.orderRoll": "Roll for turn order",
     "lobby.orderRoll.desc":
       "The game opens with everyone rolling once — highest goes first.",
+    "lobby.board": "Board",
+    "board.classic": "Classic",
+    "board.classic.desc": "The classic 40-tile board with 8 street groups.",
+    "board.large": "Large",
+    "board.large.desc":
+      "48 tiles and 10 street groups — more monopolies to go around with 6+ players.",
     "lobby.payMode": "Pay mode",
     "payMode.turbo": "Turbo",
     "payMode.normal": "Normal",
@@ -174,6 +180,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "trade.pendingTitle": "Trade offer",
     "trade.gives": "{name} gives",
     "trade.nothing": "nothing",
+    "trade.counter": "Counter offer",
+    "trade.counterTitle": "Counter offer",
+    "trade.sendCounter": "Send counter offer",
+    "trade.alreadyPending": "You already have an open offer to {name}.",
 
     "settings.sound": "Sound",
     "common.on": "On",
@@ -319,6 +329,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     "lobby.orderRoll": "Бросок за очерёдность",
     "lobby.orderRoll.desc":
       "Игра начнётся с броска кубиков — самый большой ходит первым.",
+    "lobby.board": "Поле",
+    "board.classic": "Классика",
+    "board.classic.desc": "Классическое поле: 40 клеток и 8 цветных групп.",
+    "board.large": "Большое",
+    "board.large.desc":
+      "48 клеток и 10 цветных групп — монополий хватит и на 6+ игроков.",
     "lobby.payMode": "Режим оплаты",
     "payMode.turbo": "Турбо",
     "payMode.normal": "Обычный",
@@ -366,7 +382,8 @@ const DICT: Record<Lang, Record<string, string>> = {
 
     "pay.owedTo": "Ты должен ${amount} игроку {name} за «{tile}».",
     "pay.owedBank": "Ты должен банку ${amount}.",
-    "pay.hint": "Перед оплатой можно меняться, продавать постройки и закладывать.",
+    "pay.hint":
+      "Перед оплатой можно меняться, продавать постройки и закладывать.",
     "pay.short":
       "Не хватает ${need} — продай постройки, заложи участки или меняйся.",
     "pay.pay": "Заплатить ${amount}",
@@ -444,6 +461,10 @@ const DICT: Record<Lang, Record<string, string>> = {
     "trade.pendingTitle": "Предложение обмена",
     "trade.gives": "{name} отдаёт",
     "trade.nothing": "ничего",
+    "trade.counter": "Встречное предложение",
+    "trade.counterTitle": "Встречное предложение",
+    "trade.sendCounter": "Отправить встречное",
+    "trade.alreadyPending": "У тебя уже есть предложение для {name}.",
 
     "settings.sound": "Звук",
     "common.on": "Вкл",

@@ -3,7 +3,7 @@ import { Dices, Flag, HandCoins, PartyPopper } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
-  BOARD,
+  boardOf,
   currentPlayer,
   JAIL_FINE,
   purchasePreview,
@@ -117,7 +117,9 @@ export function TurnControls({
   const player = currentPlayer(state)
   const isMyTurn = localPlayerId === undefined || player.id === localPlayerId
   const pending =
-    state.pendingPurchase !== null ? BOARD[state.pendingPurchase] : null
+    state.pendingPurchase !== null
+      ? boardOf(state)[state.pendingPurchase]
+      : null
   const pendingPrice = pending && "price" in pending ? pending.price : 0
 
   const debt = state.pendingDebt
@@ -237,7 +239,10 @@ export function TurnControls({
               ? t("pay.owedTo", {
                   amount: debt.amount,
                   name: creditor.nickname,
-                  tile: debt.tileId !== null ? BOARD[debt.tileId].name : "",
+                  tile:
+                    debt.tileId !== null
+                      ? boardOf(state)[debt.tileId].name
+                      : "",
                 })
               : t("pay.owedBank", { amount: debt.amount })}
           </p>

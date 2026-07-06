@@ -2,7 +2,7 @@ import { Hotel, House, Landmark } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
-  BOARD,
+  boardOf,
   canBuildHouse,
   canMortgage,
   canSellHouse,
@@ -63,7 +63,7 @@ export function ManagePanel({
 
       <div className="flex max-h-56 flex-col gap-1 overflow-y-auto">
         {tiles.map((id) => {
-          const def = BOARD[id]
+          const def = boardOf(state)[id]
           const tile = state.tiles[id]
           const groupColor =
             def.type === "street" ? GROUP_COLOR[def.group] : undefined
@@ -121,7 +121,9 @@ export function ManagePanel({
                   size="xs"
                   variant="outline"
                   disabled={!canUnmortgage(state, player.id, id)}
-                  title={t("manage.liftMortgage", { cost: unmortgageCost(id) })}
+                  title={t("manage.liftMortgage", {
+                    cost: unmortgageCost(state, id),
+                  })}
                   onClick={() => send({ type: "UNMORTGAGE", tileId: id })}
                 >
                   {t("manage.unmortgage")}

@@ -6,17 +6,13 @@
  * atomically. This is the piece the sync layer will drive in later stages.
  */
 
-import {
-  BOARD,
-  BOARD_SIZE,
-  GO_PAYOUT,
-  JAIL_FINE,
-  JAIL_TILE_ID,
-} from "./board.config"
+import { GO_PAYOUT, JAIL_FINE, moveTargetTile } from "./board.config"
 import { CHANCE, COMMUNITY_CHEST, type CardEffect } from "./cards"
 import { rollDice, shuffle } from "./rng"
 import {
   activePlayers,
+  boardOf,
+  boardSizeOf,
   canBuildHouse,
   canMortgage,
   canSellHouse,
@@ -24,6 +20,7 @@ import {
   currentPlayer,
   historyPoint,
   isTradeValid,
+  jailTileId,
   maxRaisable,
   mortgageValue,
   playerById,
@@ -40,6 +37,7 @@ import type {
   Player,
   StreetTile,
   TradeOffer,
+  TradeProposal,
 } from "./types"
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -84,9 +82,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "PROPOSE_TRADE":
       return proposeTrade(clone(state), action.offer)
     case "RESPOND_TRADE":
-      return respondTrade(clone(state), action.accept, action.playerId)
+      return respondTrade(
+        clone(state),
+        action.tradeId,
+        action.accept,
+        action.playerId
+      )
     case "CANCEL_TRADE":
-      return cancelTrade(clone(state), action.playerId)
+      return cancelTrade(clone(state), action.tradeId, action.playerId)
     case "PAY_DEBT":
       // The debtor raises the cash themselves (sell/mortgage/trade) — the
       // payment is only accepted once their balance actually covers it.
@@ -197,7 +200,7 @@ function roll(d: GameState): GameState {
 
   if (isDouble) d.doublesCount += 1
   if (isDouble && d.doublesCount === 3) {
-    sendToJail(player)
+    sendToJail(d, player)
     log(d, "log.threeDoubles", { name: player.nickname })
     d.phase = "awaiting-end"
     return d
@@ -271,9 +274,23 @@ function redeemJailCard(d: GameState): GameState {
 
 // --- trading (Stage 3) ---
 
-function proposeTrade(d: GameState, offer: TradeOffer): GameState {
-  if (d.pendingTrade || !isTradeValid(d, offer)) return d
-  d.pendingTrade = offer
+/** Drop every pending trade `playerId` is a party to (they left / can't answer). */
+function dropTradesWith(d: GameState, playerId: string): void {
+  d.pendingTrades = d.pendingTrades.filter(
+    (t) => t.fromId !== playerId && t.toId !== playerId
+  )
+}
+
+function proposeTrade(d: GameState, offer: TradeProposal): GameState {
+  if (!isTradeValid(d, offer)) return d
+  // Several trades may be pending at once, but only one per from→to pair —
+  // withdraw (or wait out) the previous offer before re-offering.
+  const duplicate = d.pendingTrades.some(
+    (t) => t.fromId === offer.fromId && t.toId === offer.toId
+  )
+  if (duplicate) return d
+  d.pendingTrades = [...d.pendingTrades, { ...offer, id: d.nextTradeId }]
+  d.nextTradeId += 1
   const from = d.players.find((p) => p.id === offer.fromId)
   const to = d.players.find((p) => p.id === offer.toId)
   log(d, "log.tradeProposed", {
@@ -285,33 +302,38 @@ function proposeTrade(d: GameState, offer: TradeOffer): GameState {
 
 function respondTrade(
   d: GameState,
+  tradeId: number,
   accept: boolean,
   playerId: string
 ): GameState {
-  const offer = d.pendingTrade
+  const offer = d.pendingTrades.find((t) => t.id === tradeId)
   if (!offer || offer.toId !== playerId) return d
   const to = d.players.find((p) => p.id === offer.toId)
+  d.pendingTrades = d.pendingTrades.filter((t) => t.id !== tradeId)
 
   if (!accept) {
     log(d, "log.tradeDeclined", { name: to?.nickname ?? "?" })
-    d.pendingTrade = null
     return d
   }
+  // Re-validate at apply time: an earlier accepted trade (or a purchase) may
+  // have invalidated a queued offer since it was proposed.
   if (!isTradeValid(d, offer)) {
     log(d, "log.tradeInvalid")
-    d.pendingTrade = null
     return d
   }
   applyTrade(d, offer)
   log(d, "log.tradeAccepted", { name: to?.nickname ?? "?" })
-  d.pendingTrade = null
   return d
 }
 
-function cancelTrade(d: GameState, playerId: string): GameState {
-  const offer = d.pendingTrade
+function cancelTrade(
+  d: GameState,
+  tradeId: number,
+  playerId: string
+): GameState {
+  const offer = d.pendingTrades.find((t) => t.id === tradeId)
   if (!offer || offer.fromId !== playerId) return d
-  d.pendingTrade = null
+  d.pendingTrades = d.pendingTrades.filter((t) => t.id !== tradeId)
   log(d, "log.tradeWithdrawn")
   return d
 }
@@ -333,7 +355,7 @@ function applyTrade(d: GameState, offer: TradeOffer): void {
 /** Advance a player by `steps`, paying the GO bonus when passing it. */
 function moveBy(d: GameState, player: Player, steps: number): void {
   const from = player.position
-  const to = (from + steps) % BOARD_SIZE
+  const to = (from + steps) % boardSizeOf(d)
   if (to < from) {
     player.balance += GO_PAYOUT
     log(d, "log.passGo", { name: player.nickname, amount: GO_PAYOUT })
@@ -343,7 +365,7 @@ function moveBy(d: GameState, player: Player, steps: number): void {
 
 function resolveLanding(d: GameState, diceSum: number): void {
   const player = d.players[d.currentPlayerIndex]
-  const def = tileDef(player.position)
+  const def = tileDef(d, player.position)
 
   switch (def.type) {
     case "tax":
@@ -356,7 +378,7 @@ function resolveLanding(d: GameState, diceSum: number): void {
       return
 
     case "goToJail":
-      sendToJail(player)
+      sendToJail(d, player)
       log(d, "log.toJail", { name: player.nickname })
       return
 
@@ -446,7 +468,7 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
     case "repairs": {
       let houses = 0
       let hotels = 0
-      for (const def of BOARD) {
+      for (const def of boardOf(d)) {
         if (def.type === "street" && d.tiles[def.id].ownerId === player.id) {
           if (d.tiles[def.id].houses === 5) hotels += 1
           else houses += d.tiles[def.id].houses
@@ -463,21 +485,20 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
       return
     }
     case "moveTo": {
-      moveBy(
-        d,
-        player,
-        (effect.tile - player.position + BOARD_SIZE) % BOARD_SIZE
-      )
+      const size = boardSizeOf(d)
+      const tile = moveTargetTile(boardOf(d), effect.target)
+      moveBy(d, player, (tile - player.position + size) % size)
       resolveLanding(d, diceSum)
       return
     }
-    case "moveBack":
-      player.position =
-        (player.position - effect.steps + BOARD_SIZE) % BOARD_SIZE
+    case "moveBack": {
+      const size = boardSizeOf(d)
+      player.position = (player.position - effect.steps + size) % size
       resolveLanding(d, diceSum)
       return
+    }
     case "goToJail":
-      sendToJail(player)
+      sendToJail(d, player)
       log(d, "log.toJail", { name: player.nickname })
       return
     case "getOutOfJail":
@@ -489,7 +510,7 @@ function applyCard(d: GameState, effect: CardEffect, diceSum: number): void {
 function buy(d: GameState): GameState {
   const player = d.players[d.currentPlayerIndex]
   const tileId = d.pendingPurchase!
-  const def = tileDef(tileId)
+  const def = tileDef(d, tileId)
   const price = "price" in def ? def.price : 0
 
   if (player.balance >= price) {
@@ -507,7 +528,7 @@ function decline(d: GameState): GameState {
   const tileId = d.pendingPurchase!
   log(d, "log.declinedBuy", {
     name: player.nickname,
-    tile: tileDef(tileId).name,
+    tile: tileDef(d, tileId).name,
   })
   d.pendingPurchase = null
   // A declined tile goes to auction among all players (classic rule).
@@ -538,7 +559,7 @@ function openAuction(d: GameState, tileId: number): GameState {
     currentBidderId: rotated[0],
   }
   d.phase = "auction"
-  log(d, "log.auctionStart", { tile: tileDef(tileId).name })
+  log(d, "log.auctionStart", { tile: tileDef(d, tileId).name })
   return d
 }
 
@@ -571,7 +592,7 @@ function placeBid(d: GameState, playerId: string, amount: number): GameState {
   log(d, "log.bid", {
     name: bidder.nickname,
     amount,
-    tile: tileDef(a.tileId).name,
+    tile: tileDef(d, a.tileId).name,
   })
   const next = nextActiveBidder(a, playerId)
   if (next) a.currentBidderId = next
@@ -609,11 +630,11 @@ function resolveAuctionIfDone(d: GameState): GameState {
     d.tiles[a.tileId].ownerId = winner.id
     log(d, "log.auctionWon", {
       name: winner.nickname,
-      tile: tileDef(a.tileId).name,
+      tile: tileDef(d, a.tileId).name,
       price: a.highBid,
     })
   } else {
-    log(d, "log.auctionNoBids", { tile: tileDef(a.tileId).name })
+    log(d, "log.auctionNoBids", { tile: tileDef(d, a.tileId).name })
   }
   d.auction = null
   d.phase = "awaiting-end" // clear the auction gate so settle() can recompute
@@ -693,7 +714,7 @@ function reclaimBuildings(d: GameState, tileId: number): void {
 function buildHouse(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
   if (!canBuildHouse(d, player.id, tileId)) return d
-  const def = tileDef(tileId) as StreetTile
+  const def = tileDef(d, tileId) as StreetTile
   player.balance -= def.houseCost
   takeBuilding(d, tileId)
   log(d, d.tiles[tileId].houses === 5 ? "log.builtHotel" : "log.builtHouse", {
@@ -707,7 +728,7 @@ function buildHouse(d: GameState, tileId: number): GameState {
 function sellHouse(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
   if (!canSellHouse(d, player.id, tileId)) return d
-  const def = tileDef(tileId) as StreetTile
+  const def = tileDef(d, tileId) as StreetTile
   const refund = Math.floor(def.houseCost / 2)
   returnBuilding(d, tileId)
   player.balance += refund
@@ -718,12 +739,12 @@ function sellHouse(d: GameState, tileId: number): GameState {
 function mortgage(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
   if (!canMortgage(d, player.id, tileId)) return d
-  const value = mortgageValue(tileId)
+  const value = mortgageValue(d, tileId)
   d.tiles[tileId].mortgaged = true
   player.balance += value
   log(d, "log.mortgaged", {
     name: player.nickname,
-    tile: tileDef(tileId).name,
+    tile: tileDef(d, tileId).name,
     value,
   })
   return d
@@ -732,12 +753,12 @@ function mortgage(d: GameState, tileId: number): GameState {
 function unmortgage(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
   if (!canUnmortgage(d, player.id, tileId)) return d
-  const cost = unmortgageCost(tileId)
+  const cost = unmortgageCost(d, tileId)
   d.tiles[tileId].mortgaged = false
   player.balance -= cost
   log(d, "log.unmortgaged", {
     name: player.nickname,
-    tile: tileDef(tileId).name,
+    tile: tileDef(d, tileId).name,
     cost,
   })
   return d
@@ -864,13 +885,8 @@ function goBankrupt(
     checkGameOver(d)
   }
 
-  // The departed player can't answer a trade or bid in an auction.
-  if (
-    d.pendingTrade &&
-    (d.pendingTrade.fromId === playerId || d.pendingTrade.toId === playerId)
-  ) {
-    d.pendingTrade = null
-  }
+  // The departed player can't answer trades or bid in an auction.
+  dropTradesWith(d, playerId)
   dropFromAuction(d, playerId)
 
   // If it was their turn (and no auction is still running), pass it on.
@@ -935,13 +951,8 @@ function pay(
   if (creditor) creditor.balance += debtor.balance
   debtor.balance = 0
   debtor.isBankrupt = true
-  // Drop any pending trade that involves the now-bankrupt player.
-  if (
-    d.pendingTrade &&
-    (d.pendingTrade.fromId === debtor.id || d.pendingTrade.toId === debtor.id)
-  ) {
-    d.pendingTrade = null
-  }
+  // Drop any pending trades that involve the now-bankrupt player.
+  dropTradesWith(d, debtor.id)
   for (let id = 0; id < d.tiles.length; id++) {
     const tile = d.tiles[id]
     if (tile.ownerId === debtor.id) {
@@ -961,7 +972,7 @@ function pay(
  * then mortgage clear properties (half price). Stops early once covered.
  */
 function raiseCash(d: GameState, debtor: Player, target: number): void {
-  for (const def of BOARD) {
+  for (const def of boardOf(d)) {
     if (debtor.balance >= target) return
     if (def.type !== "street") continue
     const tile = d.tiles[def.id]
@@ -971,7 +982,7 @@ function raiseCash(d: GameState, debtor: Player, target: number): void {
       debtor.balance += Math.floor(def.houseCost / 2)
     }
   }
-  for (const def of BOARD) {
+  for (const def of boardOf(d)) {
     if (debtor.balance >= target) return
     if (!("price" in def)) continue
     const tile = d.tiles[def.id]
@@ -981,8 +992,8 @@ function raiseCash(d: GameState, debtor: Player, target: number): void {
   }
 }
 
-function sendToJail(player: Player): void {
-  player.position = JAIL_TILE_ID
+function sendToJail(d: GameState, player: Player): void {
+  player.position = jailTileId(d)
   player.inJail = true
   player.jailTurns = 0
 }
@@ -1031,6 +1042,7 @@ function clone(state: GameState): GameState {
           activeBidderIds: [...state.auction.activeBidderIds],
         }
       : null,
+    pendingTrades: [...state.pendingTrades],
     log: [...state.log],
   }
 }

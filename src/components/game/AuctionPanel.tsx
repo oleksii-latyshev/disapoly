@@ -3,7 +3,7 @@ import { Gavel } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { BOARD, playerById, type GameAction, type GameState } from "@/game"
+import { boardOf, playerById, type GameAction, type GameState } from "@/game"
 import { useT } from "@/i18n"
 import { cn } from "@/lib/utils"
 
@@ -74,7 +74,7 @@ export function AuctionPanel({
   if (!a) return null
 
   const minBid = a.highBid + 1
-  const def = BOARD[a.tileId]
+  const def = boardOf(state)[a.tileId]
   const highBidder = a.highBidderId ? playerById(state, a.highBidderId) : null
   const bidder = playerById(state, a.currentBidderId)
   const myTurn =

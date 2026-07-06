@@ -1,5 +1,5 @@
 import {
-  BOARD,
+  boardOf,
   countOwnedOfType,
   hasMonopoly,
   mortgageValue,
@@ -54,7 +54,7 @@ export function TileDetails({
   onClose: () => void
 }) {
   const t = useT()
-  const def = tileId === null ? null : BOARD[tileId]
+  const def = tileId === null ? null : boardOf(state)[tileId]
   const tile = tileId === null ? null : state.tiles[tileId]
   const owner =
     tileId !== null && state.tiles[tileId]?.ownerId
@@ -190,7 +190,7 @@ export function TileDetails({
               {"price" in def && (
                 <Row
                   label={t("details.mortgage")}
-                  value={`$${mortgageValue(def.id)}`}
+                  value={`$${mortgageValue(state, def.id)}`}
                 />
               )}
 
