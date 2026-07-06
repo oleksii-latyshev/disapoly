@@ -3,13 +3,16 @@ import { motion } from "motion/react"
 import { Hotel, House } from "lucide-react"
 
 import {
+  activeEvent,
   boardOf,
   boardSizeOf,
   currentPlayer,
   hasMonopoly,
   rentFor,
+  rentMultiplier,
   UTILITY_MULTIPLIER,
   countOwnedOfType,
+  type BoardEvent,
   type GameState,
   type TileDefinition,
 } from "@/game"
@@ -20,10 +23,11 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
 import type { ReactionEvent } from "@/hooks/useRoom"
 
 import { useBoardTheme } from "./board-theme"
-import { gridSide, tileCell } from "./board-meta"
+import { EVENT_EMOJI, gridSide, tileCell, tileCenter } from "./board-meta"
 import { BoardTilt } from "./BoardTilt"
 import { Dice } from "./Dice"
 import { EventAnnouncer } from "./EventAnnouncer"
+import { EventFxLayer, useEventFx } from "./EventFx"
 import { ReactionLayer } from "./ReactionLayer"
 import { TileDetails } from "./TileDetails"
 import { TokenLayer } from "./TokenLayer"
@@ -62,11 +66,13 @@ function stripLabel(state: GameState, def: TileDefinition): string | undefined {
   const tile = state.tiles[def.id]
   if (!tile.ownerId) return `$${def.price}`
   if (tile.mortgaged) return "MTG"
+  // A live boom day doubles what's actually charged — show the real number.
+  const surge = rentMultiplier(state)
   if (def.type === "utility") {
     const owned = countOwnedOfType(state, tile.ownerId, "utility")
-    return `×${UTILITY_MULTIPLIER[Math.min(owned, 2) - 1] ?? 0}`
+    return `×${(UTILITY_MULTIPLIER[Math.min(owned, 2) - 1] ?? 0) * surge}`
   }
-  return `$${rentFor(state, def.id, 0)}`
+  return `$${rentFor(state, def.id, 0) * surge}`
 }
 
 /** Grid template for an n×n board (Tailwind only ships fixed presets). */
@@ -360,6 +366,38 @@ function Tile({
   )
 }
 
+/**
+ * A bobbing emoji marker over the tile a surprise event sits on (bounty /
+ * rabbit). Keyed by tile so the rabbit visibly pops to its next spot per hop.
+ */
+function EventMarker({ event, size }: { event: BoardEvent; size: number }) {
+  const reduce = usePrefersReducedMotion()
+  if (event.tileId === null) return null
+  const c = tileCenter(event.tileId, size)
+  return (
+    <motion.div
+      key={`${event.kind}-${event.tileId}`}
+      className="pointer-events-none absolute z-20 text-[length:max(16px,2.8cqw)] drop-shadow-md"
+      style={{ left: `${c.x}%`, top: `${c.y}%`, x: "-50%", y: "-58%" }}
+      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={
+        reduce
+          ? { duration: 0.2 }
+          : { type: "spring", stiffness: 380, damping: 16 }
+      }
+    >
+      <motion.span
+        className="block"
+        animate={reduce ? undefined : { y: [0, -5, 0] }}
+        transition={{ repeat: Infinity, duration: 1.3, ease: "easeInOut" }}
+      >
+        {EVENT_EMOJI[event.kind]}
+      </motion.span>
+    </motion.div>
+  )
+}
+
 export function GameBoard({
   state,
   reactions,
@@ -376,6 +414,11 @@ export function GameBoard({
   const board = boardOf(state)
   const n = gridSide(board.length)
   const active = state.status === "playing" ? currentPlayer(state) : undefined
+  const event = activeEvent(state)
+  const fx = useEventFx(state)
+  // The earthquake effect is the board itself rattling (CSS keyframes; the
+  // class is inert under prefers-reduced-motion like the other board effects).
+  const quaking = fx.some((f) => f.kind === "earthquake")
   const currentId = state.players[state.currentPlayerIndex]?.position
   const [selected, setSelected] = useState<number | null>(null)
 
@@ -407,7 +450,10 @@ export function GameBoard({
           }}
         >
           <div
-            className="@container relative grid aspect-square w-full gap-[3px]"
+            className={cn(
+              "@container relative grid aspect-square w-full gap-[3px]",
+              quaking && "board-quake"
+            )}
             style={gridTemplate(n)}
           >
             {board.map((def) => (
@@ -456,9 +502,27 @@ export function GameBoard({
                   {t("turn.turnOf", { name: active.nickname })}
                 </div>
               )}
+
+              {/* Live surprise event — a golden pill so the whole table sees
+                  what's in play (and what the marker on the board means). */}
+              {event && (
+                <div
+                  className="flex items-center gap-1.5 rounded-full border border-amber-500/50 px-3 py-1 text-[length:max(10px,1.2cqw)] font-semibold shadow-sm"
+                  style={{
+                    backgroundColor:
+                      "color-mix(in srgb, #f5a623 16%, var(--tile-bg))",
+                    color: "var(--tile-fg)",
+                  }}
+                >
+                  <span>{EVENT_EMOJI[event.kind]}</span>
+                  {t(`event.banner.${event.kind}`, { amount: event.amount })}
+                </div>
+              )}
             </div>
 
             <TokenLayer state={state} />
+            {event && <EventMarker event={event} size={board.length} />}
+            <EventFxLayer fx={fx} state={state} />
             {reactions && <ReactionLayer state={state} reactions={reactions} />}
             <EventAnnouncer state={state} />
           </div>

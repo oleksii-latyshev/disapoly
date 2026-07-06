@@ -11,13 +11,17 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
+  ALL_EVENT_KINDS,
   PLAYER_EMOJIS,
+  type BoardEventKind,
   type BoardId,
   type ClientMessage,
+  type EventFrequency,
   type PayMode,
   type RoomMember,
   type RoomState,
 } from "@/game"
+import { EventSettings } from "@/components/game/EventSettings"
 import { roomUrl, setStoredEmoji } from "@/net/identity"
 import { cn } from "@/lib/utils"
 import { useT } from "@/i18n"
@@ -65,6 +69,11 @@ export function LobbyScreen({
   const [payMode, setPayMode] = useState<PayMode>("turbo")
   const [board, setBoard] = useState<BoardId>("classic")
   const [orderRoll, setOrderRoll] = useState(false)
+  const [events, setEvents] = useState(false)
+  const [eventKinds, setEventKinds] = useState<BoardEventKind[]>([
+    ...ALL_EVENT_KINDS,
+  ])
+  const [eventFrequency, setEventFrequency] = useState<EventFrequency>("normal")
   const [editing, setEditing] = useState(false)
   const [draftName, setDraftName] = useState("")
   const url = roomUrl(roomId)
@@ -303,10 +312,31 @@ export function LobbyScreen({
             </div>
           )}
 
+          {self?.isHost && (
+            <EventSettings
+              events={events}
+              onEventsChange={setEvents}
+              frequency={eventFrequency}
+              onFrequencyChange={setEventFrequency}
+              kinds={eventKinds}
+              onKindsChange={setEventKinds}
+            />
+          )}
+
           {self?.isHost ? (
             <Button
               onClick={() =>
-                send({ type: "start", settings: { payMode, orderRoll, board } })
+                send({
+                  type: "start",
+                  settings: {
+                    payMode,
+                    orderRoll,
+                    board,
+                    events,
+                    eventKinds,
+                    eventFrequency,
+                  },
+                })
               }
               disabled={!canStart}
             >

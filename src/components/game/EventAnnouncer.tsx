@@ -1,16 +1,24 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import {
+  Activity,
   ArrowRightLeft,
   Banknote,
   Building2,
   CircleDollarSign,
   Gavel,
+  Gift,
   Hammer,
   Home,
   Landmark,
+  LockOpen,
+  Rabbit,
+  Search,
   Siren,
   Skull,
+  Snowflake,
+  Sparkles,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react"
 
@@ -40,6 +48,19 @@ const CALLOUTS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   "log.builtHotel": { icon: Building2, tone: "good" },
   "log.tradeProposed": { icon: ArrowRightLeft, tone: "neutral" },
   "log.tradeAccepted": { icon: ArrowRightLeft, tone: "neutral" },
+  // Surprise events (settings.events): spawns are news, claims are wins.
+  "log.eventBounty": { icon: Gift, tone: "neutral" },
+  "log.eventRabbit": { icon: Rabbit, tone: "neutral" },
+  "log.eventGoldenDice": { icon: Sparkles, tone: "neutral" },
+  "log.eventRentFreeze": { icon: Snowflake, tone: "neutral" },
+  "log.eventBountyClaimed": { icon: Gift, tone: "good" },
+  "log.eventRabbitCaught": { icon: Rabbit, tone: "good" },
+  "log.rentFrozen": { icon: Snowflake, tone: "good" },
+  "log.eventRentSurge": { icon: TrendingUp, tone: "neutral" },
+  "log.eventEarthquake": { icon: Activity, tone: "bad" },
+  "log.eventWindfall": { icon: CircleDollarSign, tone: "good" },
+  "log.eventJailbreak": { icon: LockOpen, tone: "good" },
+  "log.eventTaxAudit": { icon: Search, tone: "bad" },
 }
 
 // Opaque, self-contained colors: the callouts float over the board, whose

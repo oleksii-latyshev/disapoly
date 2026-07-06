@@ -12,14 +12,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  ALL_EVENT_KINDS,
   PLAYER_COLORS,
   PLAYER_EMOJIS,
+  type BoardEventKind,
   type BoardId,
+  type EventFrequency,
   type GameSettings,
   type PayMode,
   type PlayerSetup,
 } from "@/game"
 import { useT } from "@/i18n"
+
+import { EventSettings } from "./EventSettings"
 
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = PLAYER_COLORS.length // 8
@@ -42,6 +47,11 @@ export function SetupScreen({
   const [payMode, setPayMode] = useState<PayMode>("turbo")
   const [board, setBoard] = useState<BoardId>("classic")
   const [orderRoll, setOrderRoll] = useState(false)
+  const [events, setEvents] = useState(false)
+  const [eventKinds, setEventKinds] = useState<BoardEventKind[]>([
+    ...ALL_EVENT_KINDS,
+  ])
+  const [eventFrequency, setEventFrequency] = useState<EventFrequency>("normal")
 
   const setName = (index: number, value: string) =>
     setNames((prev) => prev.map((n, i) => (i === index ? value : n)))
@@ -81,7 +91,7 @@ export function SetupScreen({
         nickname: nickname.trim() || `Player ${i + 1}`,
         emoji: emojis[i],
       })),
-      { payMode, orderRoll, board }
+      { payMode, orderRoll, board, events, eventKinds, eventFrequency }
     )
 
   return (
@@ -207,6 +217,15 @@ export function SetupScreen({
               {t("lobby.orderRoll.desc")}
             </span>
           </div>
+
+          <EventSettings
+            events={events}
+            onEventsChange={setEvents}
+            frequency={eventFrequency}
+            onFrequencyChange={setEventFrequency}
+            kinds={eventKinds}
+            onKindsChange={setEventKinds}
+          />
 
           <Button onClick={start}>
             <Play /> {t("setup.start")}

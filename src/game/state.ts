@@ -39,6 +39,8 @@ export const DEFAULT_SETTINGS: GameSettings = {
   payMode: "turbo",
   orderRoll: false,
   board: "classic",
+  events: false,
+  eventFrequency: "normal",
 }
 
 /** Build a fresh match state for the given players (2–8). */
@@ -88,6 +90,7 @@ export function createInitialState(
     chance,
     chest,
     lastCard: null,
+    activeEvent: null,
     pendingTrades: [],
     nextTradeId: 1,
     turnCount: 0,

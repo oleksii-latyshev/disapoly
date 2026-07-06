@@ -5,6 +5,7 @@ import {
   mortgageValue,
   RAILROAD_RENT,
   rentFor,
+  rentMultiplier,
   UTILITY_MULTIPLIER,
   type GameState,
 } from "@/game"
@@ -66,10 +67,13 @@ export function TileDetails({
   const houses = tile?.houses ?? 0
   const monopoly =
     def?.type === "street" && owner && hasMonopoly(state, owner.id, def.group)
+  // A live boom day doubles what's actually charged — surface it here too.
+  const surge = rentMultiplier(state)
   const rentNow =
     def && tileId !== null && owner && !tile?.mortgaged
-      ? rentFor(state, tileId, 0)
+      ? rentFor(state, tileId, 0) * surge
       : null
+  const surgeTag = surge > 1 ? ` (📈×${surge})` : ""
   const utilityMult =
     def?.type === "utility" && owner
       ? UTILITY_MULTIPLIER[
@@ -108,21 +112,24 @@ export function TileDetails({
                 <Row
                   active
                   label={t("details.rentNow")}
-                  value={`$${rentNow}`}
+                  value={`$${rentNow}${surgeTag}`}
                 />
               )}
               {def.type === "railroad" && rentNow !== null && (
                 <Row
                   active
                   label={t("details.rentNow")}
-                  value={`$${rentNow}`}
+                  value={`$${rentNow}${surgeTag}`}
                 />
               )}
               {def.type === "utility" && utilityMult && !tile?.mortgaged && (
                 <Row
                   active
                   label={t("details.rentNow")}
-                  value={t("details.timesDice", { x: utilityMult })}
+                  value={
+                    t("details.timesDice", { x: utilityMult * surge }) +
+                    surgeTag
+                  }
                 />
               )}
 

@@ -62,6 +62,15 @@ const DICT: Record<Lang, Record<string, string>> = {
     "payMode.turbo.desc": "Rent and taxes are deducted the moment you land.",
     "payMode.normal.desc":
       "Debts wait for a confirmation — you can trade or mortgage first.",
+    "lobby.events": "Surprise events",
+    "lobby.events.desc":
+      "Every few minutes something unexpected happens: bounties, a lucky rabbit, earthquakes, money rain, tax audits and more.",
+    "lobby.eventFreq": "How often",
+    "events.freq.rare": "Rare",
+    "events.freq.normal": "Normal",
+    "events.freq.frequent": "Frequent",
+    "lobby.eventKinds": "Possible events",
+    "events.noneSelected": "No events selected — none will appear.",
     "common.save": "Save",
     "common.cancel": "Cancel",
 
@@ -266,6 +275,39 @@ const DICT: Record<Lang, Record<string, string>> = {
     "log.wins": "{name} wins the game!",
     "log.gameOver": "Game over.",
 
+    "log.eventBounty": "🎁 A treasure chest with ${amount} appeared on {tile}!",
+    "log.eventRabbit":
+      "🐇 A lucky rabbit carrying ${amount} hopped onto the board!",
+    "log.eventGoldenDice": "✨ Golden dice! Passing GO pays double this round.",
+    "log.eventRentFreeze": "❄️ Rent freeze! Nobody pays rent this round.",
+    "log.eventBountyClaimed": "{name} grabbed the ${amount} bounty!",
+    "log.eventRabbitCaught":
+      "{name} caught the lucky rabbit and won ${amount}!",
+    "log.eventEnded": "The “{event}” event is over.",
+    "log.rentFrozen": "{name} pays no rent for {tile} — rent freeze!",
+
+    "event.bounty": "Treasure chest",
+    "event.rabbit": "Lucky rabbit",
+    "event.goldenDice": "Golden dice",
+    "event.rentFreeze": "Rent freeze",
+    "event.banner.bounty": "Bounty on the board: ${amount}",
+    "event.banner.rabbit": "Catch the rabbit: ${amount}",
+    "event.banner.goldenDice": "Golden dice — GO pays double",
+    "event.banner.rentFreeze": "Rent freeze — no rent this round",
+    "event.banner.rentSurge": "Boom day — all rent ×2",
+
+    "log.eventRentSurge": "📈 Boom day! All rent is doubled this round.",
+    "log.eventEarthquake": "🫨 Earthquake! A building on {tile} collapses.",
+    "log.eventWindfall": "💸 Money rain! Everyone collects ${amount}.",
+    "log.eventJailbreak": "🔓 Jailbreak! Everyone in jail walks free.",
+    "log.eventTaxAudit":
+      "🕵️ Tax audit! {name} pays ${amount} — 10% of their cash.",
+    "event.rentSurge": "Boom day",
+    "event.earthquake": "Earthquake",
+    "event.windfall": "Money rain",
+    "event.jailbreak": "Jailbreak",
+    "event.taxAudit": "Tax audit",
+
     "card.ch_go": "Advance to GO. Collect $200.",
     "card.ch_illinois": "Advance to Illinois Avenue.",
     "card.ch_charles": "Advance to St. Charles Place.",
@@ -341,6 +383,15 @@ const DICT: Record<Lang, Record<string, string>> = {
     "payMode.turbo.desc": "Аренда и налоги списываются сразу при попадании.",
     "payMode.normal.desc":
       "Долг ждёт подтверждения — сначала можно меняться или закладывать.",
+    "lobby.events": "Случайные события",
+    "lobby.events.desc":
+      "Каждые несколько минут что-то происходит: клады, кролик, землетрясения, денежный дождь, проверки и не только.",
+    "lobby.eventFreq": "Как часто",
+    "events.freq.rare": "Редко",
+    "events.freq.normal": "Обычно",
+    "events.freq.frequent": "Часто",
+    "lobby.eventKinds": "Возможные события",
+    "events.noneSelected": "События не выбраны — ничего не появится.",
     "common.save": "Сохранить",
     "common.cancel": "Отмена",
 
@@ -547,6 +598,39 @@ const DICT: Record<Lang, Record<string, string>> = {
       "{name} слишком долго отсутствует и выбывает — имущество возвращается банку.",
     "log.wins": "{name} выигрывает!",
     "log.gameOver": "Игра окончена.",
+
+    "log.eventBounty": "🎁 На «{tile}» появился клад с ${amount}!",
+    "log.eventRabbit": "🐇 На поле выскочил счастливый кролик с ${amount}!",
+    "log.eventGoldenDice":
+      "✨ Золотые кубики! Проход «Старта» платит вдвое этот круг.",
+    "log.eventRentFreeze":
+      "❄️ Заморозка аренды! Этот круг никто не платит аренду.",
+    "log.eventBountyClaimed": "{name} забирает клад — ${amount}!",
+    "log.eventRabbitCaught": "{name} ловит кролика и получает ${amount}!",
+    "log.eventEnded": "Событие «{event}» закончилось.",
+    "log.rentFrozen": "{name} не платит аренду за «{tile}» — заморозка!",
+
+    "event.bounty": "Клад",
+    "event.rabbit": "Счастливый кролик",
+    "event.goldenDice": "Золотые кубики",
+    "event.rentFreeze": "Заморозка аренды",
+    "event.banner.bounty": "Клад на поле: ${amount}",
+    "event.banner.rabbit": "Поймай кролика: ${amount}",
+    "event.banner.goldenDice": "Золотые кубики — «Старт» платит вдвое",
+    "event.banner.rentFreeze": "Заморозка — аренды нет этот круг",
+    "event.banner.rentSurge": "День бума — аренда ×2",
+
+    "log.eventRentSurge": "📈 День бума! Вся аренда удвоена этот круг.",
+    "log.eventEarthquake": "🫨 Землетрясение! На «{tile}» рушится постройка.",
+    "log.eventWindfall": "💸 Денежный дождь! Каждый получает ${amount}.",
+    "log.eventJailbreak": "🔓 Побег! Все выходят из тюрьмы.",
+    "log.eventTaxAudit":
+      "🕵️ Налоговая проверка! {name} платит ${amount} — 10% наличных.",
+    "event.rentSurge": "День бума",
+    "event.earthquake": "Землетрясение",
+    "event.windfall": "Денежный дождь",
+    "event.jailbreak": "Побег из тюрьмы",
+    "event.taxAudit": "Налоговая проверка",
 
     "card.ch_go": "На «Старт». Получи $200.",
     "card.ch_illinois": "Переместись на Illinois Avenue.",

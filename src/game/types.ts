@@ -121,6 +121,50 @@ export type GameSettings = {
    * keep working (they read as the classic board).
    */
   board?: BoardId
+  /**
+   * Surprise events: temporary bounties/modifiers spawn on the board every few
+   * turns. Optional so matches persisted before the setting read as off.
+   */
+  events?: boolean
+  /**
+   * Which event kinds may spawn (host-picked alongside `events`). Unset means
+   * all kinds; an empty list disables spawning entirely.
+   */
+  eventKinds?: BoardEventKind[]
+  /** How often events spawn. Unset reads as "normal" (~every 5 minutes). */
+  eventFrequency?: EventFrequency
+}
+
+/** Spawn cadence for surprise events (settings.eventFrequency). */
+export type EventFrequency = "rare" | "normal" | "frequent"
+
+/**
+ * Kinds of surprise events (settings.events). Tile events sit on the board
+ * until claimed, modifiers run for a round, instant events fire and are done.
+ */
+export type BoardEventKind =
+  | "bounty" // a cash prize on a tile — first player to land there collects
+  | "rabbit" // like a bounty, but it hops to a new tile at the end of every turn
+  | "goldenDice" // passing GO pays double while active
+  | "rentFreeze" // nobody pays rent while active
+  | "rentSurge" // all rent is doubled while active ("boom day")
+  | "earthquake" // instant: one random building collapses back to the bank
+  | "windfall" // instant: money rain — every player collects a small sum
+  | "jailbreak" // instant: everyone in jail walks free
+  | "taxAudit" // instant: the richest-in-cash player pays 10% to the bank
+
+/**
+ * A live surprise event. Tile events (`tileId` set) are claimed by landing on
+ * the tile; global modifiers (`tileId` null) simply apply until they expire.
+ */
+export type BoardEvent = {
+  kind: BoardEventKind
+  /** Tile the event sits on (bounty/rabbit), or null for global modifiers. */
+  tileId: number | null
+  /** Prize paid on claim (bounty/rabbit); 0 for global modifiers. */
+  amount: number
+  /** The event ends once `turnCount` reaches this value. */
+  expiresAtTurn: number
 }
 
 /** What a pending debt was incurred for (drives the pay prompt copy). */
@@ -227,6 +271,17 @@ export type GameState = {
   chest: DeckState
   /** Card drawn this turn, or null. */
   lastCard: DrawnCard | null
+  /**
+   * The live surprise event (settings.events), or none. Optional so matches
+   * persisted before events existed keep working (they read as none).
+   */
+  activeEvent?: BoardEvent | null
+  /**
+   * No event spawns before `turnCount` reaches this value — a breather of one
+   * full round after each event, pacing them to roughly one every few minutes.
+   * Optional like `activeEvent`; unset reads as the initial warm-up.
+   */
+  eventCooldownUntil?: number
   /**
    * Outstanding trade proposals awaiting a response. Several may be pending at
    * once (at most one per from→to pair); each is accepted/declined by id and

@@ -4,10 +4,24 @@ import {
   boardOf,
   boardSizeOf,
   jailTileId,
+  type BoardEventKind,
   type ColorGroup,
   type GameState,
   type Player,
 } from "@/game"
+
+/** Emoji face for each surprise-event kind (board marker, pill, settings). */
+export const EVENT_EMOJI: Record<BoardEventKind, string> = {
+  bounty: "🎁",
+  rabbit: "🐇",
+  goldenDice: "✨",
+  rentFreeze: "❄️",
+  rentSurge: "📈",
+  earthquake: "🫨",
+  windfall: "💸",
+  jailbreak: "🔓",
+  taxAudit: "🕵️",
+}
 
 /** Cells per grid edge for a board of `size` tiles (11 classic, 13 large). */
 export function gridSide(size: number): number {

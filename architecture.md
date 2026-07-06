@@ -82,7 +82,7 @@ the Cloudflare Worker.
 ```ts
 type GameState = {
   status: "playing" | "finished"
-  settings: GameSettings         // { payMode, orderRoll, board } — host-chosen
+  settings: GameSettings         // { payMode, orderRoll, board, events } — host-chosen
   players: Player[]              // Player: id, nickname, color, balance,
                                  //   position, inJail, jailTurns,
                                  //   getOutOfJailCards, isBankrupt
@@ -96,6 +96,7 @@ type GameState = {
   rngSeed: number
   chance: DeckState; chest: DeckState   // { order, pos }
   lastCard: DrawnCard | null
+  activeEvent?: BoardEvent | null // live surprise event (settings.events)
   pendingTrades: TradeOffer[]    // open offers (queue; ≤1 per from→to pair)
   nextTradeId: number
   turnCount: number
@@ -246,6 +247,35 @@ See [README.md](README.md) for exact commands.
 - ✅ Pay modes: turbo (instant deduction) or normal (debts confirmed with a
   "Pay" step — trade/mortgage first); host-chosen per match, also available in
   hot-seat setup.
+- ✅ **Surprise events** (`settings.events`, host/hot-seat toggle, off by
+  default): seeded, temporary events spawn from `events.ts` (at most one live
+  at a time) in three shapes —
+  - *tile events*: a **bounty** on a random tile (first to land collects
+    $100–250) and a **lucky rabbit** that hops 1–6 tiles at the end of every
+    turn until caught (both expire after two uncaught rounds);
+  - *round modifiers*: **golden dice** (double GO payout), **rent freeze**
+    (no rent), **boom day** (all rent ×2) — each lasts one full round;
+  - *instant events*: an **earthquake** (one random building collapses back
+    to the bank), **money rain** (everyone collects $50–150), a **jailbreak**
+    (everyone in jail walks free), and a **tax audit** (the richest-in-cash
+    player pays 10% to the bank). Kinds whose moment hasn't come (nothing
+    built, nobody jailed) fall back to a bounty.
+
+  The host also picks **which kinds may spawn** (`settings.eventKinds`,
+  per-kind chips; unset = all, empty = none) and the **frequency**
+  (`settings.eventFrequency`: rare / normal / frequent — scaling both the
+  per-turn spawn chance and the post-event cooldown). Disabled or
+  currently-impossible kinds are simply left out of the weighted draw.
+
+  Pacing (normal): one full round of cooldown after each event, then a
+  25%-per-turn spawn roll — roughly one event every 8–11 turns (~5 minutes).
+  A live **boom day** is also reflected in the UI's rent numbers (tile value
+  tags and the details dialog show the doubled "rent now"). Everything
+  flows through the seeded PRNG and the structured log; the UI shows a board
+  marker + a golden status pill, and each event has its own short animation
+  (`EventFx.tsx`, log-driven like the callouts): a board shake, money rain,
+  a lock popping off the jail corner, an "AUDIT" stamp, a heat-glow pulse —
+  all skipped under `prefers-reduced-motion`.
 - ✅ Voluntary bankruptcy — a "declare bankruptcy" button (with confirmation)
   lets a player leave; their properties return to the bank unclaimed.
 - ✅ Win / final standings.

@@ -7,7 +7,17 @@
  */
 
 import { GO_PAYOUT, JAIL_FINE, moveTargetTile } from "./board.config"
+import { reclaimBuildings, returnBuilding, takeBuilding } from "./buildings"
 import { CHANCE, COMMUNITY_CHEST, type CardEffect } from "./cards"
+import {
+  claimEventAt,
+  goPayoutMultiplier,
+  isRentFrozen,
+  maybeSpawnEvent,
+  rentMultiplier,
+  tickEvent,
+} from "./events"
+import { log } from "./log"
 import { rollDice, shuffle } from "./rng"
 import {
   activePlayers,
@@ -33,7 +43,6 @@ import type {
   DebtReason,
   GameAction,
   GameState,
-  LogParam,
   Player,
   StreetTile,
   TradeOffer,
@@ -357,8 +366,10 @@ function moveBy(d: GameState, player: Player, steps: number): void {
   const from = player.position
   const to = (from + steps) % boardSizeOf(d)
   if (to < from) {
-    player.balance += GO_PAYOUT
-    log(d, "log.passGo", { name: player.nickname, amount: GO_PAYOUT })
+    // Golden dice (surprise event) double the GO salary while they last.
+    const payout = GO_PAYOUT * goPayoutMultiplier(d)
+    player.balance += payout
+    log(d, "log.passGo", { name: player.nickname, amount: payout })
   }
   player.position = to
 }
@@ -366,6 +377,10 @@ function moveBy(d: GameState, player: Player, steps: number): void {
 function resolveLanding(d: GameState, diceSum: number): void {
   const player = d.players[d.currentPlayerIndex]
   const def = tileDef(d, player.position)
+
+  // A surprise event waiting on this tile pays out first — its prize can help
+  // cover whatever the tile itself charges.
+  claimEventAt(d, player)
 
   switch (def.type) {
     case "tax":
@@ -399,7 +414,13 @@ function resolveLanding(d: GameState, diceSum: number): void {
           openAuction(d, def.id)
         }
       } else if (tile.ownerId !== player.id) {
-        const rent = rentFor(d, def.id, diceSum)
+        // A rent-freeze event suspends all rent while it lasts.
+        if (isRentFrozen(d)) {
+          log(d, "log.rentFrozen", { name: player.nickname, tile: def.name })
+          return
+        }
+        // A rent surge ("boom day") doubles every rent while it lasts.
+        const rent = rentFor(d, def.id, diceSum) * rentMultiplier(d)
         const owner = d.players.find((p) => p.id === tile.ownerId)!
         log(d, "log.rent", {
           name: player.nickname,
@@ -664,52 +685,14 @@ function endTurn(d: GameState): GameState {
   d.currentPlayerIndex = next
   d.phase = "awaiting-roll"
   d.turnCount += 1
+  // Surprise events: expire / hop the live one, then maybe spawn a fresh one.
+  tickEvent(d)
+  maybeSpawnEvent(d)
   d.history = [...d.history, historyPoint(d, d.turnCount)]
   return d
 }
 
 // --- property management (Stage 2) ---
-
-/**
- * Place one building on a tile and draw it from the bank. Precondition: the
- * bank stocks the piece (checked by `canBuildHouse`). Upgrading to a hotel
- * (the 5th step) takes a hotel and returns its 4 houses to the bank.
- */
-function takeBuilding(d: GameState, tileId: number): void {
-  const tile = d.tiles[tileId]
-  tile.houses += 1
-  if (tile.houses === 5) {
-    d.bank.hotels -= 1
-    d.bank.houses += 4
-  } else {
-    d.bank.houses -= 1
-  }
-}
-
-/**
- * Remove one building from a tile, returning it to the bank. Selling a hotel
- * "breaks down" into 4 houses drawn from the bank; if the bank is short (rule A
- * softened), we take whatever's available so liquidation never deadlocks.
- */
-function returnBuilding(d: GameState, tileId: number): void {
-  const tile = d.tiles[tileId]
-  const wasHotel = tile.houses === 5
-  tile.houses -= 1
-  if (wasHotel) {
-    d.bank.hotels += 1
-    d.bank.houses -= Math.min(4, d.bank.houses)
-  } else {
-    d.bank.houses += 1
-  }
-}
-
-/** Return all of a tile's buildings to the bank (e.g. on bankruptcy transfer). */
-function reclaimBuildings(d: GameState, tileId: number): void {
-  const tile = d.tiles[tileId]
-  if (tile.houses === 5) d.bank.hotels += 1
-  else d.bank.houses += tile.houses
-  tile.houses = 0
-}
 
 function buildHouse(d: GameState, tileId: number): GameState {
   const player = currentPlayer(d)
@@ -1006,24 +989,6 @@ function checkGameOver(d: GameState): void {
     if (remaining[0]) log(d, "log.wins", { name: remaining[0].nickname })
     else log(d, "log.gameOver")
   }
-}
-
-/**
- * Keep only the most recent log entries in state. The UI shows the last ~50 and
- * ids stay monotonic (via `nextLogId`), so capping is invisible while it bounds
- * the broadcast/persisted payload over a long match. Comfortably above what's
- * displayed, with headroom for the event-callout diff.
- */
-const LOG_CAP = 100
-
-function log(
-  d: GameState,
-  key: string,
-  params?: Record<string, LogParam>
-): void {
-  d.log.push({ id: d.nextLogId, key, params })
-  d.nextLogId += 1
-  if (d.log.length > LOG_CAP) d.log = d.log.slice(-LOG_CAP)
 }
 
 /** Shallow-clone the parts of state that handlers mutate. */
