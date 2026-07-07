@@ -22,7 +22,9 @@ export function member(
 }
 
 /** An in-game two-player room (p1 to move), seeded for reproducibility. */
-export function inGameRoom(members: RoomMember[] = [member("p1"), member("p2")]): RoomState {
+export function inGameRoom(
+  members: RoomMember[] = [member("p1"), member("p2")]
+): RoomState {
   return {
     ...createRoom("room"),
     phase: "in-game",

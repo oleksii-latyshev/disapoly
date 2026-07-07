@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react"
-
-import { Button } from "@/shared/components/ui/button"
+import { useT } from "@/core/i18n"
 import {
   getPlayerId,
   getStoredEmoji,
   getStoredNickname,
   setStoredNickname,
+  useRoom,
 } from "@/core/network"
-import { useRoom } from "@/core/network"
-import { useT } from "@/core/i18n"
+import { Button } from "@/shared/components/ui/button"
 
 import { LobbyScreen } from "./LobbyScreen"
 import { NetworkGame } from "./NetworkGame"
@@ -16,7 +15,7 @@ import { NicknamePrompt } from "./NicknamePrompt"
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-svh items-center justify-center p-6 text-sm text-muted-foreground">
+    <div className="flex min-h-svh items-center justify-center p-6 text-muted-foreground text-sm">
       {children}
     </div>
   )

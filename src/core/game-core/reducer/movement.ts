@@ -1,5 +1,5 @@
 import { GO_PAYOUT, moveTargetTile } from "../constants/board"
-import { CHANCE, COMMUNITY_CHEST, type CardEffect } from "../constants/cards"
+import { type CardEffect, CHANCE, COMMUNITY_CHEST } from "../constants/cards"
 import {
   claimEventAt,
   goPayoutMultiplier,
@@ -107,7 +107,11 @@ export function resolveLanding(d: GameState, diceSum: number): void {
   }
 }
 
-function drawCard(d: GameState, deck: "chance" | "chest", diceSum: number): void {
+function drawCard(
+  d: GameState,
+  deck: "chance" | "chest",
+  diceSum: number
+): void {
   const cards = deck === "chance" ? CHANCE : COMMUNITY_CHEST
   const pile = d[deck]
   if (pile.pos >= pile.order.length) {

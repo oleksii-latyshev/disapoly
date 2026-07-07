@@ -1,25 +1,24 @@
 export const en: Record<string, string> = {
-  "home.tagline":
-    "Create a room and share the link with friends — no sign-up.",
+  "home.tagline": "Create a room and share the link with friends — no sign-up.",
   "home.createRoom": "Create online room",
   "home.roomCode": "Room code",
   "home.join": "Join",
   "home.hotseat": "Play hot-seat (one device)",
-  
+
   "nickname.title": "Join game",
   "nickname.desc": "Pick a nickname to enter the room.",
   "nickname.label": "Nickname",
   "nickname.placeholder": "Your name",
   "nickname.enter": "Enter",
   "common.back": "Back",
-  
+
   "setup.desc": "Local hot-seat. Add 2–{max} players and start.",
   "setup.players": "{n} players",
   "setup.start": "Start game",
   "setup.playerN": "Player {n}",
   "setup.addPlayer": "Add player",
   "setup.removePlayer": "Remove player",
-  
+
   "lobby.title": "Lobby",
   "lobby.share": "Share the link to invite friends.",
   "lobby.connecting": "Connecting…",
@@ -59,7 +58,7 @@ export const en: Record<string, string> = {
   "events.noneSelected": "No events selected — none will appear.",
   "common.save": "Save",
   "common.cancel": "Cancel",
-  
+
   "turn.turnOf": "{name}’s turn",
   "turn.waitingFor": "Waiting for {name} to play…",
   "turn.roll": "Roll dice",
@@ -73,7 +72,7 @@ export const en: Record<string, string> = {
   "buy.railroads": "{owned}/{total} railroads → rent",
   "buy.utilities": "{owned}/{total} utilities → rent",
   "buy.timesDice": "{mult}× dice",
-  
+
   "auction.title": "Auction",
   "auction.tileUp": "{tile} is up for auction",
   "auction.highBid": "High bid ${amount}",
@@ -90,12 +89,12 @@ export const en: Record<string, string> = {
   "turn.gameOver": "Game over.",
   "turn.newGame": "New game",
   "turn.waitHostNew": "Waiting for the host to start a new game…",
-  
+
   "jail.title": "In jail — escape attempt {n}/3",
   "jail.pay": "Pay ${fine}",
   "jail.useCard": "Use card",
   "jail.roll": "Roll for doubles",
-  
+
   "pay.owedTo": "You owe ${amount} to {name} for {tile}.",
   "pay.owedBank": "You owe ${amount} to the bank.",
   "pay.hint": "You can trade, sell buildings or mortgage before paying.",
@@ -103,18 +102,18 @@ export const en: Record<string, string> = {
     "You're ${need} short — sell buildings, mortgage or trade to cover it.",
   "pay.pay": "Pay ${amount}",
   "pay.waitingFor": "{name} owes ${amount} and is deciding how to pay…",
-  
+
   "order.title": "Roll-off: highest roll starts the game.",
   "order.roll": "Roll for turn order",
-  
+
   "bankrupt.declare": "Declare bankruptcy",
   "bankrupt.confirm":
     "Give up? Your properties return to the bank and can be bought again.",
   "bankrupt.yes": "Give up",
-  
+
   "card.chance": "Chance",
   "card.chest": "Community Chest",
-  
+
   "details.owner": "Owner",
   "details.rentNow": "Rent now",
   "details.noRent": "none (mortgaged)",
@@ -128,7 +127,7 @@ export const en: Record<string, string> = {
   "details.owned": "{n} owned",
   "details.timesDice": "{x}× dice roll",
   "details.tax": "Tax",
-  
+
   "manage.title": "Your properties",
   "manage.supplyTitle": "Houses / hotels left in the bank",
   "manage.empty": "You don’t own any properties yet.",
@@ -138,7 +137,7 @@ export const en: Record<string, string> = {
   "manage.unmortgage": "Unmortgage",
   "manage.liftMortgage": "Lift mortgage (${cost})",
   "manage.mortgage": "Mortgage",
-  
+
   "net.connected": "Connected",
   "net.reconnecting": "Reconnecting…",
   "net.connectingRoom": "Connecting to room…",
@@ -149,7 +148,7 @@ export const en: Record<string, string> = {
   "net.kicked": "The host removed you from this room.",
   "notify.yourTurn": "Your turn!",
   "notify.tradeOffer": "Trade offer!",
-  
+
   "settings.title": "Settings",
   "settings.boardTheme": "Board theme",
   "settings.language": "Language",
@@ -159,7 +158,7 @@ export const en: Record<string, string> = {
   "theme.mono.desc": "Black & white, adapts to light/dark mode.",
   "theme.neon.name": "Neon",
   "theme.neon.desc": "Dark board with glowing colors.",
-  
+
   "trade.open": "Propose a trade",
   "trade.title": "Propose a trade",
   "trade.partner": "Partner",
@@ -179,16 +178,16 @@ export const en: Record<string, string> = {
   "trade.counterTitle": "Counter offer",
   "trade.sendCounter": "Send counter offer",
   "trade.alreadyPending": "You already have an open offer to {name}.",
-  
+
   "settings.sound": "Sound",
   "common.on": "On",
   "common.off": "Off",
-  
+
   "stats.open": "Stats",
   "stats.title": "Net worth over time",
   "results.standings": "Final standings",
   "results.bankrupt": "bankrupt",
-  
+
   "howto.title": "How to play",
   "howto.goal.title": "Goal",
   "howto.goal.body":
@@ -217,7 +216,7 @@ export const en: Record<string, string> = {
   "howto.win.title": "Bankruptcy & winning",
   "howto.win.body":
     "Can't pay a debt? You auto-sell buildings and mortgage to cover it; if you still fall short, you're bankrupt. The last player left wins.",
-  
+
   "log.started": "Game started with {n} players.",
   "log.rolled": "{name} rolled {a} + {b} = {sum}.",
   "log.rolledDoubles": "{name} rolled {a} + {b} = {sum} (doubles).",
@@ -260,18 +259,17 @@ export const en: Record<string, string> = {
     "{name} was away too long and is out — their properties return to the bank.",
   "log.wins": "{name} wins the game!",
   "log.gameOver": "Game over.",
-  
+
   "log.eventBounty": "🎁 A treasure chest with ${amount} appeared on {tile}!",
   "log.eventRabbit":
     "🐇 A lucky rabbit carrying ${amount} hopped onto the board!",
   "log.eventGoldenDice": "✨ Golden dice! Passing GO pays double this round.",
   "log.eventRentFreeze": "❄️ Rent freeze! Nobody pays rent this round.",
   "log.eventBountyClaimed": "{name} grabbed the ${amount} bounty!",
-  "log.eventRabbitCaught":
-    "{name} caught the lucky rabbit and won ${amount}!",
+  "log.eventRabbitCaught": "{name} caught the lucky rabbit and won ${amount}!",
   "log.eventEnded": "The “{event}” event is over.",
   "log.rentFrozen": "{name} pays no rent for {tile} — rent freeze!",
-  
+
   "event.bounty": "Treasure chest",
   "event.rabbit": "Lucky rabbit",
   "event.goldenDice": "Golden dice",
@@ -281,7 +279,7 @@ export const en: Record<string, string> = {
   "event.banner.goldenDice": "Golden dice — GO pays double",
   "event.banner.rentFreeze": "Rent freeze — no rent this round",
   "event.banner.rentSurge": "Boom day — all rent ×2",
-  
+
   "log.eventRentSurge": "📈 Boom day! All rent is doubled this round.",
   "log.eventEarthquake": "🫨 Earthquake! A building on {tile} collapses.",
   "log.eventWindfall": "💸 Money rain! Everyone collects ${amount}.",
@@ -293,7 +291,7 @@ export const en: Record<string, string> = {
   "event.windfall": "Money rain",
   "event.jailbreak": "Jailbreak",
   "event.taxAudit": "Tax audit",
-  
+
   "card.ch_go": "Advance to GO. Collect $200.",
   "card.ch_illinois": "Advance to Illinois Avenue.",
   "card.ch_charles": "Advance to St. Charles Place.",

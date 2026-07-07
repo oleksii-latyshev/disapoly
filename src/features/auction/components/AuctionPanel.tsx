@@ -1,10 +1,14 @@
-import { useState } from "react"
 import { Gavel } from "lucide-react"
-
+import { useState } from "react"
+import {
+  boardOf,
+  type GameAction,
+  type GameState,
+  playerById,
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import { boardOf, playerById, type GameAction, type GameState } from "@/core/game-core"
-import { useT } from "@/core/i18n"
 import { cn } from "@/shared/lib/utils"
 
 /**
@@ -82,10 +86,10 @@ export function AuctionPanel({
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 shadow-sm">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+      <div className="flex items-center gap-1.5 font-semibold text-amber-700 text-xs dark:text-amber-300">
         <Gavel className="size-3.5" /> {t("auction.title")}
       </div>
-      <p className="text-sm font-medium">
+      <p className="font-medium text-sm">
         {t("auction.tileUp", { tile: def.name })}
       </p>
 
@@ -135,7 +139,7 @@ export function AuctionPanel({
 
       {myTurn && bidder ? (
         <div className="flex flex-col gap-2">
-          <div className="text-xs font-medium text-amber-700 dark:text-amber-300">
+          <div className="font-medium text-amber-700 text-xs dark:text-amber-300">
             {localPlayerId === undefined
               ? t("auction.turnOf", { name: bidder.nickname })
               : t("auction.yourTurn")}
@@ -153,7 +157,7 @@ export function AuctionPanel({
           />
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {t("auction.waiting", { name: bidder?.nickname ?? "?" })}
         </p>
       )}

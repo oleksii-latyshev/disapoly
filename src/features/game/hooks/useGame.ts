@@ -2,10 +2,10 @@ import { useCallback, useReducer } from "react"
 
 import {
   createInitialState,
-  gameReducer,
   type GameAction,
   type GameSettings,
   type GameState,
+  gameReducer,
   type PlayerSetup,
 } from "@/core/game-core"
 
@@ -16,8 +16,10 @@ export function useGame(
   seed?: number,
   settings?: GameSettings
 ) {
-  const [state, dispatch] = useReducer(gameReducer, undefined, (): GameState =>
-    createInitialState(setups, seed, settings)
+  const [state, dispatch] = useReducer(
+    gameReducer,
+    undefined,
+    (): GameState => createInitialState(setups, seed, settings)
   )
 
   const send = useCallback((action: GameAction) => dispatch(action), [])

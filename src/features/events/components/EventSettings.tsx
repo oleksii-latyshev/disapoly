@@ -4,15 +4,14 @@
  * so a table can drop the events it doesn't like.
  */
 
-import { Button } from "@/shared/components/ui/button"
+import { EVENT_EMOJI } from "@/core/board"
 import {
   ALL_EVENT_KINDS,
   type BoardEventKind,
   type EventFrequency,
 } from "@/core/game-core"
 import { useT } from "@/core/i18n"
-
-import { EVENT_EMOJI } from "@/core/board"
+import { Button } from "@/shared/components/ui/button"
 
 const FREQUENCIES: EventFrequency[] = ["rare", "normal", "frequent"]
 
@@ -50,13 +49,13 @@ export function EventSettings({
       >
         {t("lobby.events")}: {events ? t("common.on") : t("common.off")}
       </Button>
-      <span className="text-xs text-muted-foreground">
+      <span className="text-muted-foreground text-xs">
         {t("lobby.events.desc")}
       </span>
 
       {events && (
         <>
-          <span className="mt-1 text-xs text-muted-foreground">
+          <span className="mt-1 text-muted-foreground text-xs">
             {t("lobby.eventFreq")}
           </span>
           <div className="flex gap-2">
@@ -73,7 +72,7 @@ export function EventSettings({
             ))}
           </div>
 
-          <span className="mt-1 text-xs text-muted-foreground">
+          <span className="mt-1 text-muted-foreground text-xs">
             {t("lobby.eventKinds")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -93,7 +92,7 @@ export function EventSettings({
             })}
           </div>
           {kinds.length === 0 && (
-            <span className="text-xs text-destructive">
+            <span className="text-destructive text-xs">
               {t("events.noneSelected")}
             </span>
           )}

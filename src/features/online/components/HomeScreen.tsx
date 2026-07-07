@@ -1,6 +1,6 @@
-import { useState } from "react"
 import { Gamepad2, Users } from "lucide-react"
-
+import { useState } from "react"
+import { useT } from "@/core/i18n"
 import { Button } from "@/shared/components/ui/button"
 import {
   Card,
@@ -11,7 +11,6 @@ import {
 } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Separator } from "@/shared/components/ui/separator"
-import { useT } from "@/core/i18n"
 
 export function HomeScreen({
   onCreateRoom,

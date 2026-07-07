@@ -28,6 +28,7 @@ import {
   Guitar,
   Lamp,
   Lock,
+  type LucideIcon,
   Mountain,
   RadioTower,
   Sailboat,
@@ -48,7 +49,6 @@ import {
   Waves,
   Wheat,
   Zap,
-  type LucideIcon,
 } from "lucide-react"
 
 import { GROUP_COLOR } from "@/core/board"

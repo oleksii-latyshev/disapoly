@@ -1,12 +1,12 @@
 /** Visual metadata for rendering the board: grid placement and group colors. */
 
 import {
+  type BoardEventKind,
   boardOf,
   boardSizeOf,
-  jailTileId,
-  type BoardEventKind,
   type ColorGroup,
   type GameState,
+  jailTileId,
   type Player,
 } from "@/core/game-core"
 

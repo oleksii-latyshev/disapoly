@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
 import {
   Activity,
   ArrowRightLeft,
@@ -12,6 +10,7 @@ import {
   Home,
   Landmark,
   LockOpen,
+  type LucideIcon,
   Rabbit,
   Search,
   Siren,
@@ -19,15 +18,13 @@ import {
   Snowflake,
   Sparkles,
   TrendingUp,
-  type LucideIcon,
 } from "lucide-react"
-
-import type { GameState, LogEntry } from "@/core/game-core"
-import { useT } from "@/core/i18n"
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
 import { positionsOf, travelPlan } from "@/core/board"
-import { renderLog } from "@/core/i18n"
+import type { GameState, LogEntry } from "@/core/game-core"
+import { renderLog, useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 type Tone = "good" | "bad" | "neutral"
 
@@ -151,14 +148,12 @@ export function EventAnnouncer({ state }: { state: GameState }) {
               }
               transition={{ duration: 0.25, ease: "easeOut" }}
               className={
-                "flex max-w-full items-center gap-[max(6px,0.9cqw)] rounded-full border px-[max(10px,1.5cqw)] py-[max(4px,0.7cqw)] text-[length:max(10px,1.5cqw)] font-semibold shadow-lg backdrop-blur-sm " +
+                "flex max-w-full items-center gap-[max(6px,0.9cqw)] rounded-full border px-[max(10px,1.5cqw)] py-[max(4px,0.7cqw)] font-semibold text-[length:max(10px,1.5cqw)] shadow-lg backdrop-blur-sm" +
                 TONE_CLASS[c.tone]
               }
             >
               <Icon
-                className={
-                  "size-[max(13px,1.9cqw)] shrink-0 " + ICON_CLASS[c.tone]
-                }
+                className={`size-[max(13px,1.9cqw)] shrink-0${ICON_CLASS[c.tone]}`}
               />
               <span className="min-w-0 truncate">{c.text}</span>
             </motion.div>

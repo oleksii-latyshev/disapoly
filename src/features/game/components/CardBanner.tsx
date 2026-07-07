@@ -17,7 +17,7 @@ export function CardBanner({ card }: { card: DrawnCard }) {
     >
       <Icon className="mt-0.5 size-5 shrink-0" style={{ color: accent }} />
       <div className="min-w-0">
-        <div className="text-xs font-semibold" style={{ color: accent }}>
+        <div className="font-semibold text-xs" style={{ color: accent }}>
           {isChance ? t("card.chance") : t("card.chest")}
         </div>
         <p className="text-sm">{t(`card.${card.cardId}`)}</p>

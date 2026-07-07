@@ -1,6 +1,18 @@
-import { useState } from "react"
 import { Minus, Play, Plus } from "lucide-react"
-
+import { useState } from "react"
+import {
+  ALL_EVENT_KINDS,
+  type BoardEventKind,
+  type BoardId,
+  type EventFrequency,
+  type GameSettings,
+  type PayMode,
+  PLAYER_COLORS,
+  PLAYER_EMOJIS,
+  type PlayerSetup,
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { EventSettings } from "@/features/events"
 import { Button } from "@/shared/components/ui/button"
 import {
   Card,
@@ -11,20 +23,6 @@ import {
 } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import {
-  ALL_EVENT_KINDS,
-  PLAYER_COLORS,
-  PLAYER_EMOJIS,
-  type BoardEventKind,
-  type BoardId,
-  type EventFrequency,
-  type GameSettings,
-  type PayMode,
-  type PlayerSetup,
-} from "@/core/game-core"
-import { useT } from "@/core/i18n"
-
-import { EventSettings } from "@/features/events"
 
 const MIN_PLAYERS = 2
 const MAX_PLAYERS = PLAYER_COLORS.length // 8
@@ -135,7 +133,7 @@ export function SetupScreen({
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               {t("setup.players", { n: names.length })}
             </span>
             <div className="flex gap-1">
@@ -161,7 +159,7 @@ export function SetupScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t("lobby.board")}
             </span>
             <div className="flex gap-2">
@@ -177,13 +175,13 @@ export function SetupScreen({
                 </Button>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t(`board.${board}.desc`)}
             </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t("lobby.payMode")}
             </span>
             <div className="flex gap-2">
@@ -199,7 +197,7 @@ export function SetupScreen({
                 </Button>
               ))}
             </div>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t(`payMode.${payMode}.desc`)}
             </span>
           </div>
@@ -213,7 +211,7 @@ export function SetupScreen({
               {t("lobby.orderRoll")}:{" "}
               {orderRoll ? t("common.on") : t("common.off")}
             </Button>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t("lobby.orderRoll.desc")}
             </span>
           </div>

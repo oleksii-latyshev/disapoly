@@ -1,17 +1,16 @@
 import type { GameSettings, PlayerSetup } from "@/core/game-core"
+import { AuctionPanel } from "@/features/auction"
+import { GameBoard } from "@/features/board"
+import { TradePanel } from "@/features/trade"
 import { useGame } from "../hooks/useGame"
 import { useGameSounds } from "../hooks/useGameSounds"
-
-import { AuctionPanel } from "@/features/auction"
 import { CardBanner } from "./CardBanner"
-import { GameBoard } from "@/features/board"
 import { GameEvents } from "./GameEvents"
 import { GameLog } from "./GameLog"
 import { GameResults } from "./GameResults"
 import { ManagePanel } from "./ManagePanel"
 import { PlayersList } from "./PlayersList"
 import { StatsButton } from "./StatsButton"
-import { TradePanel } from "@/features/trade"
 import { TurnControls } from "./TurnControls"
 
 export function GameScreen({

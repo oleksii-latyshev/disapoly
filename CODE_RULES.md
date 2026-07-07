@@ -112,9 +112,11 @@ comments that restate the code, narrate history, or reference tickets/stages.
 
 ```
 bun run typecheck   # tsc over app, node, and worker configs
-bun run lint        # eslint
+bun run check       # biome — lint + format (check:fix to apply)
 bun run test        # vitest (pure core + helpers)
 bun run build       # tsc -b && vite build
 ```
 
-All four must pass before a push; CI runs them and blocks deploys otherwise.
+All four must pass before a push; a Lefthook pre-commit hook runs Biome +
+typecheck on staged files (pre-push runs the tests), and CI runs them and
+blocks deploys otherwise.

@@ -1,33 +1,29 @@
-import { useEffect, useState } from "react"
-import { motion } from "motion/react"
 import { Hotel, House } from "lucide-react"
-
+import { motion } from "motion/react"
+import { useEffect, useState } from "react"
+import { EVENT_EMOJI, gridSide, tileCell, tileCenter } from "@/core/board"
 import {
   activeEvent,
+  type BoardEvent,
   boardOf,
   boardSizeOf,
+  countOwnedOfType,
   currentPlayer,
+  type GameState,
   hasMonopoly,
   rentFor,
   rentMultiplier,
-  UTILITY_MULTIPLIER,
-  countOwnedOfType,
-  type BoardEvent,
-  type GameState,
   type TileDefinition,
+  UTILITY_MULTIPLIER,
 } from "@/core/game-core"
-import { cn } from "@/shared/lib/utils"
 import { useT } from "@/core/i18n"
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
 import type { ReactionEvent } from "@/core/network"
-
-import { useBoardTheme } from "./board-theme"
-import { EVENT_EMOJI, gridSide, tileCell, tileCenter } from "@/core/board"
+import { EventAnnouncer, EventFxLayer, useEventFx } from "@/features/events"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { cn } from "@/shared/lib/utils"
 import { BoardTilt } from "./BoardTilt"
+import { useBoardTheme } from "./board-theme"
 import { Dice } from "./Dice"
-import { EventAnnouncer } from "@/features/events"
-import { EventFxLayer, useEventFx } from "@/features/events"
 import { ReactionLayer } from "./ReactionLayer"
 import { TileDetails } from "./TileDetails"
 import { TokenLayer } from "./TokenLayer"
@@ -269,7 +265,7 @@ function Tile({
                 : { type: "spring", stiffness: 480, damping: 15, mass: 0.7 }
             }
             className={cn(
-              "flex items-center gap-0.5 rounded-full px-1 py-px text-[length:max(7px,0.95cqw)] font-bold text-white shadow",
+              "flex items-center gap-0.5 rounded-full px-1 py-px font-bold text-[length:max(7px,0.95cqw)] text-white shadow",
               tile.houses === 5 ? "bg-red-600" : "bg-emerald-600"
             )}
           >
@@ -316,13 +312,13 @@ function Tile({
         )}
         {/* Names hide on small boards — the emblem identifies the tile and
             tapping it opens the full details. */}
-        <span className={corner ? undefined : "hidden @[560px]:block"}>
+        <span className={corner ? undefined : "@[560px]:block hidden"}>
           <span
             className={cn(
               "line-clamp-2 leading-[1.05]",
               corner
-                ? "text-[length:max(7px,1cqw)] font-bold tracking-wide"
-                : "text-[length:max(7px,1cqw)] font-semibold"
+                ? "font-bold text-[length:max(7px,1cqw)] tracking-wide"
+                : "font-semibold text-[length:max(7px,1cqw)]"
             )}
           >
             {corner && visual?.label ? visual.label : shortName(def.name)}
@@ -334,7 +330,7 @@ function Tile({
           <span
             key={tile.ownerId ?? "bank"}
             className={cn(
-              "max-w-full shrink-0 truncate rounded-full px-[max(4px,0.5cqw)] py-px text-[length:max(7px,1cqw)] font-bold tabular-nums",
+              "max-w-full shrink-0 truncate rounded-full px-[max(4px,0.5cqw)] py-px font-bold text-[length:max(7px,1cqw)] tabular-nums",
               owner && "owner-strip"
             )}
             style={
@@ -357,7 +353,7 @@ function Tile({
       </div>
       {tile.mortgaged && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-grayscale">
-          <span className="rounded bg-background/70 px-1 text-[length:max(7px,0.9cqw)] font-bold tracking-wide text-muted-foreground">
+          <span className="rounded bg-background/70 px-1 font-bold text-[length:max(7px,0.9cqw)] text-muted-foreground tracking-wide">
             MTG
           </span>
         </div>
@@ -466,9 +462,9 @@ export function GameBoard({
               className="flex flex-col items-center justify-center gap-4"
               style={{ gridColumn: `2 / ${n}`, gridRow: `2 / ${n}` }}
             >
-              <div className="flex flex-col items-center gap-2 select-none">
+              <div className="flex select-none flex-col items-center gap-2">
                 <span
-                  className="board-logo text-[length:max(18px,3.6cqw)] font-black tracking-[0.32em]"
+                  className="board-logo font-black text-[length:max(18px,3.6cqw)] tracking-[0.32em]"
                   style={{ opacity: 0.6 }}
                 >
                   DISAPOLY
@@ -482,7 +478,7 @@ export function GameBoard({
 
               {active && (
                 <div
-                  className="flex items-center gap-2 rounded-full border px-3 py-1 text-[length:max(11px,1.3cqw)] font-semibold shadow-sm"
+                  className="flex items-center gap-2 rounded-full border px-3 py-1 font-semibold text-[length:max(11px,1.3cqw)] shadow-sm"
                   style={{
                     backgroundColor: "var(--tile-bg)",
                     color: "var(--tile-fg)",
@@ -501,7 +497,7 @@ export function GameBoard({
                   what's in play (and what the marker on the board means). */}
               {event && (
                 <div
-                  className="flex items-center gap-1.5 rounded-full border border-amber-500/50 px-3 py-1 text-[length:max(10px,1.2cqw)] font-semibold shadow-sm"
+                  className="flex items-center gap-1.5 rounded-full border border-amber-500/50 px-3 py-1 font-semibold text-[length:max(10px,1.2cqw)] shadow-sm"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, #f5a623 16%, var(--tile-bg))",

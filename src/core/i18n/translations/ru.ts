@@ -5,21 +5,21 @@ export const ru: Record<string, string> = {
   "home.roomCode": "Код комнаты",
   "home.join": "Войти",
   "home.hotseat": "Игра на одном устройстве",
-  
+
   "nickname.title": "Вход в игру",
   "nickname.desc": "Выбери ник, чтобы войти в комнату.",
   "nickname.label": "Ник",
   "nickname.placeholder": "Твоё имя",
   "nickname.enter": "Войти",
   "common.back": "Назад",
-  
+
   "setup.desc": "Игра на одном устройстве. Добавь 2–{max} игрока и начни.",
   "setup.players": "Игроков: {n}",
   "setup.start": "Начать игру",
   "setup.playerN": "Игрок {n}",
   "setup.addPlayer": "Добавить игрока",
   "setup.removePlayer": "Убрать игрока",
-  
+
   "lobby.title": "Лобби",
   "lobby.share": "Поделись ссылкой, чтобы позвать друзей.",
   "lobby.connecting": "Подключение…",
@@ -59,7 +59,7 @@ export const ru: Record<string, string> = {
   "events.noneSelected": "События не выбраны — ничего не появится.",
   "common.save": "Сохранить",
   "common.cancel": "Отмена",
-  
+
   "turn.turnOf": "Ход {name}",
   "turn.waitingFor": "Ждём ход {name}…",
   "turn.roll": "Бросить кубики",
@@ -73,7 +73,7 @@ export const ru: Record<string, string> = {
   "buy.railroads": "{owned}/{total} ж/д → аренда",
   "buy.utilities": "{owned}/{total} компаний → аренда",
   "buy.timesDice": "{mult}× по кубикам",
-  
+
   "auction.title": "Аукцион",
   "auction.tileUp": "«{tile}» на аукционе",
   "auction.highBid": "Ставка ${amount}",
@@ -90,12 +90,12 @@ export const ru: Record<string, string> = {
   "turn.gameOver": "Игра окончена.",
   "turn.newGame": "Новая игра",
   "turn.waitHostNew": "Ждём, пока хост начнёт новую игру…",
-  
+
   "jail.title": "В тюрьме — попытка {n}/3",
   "jail.pay": "Заплатить ${fine}",
   "jail.useCard": "Карта",
   "jail.roll": "Бросок на дубль",
-  
+
   "pay.owedTo": "Ты должен ${amount} игроку {name} за «{tile}».",
   "pay.owedBank": "Ты должен банку ${amount}.",
   "pay.hint":
@@ -104,18 +104,18 @@ export const ru: Record<string, string> = {
     "Не хватает ${need} — продай постройки, заложи участки или меняйся.",
   "pay.pay": "Заплатить ${amount}",
   "pay.waitingFor": "{name} должен ${amount} и решает, как заплатить…",
-  
+
   "order.title": "Бросок за очерёдность: самый большой ходит первым.",
   "order.roll": "Бросить за очерёдность",
-  
+
   "bankrupt.declare": "Объявить банкротство",
   "bankrupt.confirm":
     "Сдаться? Твоё имущество вернётся банку и снова будет доступно для покупки.",
   "bankrupt.yes": "Сдаться",
-  
+
   "card.chance": "Шанс",
   "card.chest": "Общественная казна",
-  
+
   "details.owner": "Владелец",
   "details.rentNow": "Аренда сейчас",
   "details.noRent": "нет (заложено)",
@@ -129,7 +129,7 @@ export const ru: Record<string, string> = {
   "details.owned": "Во владении: {n}",
   "details.timesDice": "{x}× по кубикам",
   "details.tax": "Налог",
-  
+
   "manage.title": "Твоё имущество",
   "manage.supplyTitle": "Осталось домов / отелей в банке",
   "manage.empty": "У тебя пока нет участков.",
@@ -139,7 +139,7 @@ export const ru: Record<string, string> = {
   "manage.unmortgage": "Выкупить",
   "manage.liftMortgage": "Выкупить залог (${cost})",
   "manage.mortgage": "Заложить",
-  
+
   "net.connected": "На связи",
   "net.reconnecting": "Переподключение…",
   "net.connectingRoom": "Подключение к комнате…",
@@ -151,7 +151,7 @@ export const ru: Record<string, string> = {
   "net.kicked": "Хост удалил тебя из комнаты.",
   "notify.yourTurn": "Твой ход!",
   "notify.tradeOffer": "Предложение сделки!",
-  
+
   "settings.title": "Настройки",
   "settings.boardTheme": "Тема доски",
   "settings.language": "Язык",
@@ -161,7 +161,7 @@ export const ru: Record<string, string> = {
   "theme.mono.desc": "Чёрно-белая, подстраивается под тему.",
   "theme.neon.name": "Neon",
   "theme.neon.desc": "Тёмная доска со свечением.",
-  
+
   "trade.open": "Предложить сделку",
   "trade.title": "Предложить сделку",
   "trade.partner": "Партнёр",
@@ -181,16 +181,16 @@ export const ru: Record<string, string> = {
   "trade.counterTitle": "Встречное предложение",
   "trade.sendCounter": "Отправить встречное",
   "trade.alreadyPending": "У тебя уже есть предложение для {name}.",
-  
+
   "settings.sound": "Звук",
   "common.on": "Вкл",
   "common.off": "Выкл",
-  
+
   "stats.open": "Статистика",
   "stats.title": "Капитал по ходам",
   "results.standings": "Итоговый рейтинг",
   "results.bankrupt": "банкрот",
-  
+
   "howto.title": "Как играть",
   "howto.goal.title": "Цель",
   "howto.goal.body":
@@ -219,7 +219,7 @@ export const ru: Record<string, string> = {
   "howto.win.title": "Банкротство и победа",
   "howto.win.body":
     "Не можешь заплатить? Автоматически продаёшь постройки и закладываешь имущество; если всё равно не хватает — банкрот. Побеждает последний оставшийся.",
-  
+
   "log.started": "Игра началась, игроков: {n}.",
   "log.rolled": "{name} выбрасывает {a} + {b} = {sum}.",
   "log.rolledDoubles": "{name} выбрасывает {a} + {b} = {sum} (дубль).",
@@ -263,7 +263,7 @@ export const ru: Record<string, string> = {
     "{name} слишком долго отсутствует и выбывает — имущество возвращается банку.",
   "log.wins": "{name} выигрывает!",
   "log.gameOver": "Игра окончена.",
-  
+
   "log.eventBounty": "🎁 На «{tile}» появился клад с ${amount}!",
   "log.eventRabbit": "🐇 На поле выскочил счастливый кролик с ${amount}!",
   "log.eventGoldenDice":
@@ -274,7 +274,7 @@ export const ru: Record<string, string> = {
   "log.eventRabbitCaught": "{name} ловит кролика и получает ${amount}!",
   "log.eventEnded": "Событие «{event}» закончилось.",
   "log.rentFrozen": "{name} не платит аренду за «{tile}» — заморозка!",
-  
+
   "event.bounty": "Клад",
   "event.rabbit": "Счастливый кролик",
   "event.goldenDice": "Золотые кубики",
@@ -284,7 +284,7 @@ export const ru: Record<string, string> = {
   "event.banner.goldenDice": "Золотые кубики — «Старт» платит вдвое",
   "event.banner.rentFreeze": "Заморозка — аренды нет этот круг",
   "event.banner.rentSurge": "День бума — аренда ×2",
-  
+
   "log.eventRentSurge": "📈 День бума! Вся аренда удвоена этот круг.",
   "log.eventEarthquake": "🫨 Землетрясение! На «{tile}» рушится постройка.",
   "log.eventWindfall": "💸 Денежный дождь! Каждый получает ${amount}.",
@@ -296,7 +296,7 @@ export const ru: Record<string, string> = {
   "event.windfall": "Денежный дождь",
   "event.jailbreak": "Побег из тюрьмы",
   "event.taxAudit": "Налоговая проверка",
-  
+
   "card.ch_go": "На «Старт». Получи $200.",
   "card.ch_illinois": "Переместись на Illinois Avenue.",
   "card.ch_charles": "Переместись на St. Charles Place.",

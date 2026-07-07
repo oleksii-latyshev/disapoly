@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-
-import type { GameState } from "@/core/game-core"
 import { positionsOf, travelPlan } from "@/core/board"
+import type { GameState } from "@/core/game-core"
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 /**

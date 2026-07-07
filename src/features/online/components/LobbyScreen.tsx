@@ -1,6 +1,19 @@
-import { useState } from "react"
 import { Check, Copy, LogOut, Pencil, Play, UserX, X } from "lucide-react"
-
+import { useState } from "react"
+import {
+  ALL_EVENT_KINDS,
+  type BoardEventKind,
+  type BoardId,
+  type ClientMessage,
+  type EventFrequency,
+  type PayMode,
+  PLAYER_EMOJIS,
+  type RoomMember,
+  type RoomState,
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { roomUrl, setStoredEmoji } from "@/core/network"
+import { EventSettings } from "@/features/events"
 import { Button } from "@/shared/components/ui/button"
 import {
   Card,
@@ -10,21 +23,7 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
-import {
-  ALL_EVENT_KINDS,
-  PLAYER_EMOJIS,
-  type BoardEventKind,
-  type BoardId,
-  type ClientMessage,
-  type EventFrequency,
-  type PayMode,
-  type RoomMember,
-  type RoomState,
-} from "@/core/game-core"
-import { EventSettings } from "@/features/events"
-import { roomUrl, setStoredEmoji } from "@/core/network"
 import { cn } from "@/shared/lib/utils"
-import { useT } from "@/core/i18n"
 
 const MIN_MEMBERS = 2
 
@@ -121,7 +120,7 @@ export function LobbyScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {t("lobby.players", { n: state.members.length })}
             </span>
             {state.members.map((member) => {
@@ -212,7 +211,7 @@ export function LobbyScreen({
                         </Button>
                       )}
                       {member.isHost && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-muted-foreground text-xs">
                           {t("lobby.host")}
                         </span>
                       )}
@@ -250,7 +249,7 @@ export function LobbyScreen({
 
           {self?.isHost && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t("lobby.board")}
               </span>
               <div className="flex gap-2">
@@ -266,7 +265,7 @@ export function LobbyScreen({
                   </Button>
                 ))}
               </div>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t(`board.${board}.desc`)}
               </span>
             </div>
@@ -274,7 +273,7 @@ export function LobbyScreen({
 
           {self?.isHost && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t("lobby.payMode")}
               </span>
               <div className="flex gap-2">
@@ -290,7 +289,7 @@ export function LobbyScreen({
                   </Button>
                 ))}
               </div>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t(`payMode.${payMode}.desc`)}
               </span>
             </div>
@@ -306,7 +305,7 @@ export function LobbyScreen({
                 {t("lobby.orderRoll")}:{" "}
                 {orderRoll ? t("common.on") : t("common.off")}
               </Button>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t("lobby.orderRoll.desc")}
               </span>
             </div>
@@ -346,7 +345,7 @@ export function LobbyScreen({
                 t("lobby.startNeed2")}
             </Button>
           ) : (
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-muted-foreground text-sm">
               {t("lobby.waitHost")}
             </p>
           )}

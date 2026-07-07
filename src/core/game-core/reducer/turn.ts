@@ -5,9 +5,9 @@ import { rollDice } from "../helpers/rng"
 import { currentPlayer, historyPoint, tileDef } from "../helpers/selectors"
 import type { GameState, Player } from "../types"
 import { openAuction } from "./auction"
+import { moveBy, resolveLanding, sendToJail } from "./movement"
 import { pay } from "./payments"
 import { settle, settleNoExtra } from "./phase"
-import { moveBy, resolveLanding, sendToJail } from "./movement"
 
 function rollFor(d: GameState): { a: number; b: number } {
   const result = rollDice(d.rngSeed)

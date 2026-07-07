@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
 import { CircleHelp, Gift } from "lucide-react"
-
-import { CHANCE, COMMUNITY_CHEST, type DrawnCard, type GameState } from "@/core/game-core"
+import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
+import { positionsOf, travelPlan } from "@/core/board"
+import {
+  CHANCE,
+  COMMUNITY_CHEST,
+  type DrawnCard,
+  type GameState,
+} from "@/core/game-core"
 import { useT } from "@/core/i18n"
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
-import { positionsOf, travelPlan } from "@/core/board"
 
 type Deck = DrawnCard["deck"]
 
@@ -182,7 +185,7 @@ export function CardReveal({ state }: { state: GameState }) {
             </motion.div>
 
             <div
-              className="text-xs font-bold tracking-wide uppercase"
+              className="font-bold text-xs uppercase tracking-wide"
               style={{ color: accent }}
             >
               {isChance ? t("card.chance") : t("card.chest")}
@@ -194,7 +197,7 @@ export function CardReveal({ state }: { state: GameState }) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: reveal.settled ? 0.25 : 0.08 }}
               className={
-                "mt-1.5 min-h-[2.75rem] text-sm font-medium " +
+                "mt-1.5 min-h-[2.75rem] font-medium text-sm" +
                 (reveal.settled ? "" : "opacity-70 blur-[0.6px]")
               }
             >

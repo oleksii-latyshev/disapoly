@@ -1,9 +1,6 @@
 // Ephemeral messages relayed to everyone without ever touching room state.
 
-import {
-  REACTIONS,
-  type ServerMessage,
-} from "../../src/core/game-core/room"
+import { REACTIONS, type ServerMessage } from "../../src/core/game-core/room"
 
 export function reactionRelay(
   playerId: string,

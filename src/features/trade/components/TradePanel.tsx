@@ -1,8 +1,20 @@
-import { useState } from "react"
-import { motion } from "motion/react"
 import { ArrowLeftRight, Check, Reply, X } from "lucide-react"
-
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { motion } from "motion/react"
+import { useState } from "react"
+import { GROUP_COLOR } from "@/core/board"
+import {
+  boardOf,
+  currentPlayer,
+  type GameAction,
+  type GameState,
+  isTradeValid,
+  type Player,
+  type TradeBundle,
+  type TradeOffer,
+  type TradeProposal,
+  tradableTiles,
+} from "@/core/game-core"
+import { type TFunction, useT } from "@/core/i18n"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -11,22 +23,8 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog"
 import { Input } from "@/shared/components/ui/input"
-import {
-  boardOf,
-  currentPlayer,
-  isTradeValid,
-  tradableTiles,
-  type GameAction,
-  type GameState,
-  type Player,
-  type TradeBundle,
-  type TradeOffer,
-  type TradeProposal,
-} from "@/core/game-core"
-import { useT, type TFunction } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 import { cn } from "@/shared/lib/utils"
-
-import { GROUP_COLOR } from "@/core/board"
 
 const EMPTY: TradeBundle = { tiles: [], money: 0, jailCards: 0 }
 
@@ -78,12 +76,12 @@ function BundleEditor({
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <span className="truncate text-xs font-medium text-muted-foreground">
+      <span className="truncate font-medium text-muted-foreground text-xs">
         {title} · ${player.balance}
       </span>
       <div className="flex max-h-40 flex-col gap-0.5 overflow-y-auto rounded border p-1">
         {tiles.length === 0 && (
-          <span className="px-1 text-xs text-muted-foreground">—</span>
+          <span className="px-1 text-muted-foreground text-xs">—</span>
         )}
         {tiles.map((id) => {
           const def = boardOf(state)[id]
@@ -234,7 +232,7 @@ function TradeBuilder({
         </DialogHeader>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             {t("trade.partner")}
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -278,7 +276,7 @@ function TradeBuilder({
         </div>
 
         {duplicate && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {t("trade.alreadyPending", { name: partner?.nickname ?? "?" })}
           </p>
         )}
@@ -343,7 +341,7 @@ function PendingTrade({
     >
       <div
         className={cn(
-          "flex items-center gap-1.5 text-xs font-medium",
+          "flex items-center gap-1.5 font-medium text-xs",
           awaitingMe ? "text-primary" : "text-muted-foreground"
         )}
       >
@@ -434,7 +432,7 @@ function PendingTrade({
       )}
 
       {!canRespond && canCancel && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {t("trade.waiting", { name: to?.nickname ?? "?" })}
         </p>
       )}

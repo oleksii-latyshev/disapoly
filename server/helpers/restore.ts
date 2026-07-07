@@ -1,5 +1,5 @@
-import { migrateGameState } from "../../src/core/game-core/state"
 import type { RoomState } from "../../src/core/game-core/room"
+import { migrateGameState } from "../../src/core/game-core/state"
 
 /**
  * Revive a room persisted before a restart/deploy/eviction. Every socket

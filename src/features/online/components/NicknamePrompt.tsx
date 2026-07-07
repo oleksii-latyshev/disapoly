@@ -1,5 +1,5 @@
 import { useState } from "react"
-
+import { useT } from "@/core/i18n"
 import { Button } from "@/shared/components/ui/button"
 import {
   Card,
@@ -10,7 +10,6 @@ import {
 } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import { useT } from "@/core/i18n"
 
 export function NicknamePrompt({
   initial,

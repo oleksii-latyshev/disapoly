@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react"
 import { animate, motion } from "motion/react"
+import { useEffect, useRef } from "react"
 
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
@@ -92,7 +92,7 @@ function Die({
       },
       options
     )
-  }, [spins, delay, reduce])
+  }, [delay, reduce])
 
   return (
     <div className="relative">

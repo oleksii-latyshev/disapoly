@@ -4,8 +4,8 @@ import {
   autoSkip,
   isAbandonable,
   nextAutoBankruptAt,
-  shouldAutoSkip,
   type RoomState,
+  shouldAutoSkip,
 } from "../../src/core/game-core/room"
 import { ABANDON_MS, AUTO_SKIP_MS } from "../constants"
 

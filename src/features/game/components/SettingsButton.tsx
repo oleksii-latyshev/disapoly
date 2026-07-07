@@ -1,5 +1,11 @@
 import { Check, Settings, Volume2, VolumeX } from "lucide-react"
-
+import { type Lang, useI18n } from "@/core/i18n"
+import { useSound } from "@/core/sound"
+import {
+  BOARD_THEMES,
+  type BoardThemeId,
+  useBoardTheme,
+} from "@/features/board"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -9,10 +15,6 @@ import {
   DialogTrigger,
 } from "@/shared/components/ui/dialog"
 import { cn } from "@/shared/lib/utils"
-import { useI18n, type Lang } from "@/core/i18n"
-import { useSound } from "@/core/sound"
-
-import { BOARD_THEMES, useBoardTheme, type BoardThemeId } from "@/features/board"
 
 const THEME_ORDER: BoardThemeId[] = ["classic", "mono", "neon"]
 const LANGS: { id: Lang; label: string }[] = [
@@ -69,7 +71,7 @@ export function SettingsButton() {
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             {t("settings.language")}
           </span>
           <div className="flex gap-2">
@@ -88,7 +90,7 @@ export function SettingsButton() {
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             {t("settings.sound")}
           </span>
           <Button
@@ -106,7 +108,7 @@ export function SettingsButton() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             {t("settings.boardTheme")}
           </span>
           {THEME_ORDER.map((id) => {
@@ -125,10 +127,10 @@ export function SettingsButton() {
               >
                 <ThemeSwatch id={id} />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">
+                  <span className="block font-medium text-sm">
                     {t(`theme.${id}.name`)}
                   </span>
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block text-muted-foreground text-xs">
                     {t(`theme.${id}.desc`)}
                   </span>
                 </span>

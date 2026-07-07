@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
+import { useEffect, useRef, useState } from "react"
 
 import type { GameState } from "@/core/game-core"
 import { useT } from "@/core/i18n"
@@ -76,7 +76,7 @@ export function TurnBanner({ state }: { state: GameState }) {
               transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
             />
             <motion.div
-              className="relative flex items-center gap-2.5 text-xl font-black tracking-wide text-foreground drop-shadow-sm sm:text-2xl"
+              className="relative flex items-center gap-2.5 font-black text-foreground text-xl tracking-wide drop-shadow-sm sm:text-2xl"
               initial={reduce ? false : { x: -72, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={reduce ? { opacity: 0 } : { x: 72, opacity: 0 }}

@@ -1,4 +1,3 @@
-import { useCallback, type CSSProperties, type ReactNode } from "react"
 import {
   motion,
   useMotionTemplate,
@@ -6,9 +5,9 @@ import {
   useSpring,
   useTransform,
 } from "motion/react"
-
-import { cn } from "@/shared/lib/utils"
+import { type CSSProperties, type ReactNode, useCallback } from "react"
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { cn } from "@/shared/lib/utils"
 
 /** Max tilt in degrees — enough for depth, small enough to stay readable. */
 const MAX_TILT = 3.2

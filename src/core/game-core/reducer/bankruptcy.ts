@@ -5,8 +5,8 @@ import type { GameState } from "../types"
 import { dropFromAuction } from "./auction"
 import { clone } from "./clone"
 import { checkGameOver } from "./payments"
-import { collectPendingDebt, endTurn } from "./turn"
 import { dropTradesWith } from "./trades"
+import { collectPendingDebt, endTurn } from "./turn"
 
 /**
  * Remove a player outside the normal insolvency path (voluntary surrender or a

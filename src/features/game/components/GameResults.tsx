@@ -1,9 +1,8 @@
-import { lazy, Suspense } from "react"
 import { Trophy } from "lucide-react"
-
-import { Button } from "@/shared/components/ui/button"
-import { netWorth, type GameState } from "@/core/game-core"
+import { lazy, Suspense } from "react"
+import { type GameState, netWorth } from "@/core/game-core"
 import { useT } from "@/core/i18n"
+import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
 
 const NetWorthChart = lazy(() => import("./NetWorthChart"))
@@ -31,7 +30,7 @@ export function GameResults({
       <div className="flex max-h-[90svh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl border bg-card p-5 shadow-2xl">
         <div className="flex flex-col items-center gap-1 text-center">
           <Trophy className="size-8 text-amber-400" />
-          <h2 className="text-lg font-bold">
+          <h2 className="font-bold text-lg">
             {winner
               ? t("turn.wins", { name: winner.nickname })
               : t("turn.gameOver")}
@@ -39,7 +38,7 @@ export function GameResults({
         </div>
 
         <div>
-          <div className="mb-1 text-xs font-medium text-muted-foreground">
+          <div className="mb-1 font-medium text-muted-foreground text-xs">
             {t("results.standings")}
           </div>
           <div className="flex flex-col gap-1">
@@ -61,7 +60,7 @@ export function GameResults({
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {p.nickname}
                   {p.isBankrupt && (
-                    <span className="ml-1 text-xs text-destructive">
+                    <span className="ml-1 text-destructive text-xs">
                       ({t("results.bankrupt")})
                     </span>
                   )}
@@ -81,7 +80,7 @@ export function GameResults({
         {canReset ? (
           <Button onClick={onNewGame}>{t("turn.newGame")}</Button>
         ) : (
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-muted-foreground text-xs">
             {t("turn.waitHostNew")}
           </p>
         )}

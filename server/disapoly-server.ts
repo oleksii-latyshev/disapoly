@@ -3,15 +3,15 @@
 // `applyClientMessage` reducer, broadcasts the full state, and mirrors it
 // into the DO's SQLite storage so a match survives restarts and deploys.
 
-import { Server, type Connection, type WSMessage } from "partyserver"
+import { type Connection, Server, type WSMessage } from "partyserver"
 
 import {
   applyClientMessage,
-  createRoom,
-  setConnected,
   type ClientMessage,
+  createRoom,
   type RoomState,
   type ServerMessage,
+  setConnected,
 } from "../src/core/game-core/room"
 import { STORAGE_KEY } from "./constants"
 import {
@@ -36,9 +36,7 @@ export class DisapolyServer extends Server<Env> {
 
   async onStart() {
     const saved = await this.ctx.storage.get<RoomState>(STORAGE_KEY)
-    this.state = saved
-      ? restoreRoom(saved, Date.now())
-      : createRoom(this.name)
+    this.state = saved ? restoreRoom(saved, Date.now()) : createRoom(this.name)
   }
 
   /** Mirror the current state into DO storage (fire-and-forget; durable at gate). */

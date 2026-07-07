@@ -587,7 +587,11 @@ export function groupTileIdsOf(
 
 /** Named card destinations, resolvable on any board. */
 export type MoveTarget =
-  "go" | "illinois" | "stCharles" | "reading" | "boardwalk"
+  | "go"
+  | "illinois"
+  | "stCharles"
+  | "reading"
+  | "boardwalk"
 
 const MOVE_TARGET_NAME: Record<Exclude<MoveTarget, "go">, string> = {
   illinois: "Illinois Avenue",

@@ -32,7 +32,11 @@ describe("renderLog", () => {
 
   it("resolves translatable { t } params before formatting", () => {
     const text = renderLog(
-      { id: 1, key: "log.drew", params: { name: "Ann", card: { t: "card.ch_go" } } },
+      {
+        id: 1,
+        key: "log.drew",
+        params: { name: "Ann", card: { t: "card.ch_go" } },
+      },
       t
     )
     expect(text).toBe("Ann drew: Advance to GO. Collect $200.")

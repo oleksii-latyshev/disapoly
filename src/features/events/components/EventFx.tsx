@@ -9,14 +9,12 @@
  * is skipped under reduced motion (the callouts still announce the event).
  */
 
-import { useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
-
-import { jailTileId, type GameState } from "@/core/game-core"
+import { useEffect, useRef, useState } from "react"
+import { tileCenter } from "@/core/board"
+import { type GameState, jailTileId } from "@/core/game-core"
 import { useT } from "@/core/i18n"
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
-import { tileCenter } from "@/core/board"
 
 type FxKind = "earthquake" | "windfall" | "jailbreak" | "taxAudit" | "rentSurge"
 
@@ -119,7 +117,7 @@ function AuditStamp({ label }: { label: string }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
       <motion.div
-        className="rounded-lg border-[3px] border-rose-500 px-[max(10px,1.6cqw)] py-[max(4px,0.7cqw)] text-[length:max(13px,2.2cqw)] font-black tracking-widest text-rose-500 uppercase"
+        className="rounded-lg border-[3px] border-rose-500 px-[max(10px,1.6cqw)] py-[max(4px,0.7cqw)] font-black text-[length:max(13px,2.2cqw)] text-rose-500 uppercase tracking-widest"
         style={{ backgroundColor: "rgba(244, 63, 94, 0.08)" }}
         initial={{ opacity: 0, scale: 2.4, rotate: -10 }}
         animate={{ opacity: [0, 1, 1, 0], scale: [2.4, 1, 1, 1] }}

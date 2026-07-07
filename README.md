@@ -83,7 +83,7 @@ screen and needs no server.
 | ---------------------------- | ------------------------------------ |
 | `bun run dev` / `dev:server`  | Client / realtime server, locally    |
 | `bun run test`               | Vitest unit tests for the game core  |
-| `bun run typecheck` / `lint` | TypeScript / ESLint                  |
+| `bun run typecheck` / `check` | TypeScript / Biome (lint + format)  |
 | `bun run deploy:all`         | Deploy worker + build + deploy Pages |
 
 ## 🏗️ How it's built

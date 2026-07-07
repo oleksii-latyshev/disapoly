@@ -1,23 +1,22 @@
+import { GROUP_COLOR } from "@/core/board"
 import {
   boardOf,
   countOwnedOfType,
+  type GameState,
   hasMonopoly,
   mortgageValue,
   RAILROAD_RENT,
   rentFor,
   rentMultiplier,
   UTILITY_MULTIPLIER,
-  type GameState,
 } from "@/core/game-core"
+import { useT } from "@/core/i18n"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog"
-import { useT } from "@/core/i18n"
-
-import { GROUP_COLOR } from "@/core/board"
 
 function Row({
   label,
@@ -33,7 +32,7 @@ function Row({
     <div
       className={
         "flex items-center justify-between gap-4 border-b py-1 text-sm last:border-0" +
-        (active ? " -mx-2 rounded bg-primary/10 px-2 font-semibold" : "")
+        (active ? "-mx-2 rounded bg-primary/10 px-2 font-semibold" : "")
       }
     >
       <span className={active ? "text-foreground" : "text-muted-foreground"}>

@@ -1,26 +1,27 @@
-import { useEffect, useState } from "react"
-import { cn } from "@/shared/lib/utils"
-import { Button } from "@/shared/components/ui/button"
 import { WifiOff } from "lucide-react"
+import { useEffect, useState } from "react"
 import type { ClientMessage, RoomMember, RoomState } from "@/core/game-core"
-import type { ReactionEvent } from "@/core/network"
 import { useT } from "@/core/i18n"
-import { useGameSounds } from "@/features/game"
-import { useTabAlert } from "@/shared/hooks/useTabAlert"
-
-import { AuctionPanel } from "@/features/auction"
-import { CardBanner } from "@/features/game"
-import { GameBoard } from "@/features/board"
-import { GameEvents } from "@/features/game"
-import { GameLog } from "@/features/game"
-import { GameResults } from "@/features/game"
-import { ManagePanel } from "@/features/game"
+import type { ReactionEvent } from "@/core/network"
 import { connectionQuality } from "@/core/network"
-import { PlayersList } from "@/features/game"
-import { ReactionBar } from "./ReactionBar"
-import { StatsButton } from "@/features/game"
+import { AuctionPanel } from "@/features/auction"
+import { GameBoard } from "@/features/board"
+import {
+  CardBanner,
+  GameEvents,
+  GameLog,
+  GameResults,
+  ManagePanel,
+  PlayersList,
+  StatsButton,
+  TurnControls,
+  useGameSounds,
+} from "@/features/game"
 import { TradePanel } from "@/features/trade"
-import { TurnControls } from "@/features/game"
+import { Button } from "@/shared/components/ui/button"
+import { useTabAlert } from "@/shared/hooks/useTabAlert"
+import { cn } from "@/shared/lib/utils"
+import { ReactionBar } from "./ReactionBar"
 
 /** Live countdown (whole seconds) to the auto-skip deadline. */
 function useSecondsUntil(deadline: number | null): number | null {
@@ -89,7 +90,7 @@ export function NetworkGame({
       </div>
 
       <aside className="flex w-full flex-col gap-3 lg:w-72">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
           <span
             className={cn(
               "size-2 rounded-full",
@@ -121,7 +122,7 @@ export function NetworkGame({
         )}
 
         {turnPlayerSlow && (
-          <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+          <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-amber-700 text-xs dark:text-amber-300">
             <WifiOff className="size-3.5 shrink-0" />
             {t("net.slowConnection", {
               name: turnPlayer.nickname,

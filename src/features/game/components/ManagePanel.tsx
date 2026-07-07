@@ -1,6 +1,5 @@
 import { Hotel, House, Landmark } from "lucide-react"
-
-import { Button } from "@/shared/components/ui/button"
+import { GROUP_COLOR } from "@/core/board"
 import {
   boardOf,
   canBuildHouse,
@@ -8,14 +7,13 @@ import {
   canSellHouse,
   canUnmortgage,
   currentPlayer,
-  ownedTiles,
-  unmortgageCost,
   type GameAction,
   type GameState,
+  ownedTiles,
+  unmortgageCost,
 } from "@/core/game-core"
 import { useT } from "@/core/i18n"
-
-import { GROUP_COLOR } from "@/core/board"
+import { Button } from "@/shared/components/ui/button"
 
 /**
  * Property management for the player whose turn it is. Build/sell houses,
@@ -46,7 +44,7 @@ export function ManagePanel({
   return (
     <div className="flex flex-col gap-1.5 rounded-md border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="font-medium text-muted-foreground text-xs">
           {t("manage.title")}
         </span>
         <span
@@ -58,7 +56,7 @@ export function ManagePanel({
       </div>
 
       {tiles.length === 0 && (
-        <p className="text-xs text-muted-foreground">{t("manage.empty")}</p>
+        <p className="text-muted-foreground text-xs">{t("manage.empty")}</p>
       )}
 
       <div className="flex max-h-56 flex-col gap-1 overflow-y-auto">

@@ -4,10 +4,6 @@
 // end of a turn. Deterministic like the rest of the core: all randomness
 // flows through `rngSeed`.
 
-import { returnBuilding } from "./buildings"
-import { log } from "./log"
-import { nextRandom } from "./rng"
-import { activePlayers, boardOf, boardSizeOf, tileDef } from "./selectors"
 import type {
   BoardEvent,
   BoardEventKind,
@@ -15,6 +11,10 @@ import type {
   GameState,
   Player,
 } from "../types"
+import { returnBuilding } from "./buildings"
+import { log } from "./log"
+import { nextRandom } from "./rng"
+import { activePlayers, boardOf, boardSizeOf, tileDef } from "./selectors"
 
 const AUDIT_MIN_CASH = 200
 

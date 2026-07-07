@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react"
-
-import type { GameState } from "@/core/game-core"
 import { positionsOf, travelPlan } from "@/core/board"
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import type { GameState } from "@/core/game-core"
 import { useSound } from "@/core/sound"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 /**
  * Plays sound effects derived from changes in the game state, so it works the

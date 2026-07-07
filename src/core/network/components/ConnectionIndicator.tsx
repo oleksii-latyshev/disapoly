@@ -2,7 +2,7 @@ import { WifiOff } from "lucide-react"
 
 import { cn } from "@/shared/lib/utils"
 
-import { connectionQuality, type ConnQuality } from "../helpers/connection"
+import { type ConnQuality, connectionQuality } from "../helpers/connection"
 
 const DOT: Record<ConnQuality, string> = {
   offline: "bg-muted-foreground",

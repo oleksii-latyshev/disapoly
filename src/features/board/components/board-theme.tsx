@@ -1,12 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 import {
+  type CSSProperties,
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useMemo,
   useState,
-  type CSSProperties,
-  type ReactNode,
 } from "react"
 
 import type { ColorGroup } from "@/core/game-core"

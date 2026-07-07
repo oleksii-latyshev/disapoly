@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
-
+import { useEffect, useRef, useState } from "react"
+import { tokenTargets } from "@/core/board"
 import { boardSizeOf, type GameState } from "@/core/game-core"
 import type { ReactionEvent } from "@/core/network"
 import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
-import { tokenTargets } from "@/core/board"
 
 type FloatItem = { key: number; emoji: string; x: number; y: number }
 

@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react"
 
 import type { GameState } from "@/core/game-core"
-import { useT } from "@/core/i18n"
-
-import { renderLog } from "@/core/i18n"
+import { renderLog, useT } from "@/core/i18n"
 
 export function GameLog({ state }: { state: GameState }) {
   const t = useT()
@@ -11,7 +9,7 @@ export function GameLog({ state }: { state: GameState }) {
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" })
-  }, [state.log.length])
+  }, [])
 
   // Most recent entries are most relevant; cap to keep the DOM light.
   const entries = state.log.slice(-50)

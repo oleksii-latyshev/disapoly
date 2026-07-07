@@ -1,17 +1,16 @@
-import { useState } from "react"
 import { Dices, Flag, HandCoins, PartyPopper } from "lucide-react"
-
-import { Button } from "@/shared/components/ui/button"
+import { useState } from "react"
 import {
   boardOf,
   currentPlayer,
-  JAIL_FINE,
-  purchasePreview,
   type GameAction,
   type GameState,
+  JAIL_FINE,
+  purchasePreview,
 } from "@/core/game-core"
 import { useT } from "@/core/i18n"
 import { useTravelSettled } from "@/features/board"
+import { Button } from "@/shared/components/ui/button"
 
 /** Compact decision-support shown in the buy step: rent + set/collection progress. */
 function BuyInfo({
@@ -98,7 +97,7 @@ export function TurnControls({
     const winner = state.players.find((p) => p.id === state.winnerId)
     return (
       <div className="flex flex-col gap-3 rounded-md border bg-card p-3 text-center">
-        <p className="text-sm font-medium">
+        <p className="font-medium text-sm">
           {winner
             ? t("turn.wins", { name: winner.nickname })
             : t("turn.gameOver")}
@@ -106,7 +105,7 @@ export function TurnControls({
         {canReset ? (
           <Button onClick={onNewGame}>{t("turn.newGame")}</Button>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {t("turn.waitHostNew")}
           </p>
         )}
@@ -146,14 +145,14 @@ export function TurnControls({
       </p>
 
       {!isMyTurn && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {t("turn.waitingFor", { name: player.nickname })}
         </p>
       )}
 
       {state.phase === "order-roll" && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">{t("order.title")}</p>
+          <p className="text-muted-foreground text-xs">{t("order.title")}</p>
           {isMyTurn && (
             <Button onClick={() => send({ type: "ROLL_DICE" })}>
               <Dices /> {t("order.roll")}
@@ -170,7 +169,7 @@ export function TurnControls({
 
       {isMyTurn && state.phase === "awaiting-roll" && player.inJail && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {t("jail.title", { n: player.jailTurns + 1 })}
           </p>
           <div className="flex gap-2">
@@ -202,7 +201,7 @@ export function TurnControls({
 
       {isMyTurn && state.phase === "awaiting-buy" && pending && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {t("turn.buyPrompt", { name: pending.name, price: pendingPrice })}
           </p>
           {state.pendingPurchase !== null && (
@@ -234,7 +233,7 @@ export function TurnControls({
 
       {isMyTurn && state.phase === "awaiting-pay" && debt && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             {creditor
               ? t("pay.owedTo", {
                   amount: debt.amount,
@@ -247,9 +246,9 @@ export function TurnControls({
               : t("pay.owedBank", { amount: debt.amount })}
           </p>
           {player.balance >= debt.amount ? (
-            <p className="text-xs text-muted-foreground">{t("pay.hint")}</p>
+            <p className="text-muted-foreground text-xs">{t("pay.hint")}</p>
           ) : (
-            <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            <p className="font-medium text-amber-600 text-xs dark:text-amber-400">
               {t("pay.short", { need: debt.amount - player.balance })}
             </p>
           )}
@@ -263,7 +262,7 @@ export function TurnControls({
       )}
 
       {!isMyTurn && state.phase === "awaiting-pay" && debt && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {t("pay.waitingFor", { name: player.nickname, amount: debt.amount })}
         </p>
       )}
@@ -281,7 +280,7 @@ export function TurnControls({
       {canSurrender &&
         (confirmingBankruptcy ? (
           <div className="flex flex-col gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2">
-            <p className="text-xs font-medium">{t("bankrupt.confirm")}</p>
+            <p className="font-medium text-xs">{t("bankrupt.confirm")}</p>
             <div className="flex gap-2">
               <Button
                 variant="destructive"
@@ -308,7 +307,7 @@ export function TurnControls({
           <Button
             variant="ghost"
             size="sm"
-            className="self-start text-xs text-muted-foreground hover:text-destructive"
+            className="self-start text-muted-foreground text-xs hover:text-destructive"
             onClick={() => setConfirmingBankruptcy(true)}
           >
             <Flag className="size-3.5" /> {t("bankrupt.declare")}

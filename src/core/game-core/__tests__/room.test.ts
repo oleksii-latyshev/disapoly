@@ -3,13 +3,13 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  AUTO_BANKRUPT_MS,
   applyClientMessage,
   autoBankruptOverdue,
-  AUTO_BANKRUPT_MS,
   createRoom,
   nextAutoBankruptAt,
-  setConnected,
   type RoomState,
+  setConnected,
 } from "../room"
 
 function lobbyWith(...ids: string[]): RoomState {

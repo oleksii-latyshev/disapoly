@@ -21,8 +21,8 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Lint
-        run: bun run lint
+      - name: Biome (format + lint)
+        run: bunx biome ci
 
       - name: Test
         run: bun run test

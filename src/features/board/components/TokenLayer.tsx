@@ -1,20 +1,18 @@
+import { AnimatePresence, animate, motion } from "motion/react"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { animate, AnimatePresence, motion } from "motion/react"
-
-import { boardSizeOf, type GameState, type Player } from "@/core/game-core"
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
-import { useBoardTheme } from "./board-theme"
 import {
   positionsOf,
+  type Stopover,
+  type TokenTarget as Target,
   tileCenter,
   tokenTargets,
   travelPlan,
   travelSeconds,
   travelStopover,
-  type Stopover,
-  type TokenTarget as Target,
 } from "@/core/board"
+import { boardSizeOf, type GameState, type Player } from "@/core/game-core"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { useBoardTheme } from "./board-theme"
 
 /**
  * Bounce keyframes for a travel animation: the piece arcs up once per hop
@@ -220,7 +218,7 @@ function Token({
       ) : (
         <div
           ref={bodyRef}
-          className="relative flex size-full items-center justify-center rounded-full border border-white/80 text-[10px] font-bold text-white"
+          className="relative flex size-full items-center justify-center rounded-full border border-white/80 font-bold text-[10px] text-white"
           style={{
             background: `radial-gradient(circle at 32% 28%, color-mix(in srgb, ${player.color} 55%, white), ${player.color} 58%, color-mix(in srgb, ${player.color} 68%, black))`,
             boxShadow: glow
@@ -245,7 +243,7 @@ function MoneyDelta({ delta }: { delta: Delta }) {
   const gain = delta.amount > 0
   return (
     <motion.div
-      className="absolute z-30 rounded-full px-1.5 py-0.5 text-[length:max(10px,1.25cqw)] font-extrabold tabular-nums shadow-sm"
+      className="absolute z-30 rounded-full px-1.5 py-0.5 font-extrabold text-[length:max(10px,1.25cqw)] tabular-nums shadow-sm"
       style={{
         left: `${delta.x}%`,
         top: `${delta.y}%`,

@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from "react"
 import { animate } from "motion/react"
+import { useEffect, useRef, useState } from "react"
 
-import { netWorth, type GameState, type RoomMember } from "@/core/game-core"
-import { cn } from "@/shared/lib/utils"
-import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
-
+import { type GameState, netWorth, type RoomMember } from "@/core/game-core"
 import { ConnectionIndicator } from "@/core/network"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { cn } from "@/shared/lib/utils"
 
 /**
  * A balance that rolls to its new value instead of snapping, with a brief
@@ -98,17 +97,17 @@ export function PlayersList({
             <span className="min-w-0 flex-1 truncate font-medium">
               {player.nickname}
               {state.orderRolls && (state.orderRolls[player.id] ?? -1) >= 0 && (
-                <span className="ml-1 text-xs text-muted-foreground">
+                <span className="ml-1 text-muted-foreground text-xs">
                   🎲 {state.orderRolls[player.id]}
                 </span>
               )}
               {player.inJail && (
-                <span className="ml-1 text-xs text-muted-foreground">
+                <span className="ml-1 text-muted-foreground text-xs">
                   (jail)
                 </span>
               )}
               {player.isBankrupt && (
-                <span className="ml-1 text-xs text-destructive">
+                <span className="ml-1 text-destructive text-xs">
                   (bankrupt)
                 </span>
               )}

@@ -1,5 +1,6 @@
 import { HelpCircle } from "lucide-react"
-
+import { GO_PAYOUT, JAIL_FINE, STARTING_BALANCE } from "@/core/game-core"
+import { useT } from "@/core/i18n"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
@@ -8,8 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/components/ui/dialog"
-import { GO_PAYOUT, JAIL_FINE, STARTING_BALANCE } from "@/core/game-core"
-import { useT } from "@/core/i18n"
 
 const SECTIONS = [
   "goal",
