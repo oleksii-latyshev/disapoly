@@ -69,7 +69,7 @@ Prerequisites: [Bun](https://bun.sh) (and a free Cloudflare account for deploys)
 
 ```bash
 bun install
-bun run dev:party   # realtime room server (wrangler dev) → 127.0.0.1:8787
+bun run dev:server   # realtime room server (wrangler dev) → 127.0.0.1:8787
 bun run dev         # client (Vite) → http://localhost:5173
 ```
 
@@ -81,7 +81,7 @@ screen and needs no server.
 
 | Command                      | What it does                         |
 | ---------------------------- | ------------------------------------ |
-| `bun run dev` / `dev:party`  | Client / realtime server, locally    |
+| `bun run dev` / `dev:server`  | Client / realtime server, locally    |
 | `bun run test`               | Vitest unit tests for the game core  |
 | `bun run typecheck` / `lint` | TypeScript / ESLint                  |
 | `bun run deploy:all`         | Deploy worker + build + deploy Pages |

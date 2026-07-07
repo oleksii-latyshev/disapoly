@@ -23,6 +23,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  // party/server.ts pulls in the alias-free game core via relative imports.
-  "include": ["party"]
+  // The server pulls in the alias-free game core via relative imports.
+  "include": ["server"]
 }

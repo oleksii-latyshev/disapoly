@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config"
 // with no DOM or alias imports, so a bare node environment is all it needs.
 export default defineConfig({
   test: {
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "server/**/*.test.ts"],
     environment: "node",
   },
 })

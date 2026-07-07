@@ -28,7 +28,12 @@ src/
     components/ui/  Vendored shadcn primitives — do not hand-edit style.
     hooks/      Generic React hooks (reduced motion, tab alert, routing).
     lib/        `cn()` and similar tiny utilities.
-party/          The Cloudflare Durable Object server entry.
+server/         The Cloudflare Durable Object server. Client code in src/
+                never imports from here (and vice versa, except game-core).
+  index.ts            Worker entry: fetch handler + DO class export.
+  disapoly-server.ts  The DO class — socket lifecycle and storage only.
+  helpers/            Pure logic (alarm deadlines, restore, relays) — this
+                      is where server behavior lives, so it's testable.
 ```
 
 Every core/feature folder groups its own `components/`, `helpers/`,
@@ -53,7 +58,7 @@ One-way flow: `features → core → shared`, never the reverse.
 ## The game core is sacred
 
 `src/core/game-core` is a pure, deterministic rules engine that also runs
-inside the Cloudflare Worker (`party/server.ts` imports it by relative path):
+inside the Cloudflare Worker (`server/` imports it by relative path):
 
 - **No React, no DOM, no `@/` alias, no I/O** — not even `shared`. Plain
   TypeScript only.

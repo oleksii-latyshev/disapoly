@@ -164,9 +164,12 @@ relay, no database).
 - **`src/core/game-core/room.ts`** — `RoomState { roomId, phase: "lobby" | "in-game",
   members: RoomMember[], game: GameState | null }` and the pure
   `applyClientMessage(state, msg, senderId)` authority reducer.
-- **`party/server.ts`** — a `partyserver` `Server` (a Cloudflare Durable Object).
+- **`server/`** — a `partyserver` `Server` (a Cloudflare Durable Object).
   One instance per room id. It holds `RoomState` in memory, feeds validated
   client messages into `applyClientMessage`, and broadcasts the whole state.
+  `index.ts` is the worker entry, `disapoly-server.ts` the DO class (socket
+  lifecycle + storage only); alarm deadlines, restore-after-restart and
+  ephemeral relays are pure, unit-tested helpers in `server/helpers/`.
 - Clients (`src/core/network/hooks/useRoom.ts` over `partysocket`) send **intents**, never
   state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `avatar`
   / `kick`.

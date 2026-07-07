@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "disapoly",
-  "main": "party/server.ts",
+  "main": "server/index.ts",
   "compatibility_date": "2025-06-01",
   "durable_objects": {
     "bindings": [{ "name": "Game", "class_name": "DisapolyServer" }]
