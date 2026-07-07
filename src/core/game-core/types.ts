@@ -187,6 +187,13 @@ export type GameState = {
   currentPlayerIndex: number
   phase: TurnPhase
   dice: [number, number] | null
+  /**
+   * Monotonic count of dice rolls — bumped only when the dice are actually
+   * thrown, so the UI re-tumbles them on a real roll (even on a repeat value)
+   * and never on other `rngSeed` changes (cards, events). Optional: unset in
+   * matches persisted before it existed.
+   */
+  diceRolls?: number
   /** Consecutive doubles within the current turn (3 → jail). */
   doublesCount: number
   pendingPurchase: number | null

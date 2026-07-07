@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "motion/react"
 import { Hotel, House } from "lucide-react"
 
@@ -422,15 +422,9 @@ export function GameBoard({
   const currentId = state.players[state.currentPlayerIndex]?.position
   const [selected, setSelected] = useState<number | null>(null)
 
-  // Bump a counter on every roll so the dice re-tumble even on repeat values.
-  const [rollSeq, setRollSeq] = useState(0)
-  const lastSeed = useRef(state.rngSeed)
-  useEffect(() => {
-    if (state.rngSeed !== lastSeed.current) {
-      lastSeed.current = state.rngSeed
-      setRollSeq((s) => s + 1)
-    }
-  }, [state.rngSeed])
+  // Re-tumble the dice only on an actual roll (even on a repeat value), never
+  // on other rngSeed changes like drawing a card or spawning an event.
+  const rollSeq = state.diceRolls ?? 0
 
   return (
     <div className="mx-auto w-full max-w-[min(96vw,900px)] lg:mx-0 lg:w-[min(90svh,1180px)] lg:max-w-none">

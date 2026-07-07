@@ -66,6 +66,7 @@ export function createInitialState(
     currentPlayerIndex: 0,
     phase: rules.orderRoll ? "order-roll" : "awaiting-roll",
     dice: null,
+    diceRolls: 0,
     doublesCount: 0,
     pendingPurchase: null,
     auction: null,

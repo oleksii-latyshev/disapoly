@@ -13,6 +13,7 @@ function rollFor(d: GameState): { a: number; b: number } {
   const result = rollDice(d.rngSeed)
   d.rngSeed = result.seed
   d.dice = result.dice
+  d.diceRolls = (d.diceRolls ?? 0) + 1
   return { a: result.dice[0], b: result.dice[1] }
 }
 
