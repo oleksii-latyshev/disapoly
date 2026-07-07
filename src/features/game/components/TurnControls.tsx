@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Dices, Flag, HandCoins, PartyPopper } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   boardOf,
   currentPlayer,
@@ -9,8 +9,8 @@ import {
   purchasePreview,
   type GameAction,
   type GameState,
-} from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
 import { useTravelSettled } from "@/features/board"
 
 /** Compact decision-support shown in the buy step: rent + set/collection progress. */

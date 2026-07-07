@@ -12,11 +12,11 @@
 import { useEffect, useRef, useState } from "react"
 import { motion } from "motion/react"
 
-import { jailTileId, type GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { jailTileId, type GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
-import { tileCenter } from "@/modules/board"
+import { tileCenter } from "@/core/board"
 
 type FxKind = "earthquake" | "windfall" | "jailbreak" | "taxAudit" | "rentSurge"
 

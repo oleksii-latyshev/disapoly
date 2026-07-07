@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import PartySocket from "partysocket"
 
-import type { ClientMessage, RoomState, ServerMessage } from "@/modules/game-core"
+import type { ClientMessage, RoomState, ServerMessage } from "@/core/game-core"
 import { PARTY_HOST, PARTY_NAME } from "../config"
 
 export type RoomIdentity = {

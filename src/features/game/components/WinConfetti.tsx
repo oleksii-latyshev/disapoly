@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 
-import type { GameState } from "@/modules/game-core"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import type { GameState } from "@/core/game-core"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 type Particle = {
   x: number

@@ -8,7 +8,7 @@ import {
   YAxis,
 } from "recharts"
 
-import type { GameState } from "@/modules/game-core"
+import type { GameState } from "@/core/game-core"
 
 /**
  * Net worth (cash + property value) per player over the course of the game.

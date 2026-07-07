@@ -1,4 +1,4 @@
-import { REACTIONS } from "@/modules/game-core"
+import { REACTIONS } from "@/core/game-core"
 
 /** A compact palette of emoji reactions to fling during a live game (online). */
 export function ReactionBar({ onReact }: { onReact: (emoji: string) => void }) {

@@ -1,15 +1,15 @@
 import { useState } from "react"
 import { Check, Copy, LogOut, Pencil, Play, UserX, X } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+} from "@/shared/components/ui/card"
+import { Input } from "@/shared/components/ui/input"
 import {
   ALL_EVENT_KINDS,
   PLAYER_EMOJIS,
@@ -20,11 +20,11 @@ import {
   type PayMode,
   type RoomMember,
   type RoomState,
-} from "@/modules/game-core"
+} from "@/core/game-core"
 import { EventSettings } from "@/features/events"
-import { roomUrl, setStoredEmoji } from "@/modules/network"
-import { cn } from "@/lib/utils"
-import { useT } from "@/modules/i18n"
+import { roomUrl, setStoredEmoji } from "@/core/network"
+import { cn } from "@/shared/lib/utils"
+import { useT } from "@/core/i18n"
 
 const MIN_MEMBERS = 2
 

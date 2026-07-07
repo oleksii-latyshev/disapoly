@@ -1,4 +1,4 @@
-import type { LogEntry } from "@/modules/game-core"
+import type { LogEntry } from "@/core/game-core"
 import type { TFunction } from "../context"
 
 /** Translate a structured log entry, resolving any `{ t }` param to text. */

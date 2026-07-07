@@ -51,8 +51,8 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import { GROUP_COLOR } from "@/modules/board"
-import type { TileDefinition } from "@/modules/game-core"
+import { GROUP_COLOR } from "@/core/board"
+import type { TileDefinition } from "@/core/game-core"
 
 export type TileVisual = {
   Icon: LucideIcon

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react"
 
-import type { ColorGroup } from "@/modules/game-core"
+import type { ColorGroup } from "@/core/game-core"
 
 export type BoardThemeId = "classic" | "mono" | "neon"
 

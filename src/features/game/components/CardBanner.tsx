@@ -1,7 +1,7 @@
 import { CircleHelp, Gift } from "lucide-react"
 
-import type { DrawnCard } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+import type { DrawnCard } from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
 /** Shows the card the current player just drew (until the turn ends). */
 export function CardBanner({ card }: { card: DrawnCard }) {

@@ -8,14 +8,14 @@ the product does and *why* it's built this way, see
 
 ```
 src/
-  modules/      Cross-cutting building blocks. No dependency on features.
+  core/         App-specific building blocks. No dependency on features.
     game-core/  The pure rules engine (see below).
     board/      Board presentation math (tile positions, travel plans). No React.
     network/    Socket client, identity, connection quality.
     i18n/       Language provider + en/ru dictionaries + log formatting.
     sound/      Web Audio engine + provider.
     theme/      App light/dark theme provider.
-  features/     User-facing slices. May use modules and other features.
+  features/     User-facing slices. May use core and other features.
     board/      Board rendering: tiles, tokens, dice, tilt, tile details.
     events/     Surprise-event visuals and settings UI.
     game/       In-game HUD shared by both modes: turn controls, panels,
@@ -23,32 +23,40 @@ src/
     trade/      Trade panel.
     auction/    Auction panel.
     online/     Home/lobby/room screens and the networked game shell.
-  components/ui/  Vendored shadcn primitives — do not hand-edit style.
-  hooks/        Generic React hooks with no app knowledge.
-  lib/          `cn()` and similar tiny utilities.
+  shared/       App-agnostic code any layer may use — nothing here knows
+                about the game.
+    components/ui/  Vendored shadcn primitives — do not hand-edit style.
+    hooks/      Generic React hooks (reduced motion, tab alert, routing).
+    lib/        `cn()` and similar tiny utilities.
 party/          The Cloudflare Durable Object server entry.
 ```
 
-Every module/feature folder groups its own `components/`, `helpers/`,
+Every core/feature folder groups its own `components/`, `helpers/`,
 `hooks/`, `constants/`, `__tests__/` as needed, plus an `index.ts` barrel.
 
 ## Dependency direction
 
-- `modules → modules` and `features → modules`: always fine.
+One-way flow: `features → core → shared`, never the reverse.
+
+- `shared` imports nothing but third-party packages — if it needs app
+  knowledge, it isn't shared; move it into `core` or the feature.
+- `core → core` and `core → shared` are fine; `core` never imports from
+  `features`. Exception: `core/game-core` imports **nothing** app-level at
+  all (see below).
 - `features → features`: only through the other feature's barrel
   (`@/features/board`), and only downward: `online → game → board → events`;
   `trade` and `auction` are leaves. Never create a cycle.
-- `modules` never import from `features`.
 - Inside a folder, use relative imports; from outside, import the barrel
-  (`@/modules/game-core`, `@/features/game`). Don't deep-import another
+  (`@/core/game-core`, `@/features/game`). Don't deep-import another
   slice's internals.
 
 ## The game core is sacred
 
-`src/modules/game-core` is a pure, deterministic rules engine that also runs
+`src/core/game-core` is a pure, deterministic rules engine that also runs
 inside the Cloudflare Worker (`party/server.ts` imports it by relative path):
 
-- **No React, no DOM, no `@/` alias, no I/O.** Plain TypeScript only.
+- **No React, no DOM, no `@/` alias, no I/O** — not even `shared`. Plain
+  TypeScript only.
 - **No `Math.random()` / `Date.now()`** — all randomness advances `rngSeed`
   (`helpers/rng.ts`), so every client and the server derive identical states.
 - State changes flow through `gameReducer(state, action)`. The dispatcher
@@ -100,7 +108,7 @@ comments that restate the code, narrate history, or reference tickets/stages.
 ```
 bun run typecheck   # tsc over app, node, and worker configs
 bun run lint        # eslint
-bun run test        # vitest (pure core + module helpers)
+bun run test        # vitest (pure core + helpers)
 bun run build       # tsc -b && vite build
 ```
 

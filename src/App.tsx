@@ -6,9 +6,9 @@ import { SettingsButton } from "@/features/game"
 import { SetupScreen } from "@/features/game"
 import { HomeScreen } from "@/features/online"
 import { RoomScreen } from "@/features/online"
-import type { GameSettings, PlayerSetup } from "@/modules/game-core"
-import { generateRoomId } from "@/modules/network"
-import { useRoute } from "@/hooks/useRoute"
+import type { GameSettings, PlayerSetup } from "@/core/game-core"
+import { generateRoomId } from "@/core/network"
+import { useRoute } from "@/shared/hooks/useRoute"
 
 type HotSeat =
   | { kind: "off" }

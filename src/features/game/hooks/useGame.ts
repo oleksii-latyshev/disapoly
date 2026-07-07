@@ -7,7 +7,7 @@ import {
   type GameSettings,
   type GameState,
   type PlayerSetup,
-} from "@/modules/game-core"
+} from "@/core/game-core"
 
 /** Local (hot-seat) driver for the pure game reducer — the offline
  * counterpart to sending intents over the socket. */

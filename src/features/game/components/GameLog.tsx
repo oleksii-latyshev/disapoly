@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react"
 
-import type { GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+import type { GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
-import { renderLog } from "@/modules/i18n"
+import { renderLog } from "@/core/i18n"
 
 export function GameLog({ state }: { state: GameState }) {
   const t = useT()

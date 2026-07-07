@@ -1,16 +1,16 @@
 import { useState } from "react"
 import { Minus, Play, Plus } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/shared/components/ui/card"
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 import {
   ALL_EVENT_KINDS,
   PLAYER_COLORS,
@@ -21,8 +21,8 @@ import {
   type GameSettings,
   type PayMode,
   type PlayerSetup,
-} from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
 import { EventSettings } from "@/features/events"
 

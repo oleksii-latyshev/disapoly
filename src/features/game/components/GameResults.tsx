@@ -1,10 +1,10 @@
 import { lazy, Suspense } from "react"
 import { Trophy } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { netWorth, type GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { cn } from "@/lib/utils"
+import { Button } from "@/shared/components/ui/button"
+import { netWorth, type GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { cn } from "@/shared/lib/utils"
 
 const NetWorthChart = lazy(() => import("./NetWorthChart"))
 

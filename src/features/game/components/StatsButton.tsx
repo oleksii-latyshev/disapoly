@@ -1,16 +1,16 @@
 import { lazy, Suspense } from "react"
 import { ChartLine } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import type { GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+} from "@/shared/components/ui/dialog"
+import type { GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
 const NetWorthChart = lazy(() => import("./NetWorthChart"))
 

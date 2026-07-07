@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { CircleHelp, Gift } from "lucide-react"
 
-import { CHANCE, COMMUNITY_CHEST, type DrawnCard, type GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { CHANCE, COMMUNITY_CHEST, type DrawnCard, type GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
-import { positionsOf, travelPlan } from "@/modules/board"
+import { positionsOf, travelPlan } from "@/core/board"
 
 type Deck = DrawnCard["deck"]
 

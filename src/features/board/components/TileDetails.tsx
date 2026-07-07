@@ -8,16 +8,16 @@ import {
   rentMultiplier,
   UTILITY_MULTIPLIER,
   type GameState,
-} from "@/modules/game-core"
+} from "@/core/game-core"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { useT } from "@/modules/i18n"
+} from "@/shared/components/ui/dialog"
+import { useT } from "@/core/i18n"
 
-import { GROUP_COLOR } from "@/modules/board"
+import { GROUP_COLOR } from "@/core/board"
 
 function Row({
   label,

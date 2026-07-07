@@ -1,6 +1,6 @@
 import { Hotel, House, Landmark } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   boardOf,
   canBuildHouse,
@@ -12,10 +12,10 @@ import {
   unmortgageCost,
   type GameAction,
   type GameState,
-} from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
-import { GROUP_COLOR } from "@/modules/board"
+import { GROUP_COLOR } from "@/core/board"
 
 /**
  * Property management for the player whose turn it is. Build/sell houses,

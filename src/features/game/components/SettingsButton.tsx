@@ -1,16 +1,16 @@
 import { Check, Settings, Volume2, VolumeX } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
-import { useI18n, type Lang } from "@/modules/i18n"
-import { useSound } from "@/modules/sound"
+} from "@/shared/components/ui/dialog"
+import { cn } from "@/shared/lib/utils"
+import { useI18n, type Lang } from "@/core/i18n"
+import { useSound } from "@/core/sound"
 
 import { BOARD_THEMES, useBoardTheme, type BoardThemeId } from "@/features/board"
 

@@ -34,7 +34,7 @@ history see the git log; for how to run/deploy see [README.md](README.md).
 | Icons | **lucide-react** |
 | Realtime server | **Cloudflare Durable Object** via **`partyserver`**, client via **`partysocket`** |
 | Sound | **Web Audio API** (synthesized, no assets) |
-| Tests | **Vitest** — unit tests for the pure game core (`src/modules/game-core/__tests__/`) |
+| Tests | **Vitest** — unit tests for the pure game core (`src/core/game-core/__tests__/`) |
 | Deploy | Cloudflare **Workers** (server) + **Pages** (client), GitHub Actions |
 
 ---
@@ -51,7 +51,7 @@ Sync ─────── online: WebSocket to the Durable Object; hot-seat: lo
 Game core ── pure (state, action) => state reducer; no React, no I/O
 ```
 
-### 3.1. Game core (`src/modules/game-core/`) — pure and portable
+### 3.1. Game core (`src/core/game-core/`) — pure and portable
 
 The rules are a pure, JSON-serializable model plus a reducer. **No React, no
 network, no `@/` alias** — so the exact same code runs in the browser and inside
@@ -142,7 +142,7 @@ insolvency path: any pending debt is settled first (classically, to the
 creditor), then their remaining properties return to the bank *unowned and
 unmortgaged* — up for grabs again.
 
-### 3.2. UI (`src/features/`, `src/modules/`)
+### 3.2. UI (`src/features/`, `src/core/`)
 
 - Feature slices (see [CODE_RULES.md](CODE_RULES.md)) take `state` + a
   `send(action)` and are shared by both modes: `features/board` (tiles,
@@ -152,8 +152,8 @@ unmortgaged* — up for grabs again.
   `LobbyScreen`, `RoomScreen`, `NetworkGame`.
 - Hot-seat (`GameScreen`) drives the reducer with a local `useReducer`
   (`useGame`); online (`NetworkGame`) sends intents over the socket.
-- Cross-cutting modules: `modules/i18n` (en/ru), `modules/sound`,
-  `modules/theme`, `modules/board` (tile geometry/travel plans), and the
+- Cross-cutting core: `core/i18n` (en/ru), `core/sound`,
+  `core/theme`, `core/board` (tile geometry/travel plans), and the
   board theme (`features/board`, Classic/Minimal/Neon).
 
 ### 3.3. Networking — authoritative Durable Object
@@ -161,13 +161,13 @@ unmortgaged* — up for grabs again.
 The server is the **single source of truth** ("Option B": a thin authoritative
 relay, no database).
 
-- **`src/modules/game-core/room.ts`** — `RoomState { roomId, phase: "lobby" | "in-game",
+- **`src/core/game-core/room.ts`** — `RoomState { roomId, phase: "lobby" | "in-game",
   members: RoomMember[], game: GameState | null }` and the pure
   `applyClientMessage(state, msg, senderId)` authority reducer.
 - **`party/server.ts`** — a `partyserver` `Server` (a Cloudflare Durable Object).
   One instance per room id. It holds `RoomState` in memory, feeds validated
   client messages into `applyClientMessage`, and broadcasts the whole state.
-- Clients (`src/modules/network/hooks/useRoom.ts` over `partysocket`) send **intents**, never
+- Clients (`src/core/network/hooks/useRoom.ts` over `partysocket`) send **intents**, never
   state: `join` / `start` / `action` / `reset` / `skip` / `rename` / `avatar`
   / `kick`.
 
@@ -373,12 +373,12 @@ See [README.md](README.md) for exact commands.
   tokens, and win confetti. Shared by both play modes.
 - ✅ **Landing-synced feedback** — effects caused by landing on a tile (card
   reveal, event callouts, card/jail sounds, money deltas) wait for the token's
-  travel animation via a shared `travelPlan` helper (`src/modules/board`), so the
+  travel animation via a shared `travelPlan` helper (`src/core/board`), so the
   outcome isn't revealed before the piece arrives. A **movement card** (e.g.
   "Advance to GO") and a roll onto **Go To Jail** animate in two legs: the
   token first visibly lands on the tile the roll hit, pauses (card reveal /
   a dramatic beat), then travels on to the destination (`travelStopover` in
-  `src/modules/board`). Turn buttons
+  `src/core/board`). Turn buttons
   (roll/buy/end/pay) are disabled until the travel settles
   (`useTravelSettled`), so a turn can't be ended while a piece is still
   flying. Stationary events (buy, trade, auction) stay instant, and reduced

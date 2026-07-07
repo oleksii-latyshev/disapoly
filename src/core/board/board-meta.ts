@@ -8,7 +8,7 @@ import {
   type ColorGroup,
   type GameState,
   type Player,
-} from "@/modules/game-core"
+} from "@/core/game-core"
 
 /** Emoji face for each surprise-event kind (board marker, pill, settings). */
 export const EVENT_EMOJI: Record<BoardEventKind, string> = {

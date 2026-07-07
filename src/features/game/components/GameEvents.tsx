@@ -1,4 +1,4 @@
-import type { GameState } from "@/modules/game-core"
+import type { GameState } from "@/core/game-core"
 
 import { CardReveal } from "./CardReveal"
 import { TurnBanner } from "./TurnBanner"

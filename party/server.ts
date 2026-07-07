@@ -10,7 +10,7 @@ import {
   type WSMessage,
 } from "partyserver"
 
-import { migrateGameState } from "../src/modules/game-core/state"
+import { migrateGameState } from "../src/core/game-core/state"
 import {
   abandonMatch,
   applyClientMessage,
@@ -25,7 +25,7 @@ import {
   type ClientMessage,
   type RoomState,
   type ServerMessage,
-} from "../src/modules/game-core/room"
+} from "../src/core/game-core/room"
 
 /** Grace period before a disconnected player's turn is auto-skipped. */
 const AUTO_SKIP_MS = 30_000

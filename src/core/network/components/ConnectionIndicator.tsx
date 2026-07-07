@@ -1,6 +1,6 @@
 import { WifiOff } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/shared/lib/utils"
 
 import { connectionQuality, type ConnQuality } from "../helpers/connection"
 

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 
-import type { GameState } from "@/modules/game-core"
-import { positionsOf, travelPlan } from "@/modules/board"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import type { GameState } from "@/core/game-core"
+import { positionsOf, travelPlan } from "@/core/board"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 /**
  * False while a token-travel animation from the latest state update is still

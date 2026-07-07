@@ -2,15 +2,15 @@ import { useState } from "react"
 import { motion } from "motion/react"
 import { ArrowLeftRight, Check, Reply, X } from "lucide-react"
 
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
-import { Button } from "@/components/ui/button"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
+import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+} from "@/shared/components/ui/dialog"
+import { Input } from "@/shared/components/ui/input"
 import {
   boardOf,
   currentPlayer,
@@ -22,11 +22,11 @@ import {
   type TradeBundle,
   type TradeOffer,
   type TradeProposal,
-} from "@/modules/game-core"
-import { useT, type TFunction } from "@/modules/i18n"
-import { cn } from "@/lib/utils"
+} from "@/core/game-core"
+import { useT, type TFunction } from "@/core/i18n"
+import { cn } from "@/shared/lib/utils"
 
-import { GROUP_COLOR } from "@/modules/board"
+import { GROUP_COLOR } from "@/core/board"
 
 const EMPTY: TradeBundle = { tiles: [], money: 0, jailCards: 0 }
 

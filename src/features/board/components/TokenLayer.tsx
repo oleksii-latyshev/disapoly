@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { animate, AnimatePresence, motion } from "motion/react"
 
-import { boardSizeOf, type GameState, type Player } from "@/modules/game-core"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { boardSizeOf, type GameState, type Player } from "@/core/game-core"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 import { useBoardTheme } from "./board-theme"
 import {
@@ -14,7 +14,7 @@ import {
   travelStopover,
   type Stopover,
   type TokenTarget as Target,
-} from "@/modules/board"
+} from "@/core/board"
 
 /**
  * Bounce keyframes for a travel animation: the piece arcs up once per hop

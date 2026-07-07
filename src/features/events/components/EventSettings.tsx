@@ -4,15 +4,15 @@
  * so a table can drop the events it doesn't like.
  */
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   ALL_EVENT_KINDS,
   type BoardEventKind,
   type EventFrequency,
-} from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
+} from "@/core/game-core"
+import { useT } from "@/core/i18n"
 
-import { EVENT_EMOJI } from "@/modules/board"
+import { EVENT_EMOJI } from "@/core/board"
 
 const FREQUENCIES: EventFrequency[] = ["rare", "normal", "frequent"]
 

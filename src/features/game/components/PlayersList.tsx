@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react"
 import { animate } from "motion/react"
 
-import { netWorth, type GameState, type RoomMember } from "@/modules/game-core"
-import { cn } from "@/lib/utils"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { netWorth, type GameState, type RoomMember } from "@/core/game-core"
+import { cn } from "@/shared/lib/utils"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
-import { ConnectionIndicator } from "@/modules/network"
+import { ConnectionIndicator } from "@/core/network"
 
 /**
  * A balance that rolls to its new value instead of snapping, with a brief

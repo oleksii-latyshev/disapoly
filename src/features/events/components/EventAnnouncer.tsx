@@ -22,12 +22,12 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import type { GameState, LogEntry } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import type { GameState, LogEntry } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
-import { positionsOf, travelPlan } from "@/modules/board"
-import { renderLog } from "@/modules/i18n"
+import { positionsOf, travelPlan } from "@/core/board"
+import { renderLog } from "@/core/i18n"
 
 type Tone = "good" | "bad" | "neutral"
 

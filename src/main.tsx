@@ -3,10 +3,10 @@ import { createRoot } from "react-dom/client"
 
 import "./index.css"
 import App from "./App.tsx"
-import { ThemeProvider } from "@/modules/theme"
+import { ThemeProvider } from "@/core/theme"
 import { BoardThemeProvider } from "@/features/board"
-import { I18nProvider } from "@/modules/i18n"
-import { SoundProvider } from "@/modules/sound"
+import { I18nProvider } from "@/core/i18n"
+import { SoundProvider } from "@/core/sound"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

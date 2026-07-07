@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 
-import type { GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import type { GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 type Banner = { key: number; name: string; color: string }
 

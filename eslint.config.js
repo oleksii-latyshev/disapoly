@@ -22,7 +22,7 @@ export default defineConfig([
   {
     // shadcn ui components conventionally export variants (cva) alongside the
     // component; that's fine — they're vendored, not hot-edited app code.
-    files: ['src/components/ui/**/*.{ts,tsx}'],
+    files: ['src/shared/components/ui/**/*.{ts,tsx}'],
     rules: {
       'react-refresh/only-export-components': 'off',
     },

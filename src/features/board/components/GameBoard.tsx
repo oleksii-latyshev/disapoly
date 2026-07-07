@@ -15,15 +15,15 @@ import {
   type BoardEvent,
   type GameState,
   type TileDefinition,
-} from "@/modules/game-core"
-import { cn } from "@/lib/utils"
-import { useT } from "@/modules/i18n"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+} from "@/core/game-core"
+import { cn } from "@/shared/lib/utils"
+import { useT } from "@/core/i18n"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
-import type { ReactionEvent } from "@/modules/network"
+import type { ReactionEvent } from "@/core/network"
 
 import { useBoardTheme } from "./board-theme"
-import { EVENT_EMOJI, gridSide, tileCell, tileCenter } from "@/modules/board"
+import { EVENT_EMOJI, gridSide, tileCell, tileCenter } from "@/core/board"
 import { BoardTilt } from "./BoardTilt"
 import { Dice } from "./Dice"
 import { EventAnnouncer } from "@/features/events"

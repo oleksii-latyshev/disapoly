@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { animate, motion } from "motion/react"
 
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 const SIZE = 44
 const HALF = SIZE / 2

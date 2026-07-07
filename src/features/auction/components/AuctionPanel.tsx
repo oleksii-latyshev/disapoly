@@ -1,11 +1,11 @@
 import { useState } from "react"
 import { Gavel } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { boardOf, playerById, type GameAction, type GameState } from "@/modules/game-core"
-import { useT } from "@/modules/i18n"
-import { cn } from "@/lib/utils"
+import { Button } from "@/shared/components/ui/button"
+import { Input } from "@/shared/components/ui/input"
+import { boardOf, playerById, type GameAction, type GameState } from "@/core/game-core"
+import { useT } from "@/core/i18n"
+import { cn } from "@/shared/lib/utils"
 
 /**
  * Raise/pass controls for the bidder whose turn it is. Kept in its own component

@@ -1,4 +1,4 @@
-import type { GameSettings, PlayerSetup } from "@/modules/game-core"
+import type { GameSettings, PlayerSetup } from "@/core/game-core"
 import { useGame } from "../hooks/useGame"
 import { useGameSounds } from "../hooks/useGameSounds"
 

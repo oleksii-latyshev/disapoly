@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/shared/components/ui/button"
 import {
   getPlayerId,
   getStoredEmoji,
   getStoredNickname,
   setStoredNickname,
-} from "@/modules/network"
-import { useRoom } from "@/modules/network"
-import { useT } from "@/modules/i18n"
+} from "@/core/network"
+import { useRoom } from "@/core/network"
+import { useT } from "@/core/i18n"
 
 import { LobbyScreen } from "./LobbyScreen"
 import { NetworkGame } from "./NetworkGame"

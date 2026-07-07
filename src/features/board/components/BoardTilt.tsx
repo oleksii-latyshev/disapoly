@@ -7,8 +7,8 @@ import {
   useTransform,
 } from "motion/react"
 
-import { cn } from "@/lib/utils"
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion"
+import { cn } from "@/shared/lib/utils"
+import { usePrefersReducedMotion } from "@/shared/hooks/usePrefersReducedMotion"
 
 /** Max tilt in degrees — enough for depth, small enough to stay readable. */
 const MAX_TILT = 3.2
