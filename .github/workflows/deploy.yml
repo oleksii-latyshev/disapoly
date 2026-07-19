@@ -11,10 +11,22 @@ jobs:
   # and PR; a failure here blocks the deploy job below.
   check:
     runs-on: ubuntu-latest
+    # A new push supersedes any in-flight run for the same branch/PR. Only
+    # cancel on PRs: a cancelled master check would leave that commit
+    # undeployed even though it may still be the latest.
+    concurrency:
+      group: check-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     steps:
       - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
 
       - run: bun install --frozen-lockfile
 
@@ -39,6 +51,12 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
 
       - run: bun install --frozen-lockfile
 

@@ -29,6 +29,17 @@ app *is* see [README.md](README.md); for how the code is organized see
   passes. Deploys the Worker (`wrangler deploy`), builds the frontend, and
   deploys it to Pages. Serialized via a `deploy` concurrency group.
 
+Two speed optimizations apply to the jobs:
+
+- **Dependency cache** — `~/.bun/install/cache` is cached keyed on the
+  `bun.lock` hash, so repeat runs install from cache instead of re-downloading
+  every package.
+- **Superseded-run cancellation** — the `check` job uses a per-ref
+  `concurrency` group with `cancel-in-progress` on PRs, so a new push to a PR
+  cancels the now-stale run. Master pushes are never cancelled (a cancelled
+  check would leave that commit undeployed), and the `deploy` job keeps its
+  own serialized, non-cancelling group.
+
 Locally, Lefthook mirrors the gate before code ever reaches CI: Biome +
 typecheck on pre-commit, tests on pre-push.
 
@@ -90,18 +101,15 @@ workflow), comment `@dependabot rebase` on the PR.
 
 Roughly in priority order:
 
-1. **Faster CI.** Cache `~/.bun/install/cache` keyed on the `bun.lock` hash,
-   and add a `concurrency` group with `cancel-in-progress: true` to the
-   `check` job so a new push to a PR cancels the superseded run.
-2. **PR preview deployments.** On PRs, `wrangler pages deploy dist
+1. **PR preview deployments.** On PRs, `wrangler pages deploy dist
    --branch=<branch>` publishes a Pages preview environment — every PR gets a
    live frontend URL to click through before merging.
-3. **Migrate Pages → Workers Static Assets.** Cloudflare now recommends
+2. **Migrate Pages → Workers Static Assets.** Cloudflare now recommends
    serving static assets from the Worker itself (`assets` in
    `wrangler.jsonc`) instead of a separate Pages project. This collapses
    `deploy:all` into a single `wrangler deploy`, puts the frontend and the
    websocket server on one origin, and removes the hardcoded
    `VITE_PARTYKIT_HOST` entirely.
-4. **Secret scanning.** If the repo is public, enable Secret scanning + Push
+3. **Secret scanning.** If the repo is public, enable Secret scanning + Push
    protection (free for public repos) to catch an accidentally committed
    Cloudflare token before it lands.
