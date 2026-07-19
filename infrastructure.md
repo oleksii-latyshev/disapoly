@@ -43,6 +43,21 @@ Two speed optimizations apply to the jobs:
 Locally, Lefthook mirrors the gate before code ever reaches CI: Biome +
 typecheck on pre-commit, tests on pre-push.
 
+### Workflow hardening
+
+- **Actions are pinned to commit SHAs** (with the version in a trailing
+  comment), not to tags. Tags are mutable — the `tj-actions/changed-files`
+  attack (March 2025) worked by repointing existing tags at malicious
+  commits that exfiltrated CI secrets. Dependabot understands SHA pins and
+  keeps them (and their version comments) up to date.
+- **Least-privilege tokens:** every workflow declares an explicit
+  `permissions` block — `contents: read` for CI/deploy (it talks to
+  Cloudflare, not the repo), `contents: write` + `pull-requests: write` only
+  for the auto-merge workflow that needs them.
+- **Secret scanning + push protection** are enabled (GitHub defaults for
+  public repos), catching an accidentally committed Cloudflare token before
+  it lands.
+
 ### Branch protection
 
 `master` is protected by a repository ruleset:
@@ -80,6 +95,11 @@ Configured in [`.github/dependabot.yml`](.github/dependabot.yml).
   usually yanked from the registry within days. (It shrinks the window, not
   to zero — but it filters the common "compromised overnight, yanked next
   day" case.)
+- **Security updates** (repo setting, separate from the weekly schedule):
+  when a vulnerability is published for a dependency in use, Dependabot
+  opens a fix PR immediately — no waiting for Monday, no cooldown. The two
+  mechanisms are complementary: routine updates age safely, security fixes
+  ship fast.
 
 ### Auto-merge
 
@@ -97,19 +117,24 @@ itself is still gated by the ruleset: auto-merge only completes after the
 To re-trigger auto-merge on an already-open PR (e.g. after changing this
 workflow), comment `@dependabot rebase` on the PR.
 
-## 4. Planned improvements
+## 4. Considered and deferred
 
-Roughly in priority order:
+Ideas that were evaluated and consciously *not* done, so the discussion
+doesn't have to be repeated later.
 
-1. **PR preview deployments.** On PRs, `wrangler pages deploy dist
-   --branch=<branch>` publishes a Pages preview environment — every PR gets a
-   live frontend URL to click through before merging.
-2. **Migrate Pages → Workers Static Assets.** Cloudflare now recommends
-   serving static assets from the Worker itself (`assets` in
-   `wrangler.jsonc`) instead of a separate Pages project. This collapses
-   `deploy:all` into a single `wrangler deploy`, puts the frontend and the
-   websocket server on one origin, and removes the hardcoded
-   `VITE_PARTYKIT_HOST` entirely.
-3. **Secret scanning.** If the repo is public, enable Secret scanning + Push
-   protection (free for public repos) to catch an accidentally committed
-   Cloudflare token before it lands.
+- **Migrate Pages → Workers Static Assets** *(deferred, July 2026)*.
+  Cloudflare recommends serving static assets from the Worker (`assets` in
+  `wrangler.jsonc`) instead of a separate Pages project; Pages is in
+  maintenance mode. The migration would make client + server deploy as one
+  atomic version (today `deploy:all` deploys the Worker first, then Pages —
+  a wire-protocol change briefly skews production), collapse the pipeline
+  into a single `wrangler deploy`, and remove the hardcoded
+  `VITE_PARTYKIT_HOST`. Deferred because players wouldn't notice any
+  difference and the public URL would change from `disapoly.pages.dev`.
+  **Revisit if:** wire-protocol changes become frequent, Pages loses
+  features, or a custom domain is set up anyway.
+- **PR preview deployments** *(declined, July 2026)*. The workflow here is
+  test-locally-then-push; PRs are mostly Dependabot's. Previews would add
+  moving parts without a consumer. Also, doing them well depends on the
+  Workers migration above (Pages previews only cover the frontend, pointed
+  at the production Worker).
