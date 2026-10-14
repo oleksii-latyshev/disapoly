@@ -31,8 +31,9 @@ One person creates a room and shares a link. Everyone else joins, picks a nickna
 
 **Made for playing with friends online:**
 
-- 🔗 **No accounts** — create a room, share the `?room=…` link, play. Identity
-  survives refreshes; a dropped player can reconnect and resume.
+- 🔗 **No accounts** — create a room, share the `?room=…` link, pick an
+  emoji avatar & nickname, and play. Identity survives refreshes; a dropped
+  player can reconnect and resume.
 - 🛡️ **Authoritative server** — the room lives in a Cloudflare Durable Object;
   clients only send intents, so nobody can cheat by editing state.
 - ⏱️ Disconnect handling: skip an absent player's turn (manually or after a 30s
@@ -122,5 +123,7 @@ One-time repo setup:
 Manual deploy: `bun run deploy:all` (after `wrangler login`).
 
 > [!WARNING]
-> Durable Objects. UI-only changes need just `bun run build && bun run
-deploy:pages`; redeploy the worker only when `src/core/game-core/**` changes.
+> Don't deploy while a match is live — updating the worker restarts the room
+> Durable Object and resets in-progress matches. UI-only changes need just
+> `bun run build && bun run deploy:pages`; redeploy the worker only when
+> `server/**` or `src/core/game-core/**` changes.

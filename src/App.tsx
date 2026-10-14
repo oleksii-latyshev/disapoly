@@ -7,7 +7,7 @@ import {
   SettingsButton,
   SetupScreen,
 } from "@/features/game"
-import { HomeScreen, RoomScreen } from "@/features/online"
+import { HomeScreen, PreviewGame, RoomScreen } from "@/features/online"
 import { useRoute } from "@/shared/hooks/useRoute"
 
 type HotSeat =
@@ -19,8 +19,14 @@ export function App() {
   const { roomId, navigate } = useRoute()
   const [hotSeat, setHotSeat] = useState<HotSeat>({ kind: "off" })
 
+  const isPreview =
+    typeof window !== "undefined" &&
+    window.location.search.includes("preview=true")
+
   let screen
-  if (roomId) {
+  if (isPreview) {
+    screen = <PreviewGame />
+  } else if (roomId) {
     // Online room takes priority — the URL is the source of truth for it.
     screen = <RoomScreen roomId={roomId} onLeave={() => navigate(null)} />
   } else if (hotSeat.kind === "setup") {
